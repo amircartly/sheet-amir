@@ -44,7 +44,8 @@
     .top-bar-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .badge-mode {
       background: #2563eb;
@@ -91,6 +92,23 @@
     .btn-switch-user:hover {
       opacity: 0.9;
     }
+
+    .btn-view-treasury {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-view-treasury:hover {
+      background: #047857;
+    }
     
     /* Role Alert Banner */
     .role-banner {
@@ -105,6 +123,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
     }
     
     /* Controls Bar */
@@ -119,7 +139,7 @@
       display: flex;
       gap: 6px;
       flex: 1;
-      min-width: 320px;
+      min-width: 300px;
       background: white;
       padding: 7px 10px;
       border-radius: 10px;
@@ -286,6 +306,8 @@
       padding: 12px 16px;
       border-radius: 12px;
       border: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .btn-save {
       background: #059669;
@@ -302,12 +324,29 @@
     .btn-save:hover {
       background: #047857;
     }
+    .btn-settle-action {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(217, 119, 6, 0.25);
+    }
+    .btn-settle-action:hover {
+      background: linear-gradient(135deg, #b45309, #92400e);
+    }
     .btn-clear {
       background: #f8fafc;
       color: #475569;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      padding: 9px 18px;
+      padding: 9px 16px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
@@ -316,51 +355,8 @@
       background: #f1f5f9;
     }
 
-    /* Report Print Overlay */
-    #reportModal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(4px);
-      z-index: 9999;
-      overflow-y: auto;
-      padding: 20px;
-    }
-    .report-content {
-      background: white;
-      max-width: 960px;
-      margin: 0 auto;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    }
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      font-size: 12px;
-    }
-    .report-table th {
-      background: #0f172a;
-      color: white;
-      padding: 8px;
-      text-align: right;
-      font-weight: 600;
-    }
-    .report-table td {
-      border: 1px solid #cbd5e1;
-      padding: 7px 8px;
-    }
-    .report-table tr:nth-child(even) {
-      background: #f8fafc;
-    }
-
-    /* Success Modal */
-    #successModal, #loginModal {
+    /* Modal Overlays */
+    #reportModal, #successModal, #loginModal, #settleModal, #treasuryModal {
       display: none;
       position: fixed;
       top: 0;
@@ -368,21 +364,27 @@
       width: 100vw;
       height: 100vh;
       background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(3px);
+      backdrop-filter: blur(4px);
       z-index: 10000;
       align-items: center;
       justify-content: center;
+      overflow-y: auto;
+      padding: 16px;
     }
     .modal-card {
       background: white;
-      width: 90%;
-      max-width: 440px;
+      width: 100%;
+      max-width: 480px;
       border-radius: 16px;
-      padding: 24px;
+      padding: 22px;
       text-align: center;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
       border: 1px solid #e2e8f0;
       animation: popIn 0.25s ease-out;
+    }
+    .modal-card-large {
+      max-width: 640px;
+      text-align: right;
     }
     @keyframes popIn {
       0% { transform: scale(0.9); opacity: 0; }
@@ -399,10 +401,10 @@
       justify-content: center;
       font-size: 28px;
       font-weight: bold;
-      margin: 0 auto 14px auto;
+      margin: 0 auto 12px auto;
       border: 3px solid #bbf7d0;
     }
-    .login-icon-wrap {
+    .login-icon-wrap, .settle-icon-wrap {
       width: 58px;
       height: 58px;
       background: #fef3c7;
@@ -413,19 +415,19 @@
       justify-content: center;
       font-size: 26px;
       font-weight: bold;
-      margin: 0 auto 14px auto;
+      margin: 0 auto 12px auto;
       border: 3px solid #fde68a;
     }
     .modal-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: #0f172a;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .modal-subtitle {
-      font-size: 13px;
+      font-size: 12px;
       color: #64748b;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       line-height: 1.5;
     }
     .pin-input {
@@ -434,7 +436,7 @@
       letter-spacing: 8px;
       padding: 8px;
       width: 160px;
-      margin: 0 auto 14px auto;
+      margin: 0 auto 12px auto;
       border: 2px solid #cbd5e1;
       border-radius: 10px;
       outline: none;
@@ -446,7 +448,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .btn-quick-role {
       background: #f8fafc;
@@ -475,6 +477,22 @@
       width: 100%;
       margin-bottom: 8px;
     }
+    .btn-confirm-settle {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);
+    }
+    .btn-confirm-settle:hover {
+      background: #047857;
+    }
     .btn-secondary-action {
       background: #f1f5f9;
       color: #475569;
@@ -495,7 +513,7 @@
       font-size: 12px;
       font-weight: bold;
       border: 1px solid #cbd5e1;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
     .success-actions {
       display: flex;
@@ -525,6 +543,83 @@
       flex: 1;
     }
 
+    /* Calculation Cards in Settlement Modal */
+    .calc-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .calc-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .calc-box-title {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    .calc-box-value {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    /* Treasury Table in Modal */
+    .treasury-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .treasury-table th {
+      background: #064e3b;
+      color: #a7f3d0;
+      padding: 7px 10px;
+      text-align: right;
+    }
+    .treasury-table td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+    }
+    .treasury-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    /* Report Content */
+    .report-content {
+      background: white;
+      max-width: 960px;
+      margin: 0 auto;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 12px;
+    }
+    .report-table th {
+      background: #0f172a;
+      color: white;
+      padding: 8px;
+      text-align: right;
+      font-weight: 600;
+    }
+    .report-table td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 8px;
+    }
+    .report-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
     @media print {
       body * {
         visibility: hidden;
@@ -548,7 +643,7 @@
 </head>
 <body>
 
-  <!-- Top Bar with User Role Switcher -->
+  <!-- Top Bar with User Role Switcher & Treasury Button -->
   <div class="top-bar">
     <div class="top-bar-title">
       <h2>💎 منظومة بطاقات مصرفية (AMIR)</h2>
@@ -556,6 +651,11 @@
     </div>
 
     <div class="top-bar-actions">
+      <!-- Real-time Treasury Balances Viewer Button -->
+      <button type="button" class="btn-view-treasury" onclick="openTreasuryModal()">
+        🏦 أرصدة الخزائن والمصارف
+      </button>
+
       <!-- Active User Profile Indicator -->
       <div class="user-profile-badge">
         <span class="user-role-tag" id="currentRoleTag">موظف استقبال</span>
@@ -588,6 +688,7 @@
         <option value="4. انتظار شحن">4. انتظار شحن</option>
         <option value="5. مشحونة">5. مشحونة</option>
         <option value="6. مرسلة للسحب">6. مرسلة للسحب</option>
+        <option value="7. تم السحب والتصفية">7. تم السحب والتصفية</option>
         <option value="الكل">جميع البطاقات (سجل عام)</option>
       </select>
       <button type="button" class="btn-print" onclick="openPrintReport()">🖨️ فتح الكشف للطباعة</button>
@@ -708,7 +809,7 @@
           </div>
           <div class="form-group">
             <label>المرحلة الحالية للبطاقة *</label>
-            <select id="status">
+            <select id="status" onchange="handleStageChange(this.value)">
               <!-- Dynamically populated based on employee role -->
             </select>
           </div>
@@ -724,10 +825,111 @@
     <!-- Actions Bar -->
     <div class="actions">
       <button type="button" class="btn-clear" onclick="clearForm()">🔄 تفريغ الخانات (بطاقة جديدة)</button>
+      
+      <!-- Dedicated Settlement Button (visible for foreign office & admin) -->
+      <button type="button" id="btnSettleSale" class="btn-settle-action" style="display:none;" onclick="openSettleModal()">
+        💰 تصفية وبيع الدولار وتوريد الخزينة
+      </button>
+
       <span id="statusMsg" style="font-size:12px; font-weight:bold;"></span>
       <button type="button" class="btn-save" onclick="sendData()">💾 ترحيل وحفظ البطاقة</button>
     </div>
   </form>
+
+  <!-- Settle & Sell Dollar Modal (Links Sale to Treasury) -->
+  <div id="settleModal">
+    <div class="modal-card modal-card-large">
+      <div class="settle-icon-wrap">💵</div>
+      <div class="modal-title" style="text-align:center;">تصفية البطاقة وبيع الدولار وتوريد الأرباح للخزينة</div>
+      <div class="modal-subtitle" style="text-align:center;">إدخال سعر بيع الدولار المسحوب (4,000$) في السوق الموازي وتوريد القيمة الناتجة مباشرة لخزينة الدينار واحتساب صافي الأرباح تلقائياً</div>
+
+      <div style="background:#f1f5f9; padding:10px 14px; border-radius:10px; font-size:12px; margin-bottom:12px; display:flex; justify-content:space-between; flex-wrap:wrap;">
+        <div>الزبون: <strong id="settleClientName" style="color:#0f172a;">-</strong></div>
+        <div>كود البطاقة: <strong id="settleCardCode" style="color:#2563eb;">-</strong></div>
+      </div>
+
+      <div class="row-2">
+        <div class="form-group">
+          <label>المبلغ المسحوب بالدولار ($) *</label>
+          <input type="number" id="settleUsdAmount" value="4000" oninput="calculateSettlement()">
+        </div>
+        <div class="form-group">
+          <label style="color:#b45309;">سعر بيع الدولار بالسوق الموازي (د.ل) *</label>
+          <input type="number" step="0.01" id="settleExchangeRate" value="10.00" oninput="calculateSettlement()">
+        </div>
+      </div>
+
+      <!-- Real-time dynamic calculation boxes -->
+      <div class="calc-card-grid">
+        <div class="calc-box" style="background:#eff6ff; border-color:#bfdbfe;">
+          <div class="calc-box-title" style="color:#1d4ed8;">إجمالي البيع بالدينار (د.ل)</div>
+          <div class="calc-box-value" id="settleTotalSaleDisplay" style="color:#1d4ed8;">40,000 د.ل</div>
+        </div>
+        <div class="calc-box" style="background:#f0fdf4; border-color:#bbf7d0;">
+          <div class="calc-box-title" style="color:#15803d;">صافي الربح المحقق (د.ل)</div>
+          <div class="calc-box-value" id="settleNetProfitDisplay" style="color:#15803d;">17,700 د.ل</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label style="color:#065f46; font-weight:bold;">الخزينة المستلمة لتوريد المبلغ بالدينار *</label>
+        <select id="settleDestinationVault">
+          <option value="خزينة الكاش بالدينار">خزينة الكاش بالدينار (السيولة النقدية بمقر المكتب)</option>
+          <option value="حساب مصرف التجارة والتنمية">حساب مصرف التجارة والتنمية</option>
+          <option value="حساب مصرف الوحدة">حساب مصرف الوحدة</option>
+          <option value="حساب المصرف التجاري الوطني">حساب المصرف التجاري الوطني</option>
+          <option value="حساب مصرف الأمان">حساب مصرف الأمان</option>
+          <option value="حساب مصرف المتوسط">حساب مصرف المتوسط</option>
+          <option value="حساب مصرف الجمهورية">حساب مصرف الجمهورية</option>
+          <option value="حساب المصرف الإسلامي الليبي">حساب المصرف الإسلامي الليبي</option>
+          <option value="حساب مصرف شمال أفريقيا">حساب مصرف شمال أفريقيا</option>
+          <option value="حساب مصرف اليقين">حساب مصرف اليقين</option>
+        </select>
+      </div>
+
+      <div id="settleErrorMsg" style="color:#dc2626; font-size:12px; font-weight:bold; margin-bottom:8px; text-align:center;"></div>
+
+      <button type="button" class="btn-confirm-settle" onclick="confirmSettleAndSell()">
+        🚀 تأكيد التصفية وتوريد المبلغ فوراً للخزينة
+      </button>
+      <button type="button" class="btn-secondary-action" onclick="closeSettleModal()">
+        إلغاء التصفية
+      </button>
+    </div>
+  </div>
+
+  <!-- Real-time Treasury Balances Modal -->
+  <div id="treasuryModal">
+    <div class="modal-card modal-card-large">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #064e3b; padding-bottom:8px; margin-bottom:12px;">
+        <div>
+          <h3 style="color:#064e3b; font-size:16px;">🏦 أرصدة الخزائن والمصارف اللحظية</h3>
+          <span style="font-size:11px; color:#64748b;">تحديث فوري من ورقة أرصدة_الخزائن</span>
+        </div>
+        <button type="button" onclick="loadTreasuryBalances()" style="background:#059669; color:white; border:none; padding:5px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">
+          🔄 تحديث الأرصدة
+        </button>
+      </div>
+
+      <div id="treasuryLoading" style="text-align:center; padding:20px; font-size:13px; color:#64748b;">جاري جلب الأرصدة من الشيت...</div>
+      
+      <table class="treasury-table" id="treasuryTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>الحساب / الخزينة</th>
+            <th>العملة</th>
+            <th>إجمالي الإيداعات والأرباح</th>
+            <th>الرصيد الحالي المتوفر</th>
+          </tr>
+        </thead>
+        <tbody id="treasuryTableBody"></tbody>
+      </table>
+
+      <div style="margin-top:14px; text-align:left;">
+        <button type="button" class="btn-secondary-action" style="width:auto; padding:6px 18px;" onclick="closeTreasuryModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Login / Switch Role Modal -->
   <div id="loginModal">
@@ -798,7 +1000,7 @@
   <div id="successModal">
     <div class="modal-card">
       <div class="success-icon-wrap">✓</div>
-      <div class="modal-title">تم حفظ بيانات الزبون بنجاح</div>
+      <div id="successTitle" class="modal-title">تم حفظ بيانات الزبون بنجاح</div>
       <div id="successDetails" class="modal-subtitle"></div>
       <div>
         <span id="successCodeBadge" class="success-badge"></span>
@@ -811,7 +1013,6 @@
   </div>
 
   <script>
-    // الحالة الافتراضية للموظف الحالي
     var currentEmployee = {
       name: 'موظف الاستقبال',
       role: 'موظف استقبال',
@@ -828,12 +1029,10 @@
       '7. تم السحب والتصفية'
     ];
 
-    // تهيئة الصفحة وتطبيق الصلاحيات عند البدء
     window.onload = function() {
       applyRoleRestrictions(currentEmployee.role);
     };
 
-    // تطبيق قواعد الصلاحيات والأمان حسب الدور
     function applyRoleRestrictions(role) {
       var statusSelect = document.getElementById('status');
       statusSelect.innerHTML = '';
@@ -845,6 +1044,7 @@
       var securityBadge = document.getElementById('roleSecurityBadge');
       var roleTag = document.getElementById('currentRoleTag');
       var userLabel = document.getElementById('currentUserName');
+      var btnSettle = document.getElementById('btnSettleSale');
 
       roleTag.innerText = role;
       userLabel.innerText = '👤 ' + currentEmployee.name;
@@ -860,7 +1060,6 @@
         securityBadge.style.color = '#0369a1';
         securityBadge.style.background = '#dbeafe';
 
-        // حجب الأرقام السرية
         pinLocalInput.value = '••••';
         pinLocalInput.disabled = true;
         pinLocalInput.classList.add('pin-locked');
@@ -868,6 +1067,8 @@
         pinDollarInput.value = '••••';
         pinDollarInput.disabled = true;
         pinDollarInput.classList.add('pin-locked');
+
+        btnSettle.style.display = 'none';
 
       } else if (role === 'مسؤول إيداع وخزينة') {
         allowedOptions = ['1. إدخال البيانات', '2. محجوزة', '3. مودعة'];
@@ -886,12 +1087,14 @@
         pinDollarInput.disabled = true;
         pinDollarInput.classList.add('pin-locked');
 
+        btnSettle.style.display = 'none';
+
       } else if (role === 'مسؤول مالي ومكتب الخارج') {
         allowedOptions = ['4. انتظار شحن', '5. مشحونة', '6. مرسلة للسحب', '7. تم السحب والتصفية'];
         roleBanner.style.background = '#fef3c7';
         roleBanner.style.borderColor = '#fde68a';
-        roleText.innerText = '📌 صلاحيتك (مكتب الخارج والمالي): شحن البطاقات، كشف السري دولار، وإتمام السحب والتصفية.';
-        securityBadge.innerText = '🔓 السري دولار مفتوح للسحب الخارجي';
+        roleText.innerText = '📌 صلاحيتك (مكتب الخارج والمالي): شحن البطاقات، كشف السري دولار، وإتمام السحب والتصفية وبيع الدولار.';
+        securityBadge.innerText = '🔓 السري دولار مفتوح للسحب وتوريد الخزينة';
         securityBadge.style.color = '#b45309';
         securityBadge.style.background = '#fef3c7';
 
@@ -903,13 +1106,14 @@
         pinDollarInput.classList.remove('pin-locked');
         if (pinDollarInput.value === '••••') pinDollarInput.value = '';
 
+        btnSettle.style.display = 'inline-flex';
+
       } else {
-        // المدير العام (صلاحيات كاملة)
         allowedOptions = ALL_STAGES;
         roleBanner.style.background = '#f3e8ff';
         roleBanner.style.borderColor = '#e9d5ff';
-        roleText.innerText = '👑 صلاحيتك (المدير العام): إشراف كامل على كافة المراحل 1-7، الخزائن، والأرباح.';
-        securityBadge.innerText = '⚡ صلاحيات إدارية مطلقة';
+        roleText.innerText = '👑 صلاحيتك (المدير العام): إشراف كامل على كافة المراحل 1-7، الخزائن، والأرباح والتصفية.';
+        securityBadge.innerText = '⚡ صلاحيات إدارية مطلقة وتوريد فوري';
         securityBadge.style.color = '#7c3aed';
         securityBadge.style.background = '#f3e8ff';
 
@@ -920,15 +1124,162 @@
         pinDollarInput.disabled = false;
         pinDollarInput.classList.remove('pin-locked');
         if (pinDollarInput.value === '••••') pinDollarInput.value = '';
+
+        btnSettle.style.display = 'inline-flex';
       }
 
-      // ملء خيارات المرحلة المسموحة
       allowedOptions.forEach(function(stg) {
         var opt = document.createElement('option');
         opt.value = stg;
         opt.innerText = stg;
         statusSelect.appendChild(opt);
       });
+    }
+
+    // عند تغيير المرحلة إلى السحب والتصفية
+    function handleStageChange(stage) {
+      if (stage === '7. تم السحب والتصفية') {
+        openSettleModal();
+      }
+    }
+
+    // فتح نافذة التصفية وبيع الدولار
+    function openSettleModal() {
+      var name = document.getElementById('name').value.trim();
+      var code = document.getElementById('cardCode').value.trim();
+
+      if (!name) {
+        alert('الرجاء اختيار أو إدخال بيانات الزبون أولاً قبل التصفية.');
+        return;
+      }
+
+      document.getElementById('settleClientName').innerText = name;
+      document.getElementById('settleCardCode').innerText = code || 'بطاقة جديدة';
+      document.getElementById('settleErrorMsg').innerText = '';
+
+      calculateSettlement();
+      document.getElementById('settleModal').style.display = 'flex';
+    }
+
+    function closeSettleModal() {
+      document.getElementById('settleModal').style.display = 'none';
+    }
+
+    // حساب مبالغ وأرباح التصفية لحظياً
+    function calculateSettlement() {
+      var usd = parseFloat(document.getElementById('settleUsdAmount').value) || 0;
+      var rate = parseFloat(document.getElementById('settleExchangeRate').value) || 0;
+      var totalSale = usd * rate;
+
+      var dep = parseFloat(document.getElementById('depositAmt').value) || 0;
+      var cardPrice = parseFloat(document.getElementById('cardPrice').value) || 0;
+      var totalCost = dep + cardPrice;
+      var netProfit = totalSale - totalCost;
+
+      document.getElementById('settleTotalSaleDisplay').innerText = totalSale.toLocaleString('en-US') + ' د.ل';
+      document.getElementById('settleNetProfitDisplay').innerText = netProfit.toLocaleString('en-US') + ' د.ل';
+    }
+
+    // تأكيد التصفية وبيع الدولار وتوريد القيمة للخزينة
+    function confirmSettleAndSell() {
+      var name = document.getElementById('name').value.trim();
+      var code = document.getElementById('cardCode').value.trim();
+      var usdAmount = parseFloat(document.getElementById('settleUsdAmount').value) || 0;
+      var rate = parseFloat(document.getElementById('settleExchangeRate').value) || 0;
+      var destinationVault = document.getElementById('settleDestinationVault').value;
+
+      var dep = parseFloat(document.getElementById('depositAmt').value) || 0;
+      var cardPrice = parseFloat(document.getElementById('cardPrice').value) || 0;
+      var totalCost = dep + cardPrice;
+
+      if (usdAmount <= 0 || rate <= 0) {
+        document.getElementById('settleErrorMsg').innerText = 'الرجاء إدخال مبلغ الدولار وسعر البيع بشكل صحيح';
+        return;
+      }
+
+      var settleData = {
+        code: code,
+        name: name,
+        usdAmount: usdAmount,
+        rate: rate,
+        totalCost: totalCost,
+        destinationVault: destinationVault
+      };
+
+      var errBox = document.getElementById('settleErrorMsg');
+      errBox.innerText = 'جاري تصفية الدولار وتوريد المبلغ إلى الخزينة وتسجيل القيد...';
+      errBox.style.color = '#2563eb';
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            closeSettleModal();
+            document.getElementById('status').value = '7. تم السحب والتصفية';
+            
+            showSuccessDialog(
+              res.name,
+              res.code,
+              'تم بيع $' + res.usdAmount.toLocaleString('en-US') + ' بسعر ' + res.rate + ' د.ل وتوريد ' + res.totalSaleLYD.toLocaleString('en-US') + ' د.ل إلى (' + res.destinationVault + ')',
+              'صافي الأرباح المحققة: ' + res.netProfitLYD.toLocaleString('en-US') + ' د.ل',
+              res.totalCost
+            );
+          })
+          .withFailureHandler(function(err) {
+            errBox.innerText = 'حدث خطأ أثناء التصفية: ' + err.message;
+            errBox.style.color = '#dc2626';
+          })
+          .settleAndSellCard(settleData, currentEmployee.name);
+      } else {
+        closeSettleModal();
+        alert('تمت التصفية بنجاح في البيئة التجريبية!');
+      }
+    }
+
+    // فتح وعرض أرصدة الخزائن والمصارف
+    function openTreasuryModal() {
+      document.getElementById('treasuryModal').style.display = 'flex';
+      loadTreasuryBalances();
+    }
+
+    function closeTreasuryModal() {
+      document.getElementById('treasuryModal').style.display = 'none';
+    }
+
+    function loadTreasuryBalances() {
+      var loading = document.getElementById('treasuryLoading');
+      var table = document.getElementById('treasuryTable');
+      var tbody = document.getElementById('treasuryTableBody');
+
+      loading.style.display = 'block';
+      table.style.display = 'none';
+      tbody.innerHTML = '';
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(accounts) {
+            loading.style.display = 'none';
+            table.style.display = 'table';
+
+            if (!accounts || accounts.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:15px;">لا توجد حسابات مسجلة</td></tr>';
+              return;
+            }
+
+            accounts.forEach(function(acc) {
+              var tr = document.createElement('tr');
+              var currStyle = (acc.currency === '$') ? 'color:#15803d; font-weight:bold;' : 'color:#0f172a; font-weight:bold;';
+              tr.innerHTML = '<td><strong>' + acc.accountName + '</strong></td>' +
+                             '<td>' + acc.currency + '</td>' +
+                             '<td>' + Number(acc.totalIncome).toLocaleString('en-US') + '</td>' +
+                             '<td style="' + currStyle + '">' + Number(acc.currentBalance).toLocaleString('en-US') + ' ' + acc.currency + '</td>';
+              tbody.appendChild(tr);
+            });
+          })
+          .withFailureHandler(function(err) {
+            loading.innerText = 'تعذر جلب الأرصدة: ' + err.message;
+          })
+          .getTreasuryBalances();
+      }
     }
 
     // فتح نافذة الدخول والتبديل
@@ -943,13 +1294,11 @@
       document.getElementById('loginModal').style.display = 'none';
     }
 
-    // تسجيل الدخول السريع
     function quickLogin(pin) {
       document.getElementById('pinInput').value = pin;
       submitPinLogin();
     }
 
-    // التحقق من رمز PIN
     function submitPinLogin() {
       var pin = document.getElementById('pinInput').value.trim();
       var errBox = document.getElementById('pinErrorMsg');
@@ -959,7 +1308,6 @@
         return;
       }
 
-      // فحص محلي فوري
       var profileMap = {
         '1111': { name: 'موظف الاستقبال', role: 'موظف استقبال' },
         '2222': { name: 'مسؤول الإيداع والخزينة', role: 'مسؤول إيداع وخزينة' },
@@ -974,7 +1322,6 @@
         return;
       }
 
-      // إذا لم يكن من الأرقام الافتراضية، نتحقق من الشيت مباشرة عبر Apps Script
       errBox.innerText = 'جاري التحقق من الصلاحيات...';
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
@@ -996,7 +1343,6 @@
       }
     }
 
-    // حساب التكلفة الكلية لحظياً
     function calculateTotalCost() {
       var dep = parseFloat(document.getElementById('depositAmt').value) || 0;
       var prc = parseFloat(document.getElementById('cardPrice').value) || 0;
@@ -1004,7 +1350,6 @@
       document.getElementById('totalCostDisplay').value = total.toLocaleString('en-US') + ' د.ل';
     }
 
-    // 1. البحث الذكي الموحد
     function searchCustomer() {
       var q = document.getElementById('searchInput').value.trim();
       if (!q) {
@@ -1041,7 +1386,6 @@
             document.getElementById('bookingDate').value = card.bookingDate || '';
             document.getElementById('cardNum').value = card.cardNum || '';
 
-            // حماية الأرقام السرية حسب الدور
             if (currentEmployee.role === 'موظف استقبال') {
               document.getElementById('pinLocal').value = '••••';
               document.getElementById('pinDollar').value = '••••';
@@ -1068,7 +1412,6 @@
       }
     }
 
-    // 2. ترحيل وحفظ البيانات
     function sendData() {
       var name = document.getElementById('name').value.trim();
       if (!name) {
@@ -1114,7 +1457,6 @@
       }
     }
 
-    // عرض نافذة نجاح الحفظ الأنيقة
     function showSuccessDialog(customerName, code, bank, status, totalCost) {
       var costText = totalCost ? ' | إجمالي التكلفة: ' + Number(totalCost).toLocaleString('en-US') + ' د.ل' : '';
       document.getElementById('successDetails').innerHTML =
@@ -1126,14 +1468,12 @@
       modal.style.display = 'flex';
     }
 
-    // المتابعة لإدخال زبون جديد
     function continueNewCustomer() {
       document.getElementById('successModal').style.display = 'none';
       clearForm();
       document.getElementById('name').focus();
     }
 
-    // إغلاق النافذة المنبثقة
     function closeDialog() {
       document.getElementById('successModal').style.display = 'none';
       clearForm();
@@ -1142,7 +1482,6 @@
       }
     }
 
-    // 3. فتح تقرير المرحلة للطباعة
     function openPrintReport() {
       var stage = document.getElementById('reportStage').value;
       if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -1181,7 +1520,6 @@
       }
     }
 
-    // 4. تفريغ النموذج
     function clearForm() {
       document.getElementById('cardForm').reset();
       document.getElementById('cardCode').value = '';

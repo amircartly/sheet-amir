@@ -7,8 +7,9 @@
  * 2. تهيئة تلقائية لكافة شيتات المنظومة (البطاقات، المستخدمين، الخزائن، الحركات).
  * 3. إدارة المستخدمين والصلاحيات (استقبال، خزينة، مالي وخارج، مدير عام).
  * 4. إدارة التكاليف: قيمة الإيداع + سعر شراء البطاقة = إجمالي التكلفة الحقيقية.
- * 5. تسجيل قيود وحركات الخزينة وسجل التدقيق (Audit Log) تلقائياً لكل حركة.
- * 6. تقارير وكشوفات المراحل قابلة للطباعة والتصدير كـ PDF.
+ * 5. ربط تصفية وبيع الدولار بالخزينة تلقائياً (إضافة القيمة المباعة بالدينار للخزينة واحتساب الأرباح).
+ * 6. تسجيل قيود وحركات الخزينة وسجل التدقيق (Audit Log) تلقائياً لكل حركة.
+ * 7. تقارير وكشوفات المراحل قابلة للطباعة والتصدير كـ PDF.
  */
 
 // 1. إنشاء القائمة في شريط الأدوات عند فتح الشيت
@@ -35,7 +36,6 @@ function openFormDialog() {
 function doGet(e) {
   var action = e && e.parameter ? e.parameter.action : '';
 
-  // إذا كان الطلب API لجلب البيانات بصيغة JSON
   if (action === 'getCards') {
     return ContentService.createTextOutput(JSON.stringify(getAllCards()))
       .setMimeType(ContentService.MimeType.JSON);
@@ -49,7 +49,6 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // الوضع الافتراضي: عرض صفحة الواجهة متوافقة تماماً مع شاشات الهواتف
   var template = HtmlService.createTemplateFromFile('Index');
   return template.evaluate()
     .setTitle('منظومة بطاقات AMIR')
@@ -61,16 +60,9 @@ function doGet(e) {
 function setupAllSystemSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // أ. تهيئة ورقة بيانات_ماستر (18 عمود)
   setupSheetColumns();
-
-  // ب. تهيئة ورقة المستخدمين
   setupUsersSheet(ss);
-
-  // ج. تهيئة ورقة أرصدة_الخزائن
   setupTreasurySheet(ss);
-
-  // د. تهيئة ورقة حركة_الخزائن (سجل العمليات Audit Log)
   setupMovementsSheet(ss);
 
   SpreadsheetApp.getUi().alert('✅ تم بنجاح تهيئة كافة أوراق المنظومة الأربعة وتجهيز المستخدمين والخزائن وسجل الحركات!');
@@ -139,7 +131,6 @@ function setupUsersSheet(ss) {
   sheet.setFrozenRows(1);
   sheet.setRightToLeft(true);
 
-  // إضافة المستخدمين الافتراضيين إذا كانت الورقة جديدة
   if (sheet.getLastRow() <= 1) {
     var defaultUsers = [
       ['موظف الاستقبال', '1111', 'موظف استقبال', 'المرحلة 1 و 2 (إدخال وحجز فقط)', 'نشط'],
@@ -179,7 +170,6 @@ function setupTreasurySheet(ss) {
   sheet.setFrozenRows(1);
   sheet.setRightToLeft(true);
 
-  // الحسابات الافتراضية
   if (sheet.getLastRow() <= 1) {
     var defaultAccounts = [
       ['خزينة الكاش بالدينار', 'د.ل', 120000, 0, 0, '=C2+D2-E2', 'السيولة النقدية بمقر المكتب'],
@@ -263,7 +253,41 @@ function recordMovement(cardCode, clientName, movementType, accountName, amount,
   }
 }
 
-// 6. التحقق من تسجيل دخول الموظف عبر رمز PIN
+// 6. تحديث رصيد الخزينة تلقائياً في ورقة أرصدة_الخزائن
+function updateTreasuryBalance(accountName, amount, isIncome) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('أرصدة_الخزائن');
+    if (!sheet) return false;
+    
+    var data = sheet.getDataRange().getValues();
+    var targetRow = -1;
+    var accClean = cleanText(accountName);
+    
+    for (var i = 1; i < data.length; i++) {
+      var rowNameClean = cleanText(data[i][0]);
+      if (rowNameClean === accClean || rowNameClean.indexOf(accClean) !== -1 || accClean.indexOf(rowNameClean) !== -1) {
+        targetRow = i + 1;
+        break;
+      }
+    }
+    
+    // إذا لم يتطابق مع أي اسم، الافتراضي هو الصف 2 (خزينة الكاش بالدينار)
+    if (targetRow === -1) targetRow = 2;
+    
+    var colIndex = isIncome ? 4 : 5; // العمود 4 هو إجمالي الإيداعات، والعمود 5 هو إجمالي السحوبات
+    var cell = sheet.getRange(targetRow, colIndex);
+    var currentVal = parseFloat(cell.getValue()) || 0;
+    cell.setValue(currentVal + (parseFloat(amount) || 0));
+    
+    return true;
+  } catch (err) {
+    Logger.log('Error updating treasury balance: ' + err);
+    return false;
+  }
+}
+
+// 7. التحقق من تسجيل دخول الموظف عبر رمز PIN
 function verifyEmployeePin(pin) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('المستخدمين');
@@ -295,7 +319,7 @@ function verifyEmployeePin(pin) {
   return { success: false, message: 'رمز الدخول غير صحيح' };
 }
 
-// 7. جلب قائمة مستخدمي النظام
+// 8. جلب قائمة مستخدمي النظام
 function getSystemUsers() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('المستخدمين');
@@ -316,7 +340,7 @@ function getSystemUsers() {
   return users;
 }
 
-// 8. جلب أرصدة الخزائن والمصارف
+// 9. جلب أرصدة الخزائن والمصارف
 function getTreasuryBalances() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('أرصدة_الخزائن');
@@ -339,7 +363,7 @@ function getTreasuryBalances() {
   return accounts;
 }
 
-// 9. دالة تنظيف وتوحيد النصوص العربية للبحث المرن
+// 10. دالة تنظيف وتوحيد النصوص العربية للبحث المرن
 function cleanText(txt) {
   if (!txt) return '';
   return txt.toString().trim().toLowerCase()
@@ -349,7 +373,7 @@ function cleanText(txt) {
     .replace(/[\s\-_/\\,.]/g, '');
 }
 
-// 8. تنسيق التاريخ بصيغة yyyy-MM-dd
+// 11. تنسيق التاريخ بصيغة yyyy-MM-dd
 function formatDateValue(val) {
   if (!val) return '';
   if (val instanceof Date) {
@@ -358,7 +382,7 @@ function formatDateValue(val) {
   return val.toString();
 }
 
-// 9. جلب كافة البطاقات للربط السحابي
+// 12. جلب كافة البطاقات للربط السحابي
 function getAllCards() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('بيانات_ماستر') || ss.getSheets()[0];
@@ -395,7 +419,7 @@ function getAllCards() {
   return cards;
 }
 
-// 10. البحث الذكي الموحد (بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة)
+// 13. البحث الذكي الموحد (بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة)
 function searchCardData(query) {
   if (!query || query.toString().trim() === '') return { found: false };
   
@@ -459,7 +483,7 @@ function searchCardData(query) {
   return { found: false };
 }
 
-// 11. حفظ أو تعديل المعاملة
+// 14. حفظ أو تعديل المعاملة
 function saveCardData(card, employeeName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('بيانات_ماستر') || ss.getSheets()[0];
@@ -469,7 +493,6 @@ function saveCardData(card, employeeName) {
   var code = card.code ? card.code.toString().trim() : '';
   var isNew = false;
 
-  // التحقق إذا كان تعديلاً على بطاقة موجودة
   if (code !== '') {
     for (var i = 1; i < data.length; i++) {
       if (data[i][0] && data[i][0].toString().trim() === code) {
@@ -479,7 +502,6 @@ function saveCardData(card, employeeName) {
     }
   }
 
-  // إضافة بطاقة جديدة إذا لم تكن موجودة
   if (targetRow === -1) {
     var lastRow = sheet.getLastRow();
     targetRow = lastRow + 1;
@@ -514,7 +536,6 @@ function saveCardData(card, employeeName) {
 
   sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
   
-  // تسجيل حركة في الـ Audit Log
   if (isNew) {
     recordMovement(code, card.name, 'تسجيل معاملة جديدة', card.bank, deposit, 'د.ل', employeeName || 'موظف الاستقبال', 'تم إدخال الزبون مبدئياً');
   }
@@ -529,7 +550,78 @@ function saveCardData(card, employeeName) {
   };
 }
 
-// 12. جلب كشف تقرير المرحلة للطباعة والتصدير
+// 15. تصفية البطاقة وبيع الدولار وربطه مباشرة بخزينة الدينار وسجل الحركات
+function settleAndSellCard(settleData, employeeName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('بيانات_ماستر') || ss.getSheets()[0];
+  var data = sheet.getDataRange().getValues();
+  
+  var code = settleData.code ? settleData.code.toString().trim() : '';
+  var name = settleData.name ? settleData.name.toString().trim() : '';
+  var usdAmount = parseFloat(settleData.usdAmount) || 4000;
+  var rate = parseFloat(settleData.rate) || 10;
+  var totalSaleLYD = usdAmount * rate;
+  var destinationVault = settleData.destinationVault || 'خزينة الكاش بالدينار';
+  
+  var targetRow = -1;
+  var deposit = 0;
+  var cardPrice = 0;
+  
+  for (var i = 1; i < data.length; i++) {
+    if ((code && data[i][0] && data[i][0].toString().trim() === code) ||
+        (name && data[i][1] && data[i][1].toString().trim() === name)) {
+      targetRow = i + 1;
+      code = data[i][0] ? data[i][0].toString() : code;
+      name = data[i][1] ? data[i][1].toString() : name;
+      deposit = parseFloat(data[i][7]) || 0;
+      cardPrice = parseFloat(data[i][8]) || 0;
+      break;
+    }
+  }
+  
+  var totalCost = deposit + cardPrice;
+  if (totalCost === 0 && settleData.totalCost) totalCost = parseFloat(settleData.totalCost);
+  var netProfitLYD = totalSaleLYD - totalCost;
+  
+  var noteText = 'تصفية وبيع: سحب $' + usdAmount.toLocaleString('en-US') + ' وبيع بسعر ' + rate + ' د.ل بإجمالي ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل وتوريد لـ (' + destinationVault + ') | صافي الربح: ' + netProfitLYD.toLocaleString('en-US') + ' د.ل';
+  
+  // أ. تحديث مرحلة البطاقة وملاحظاتها في بيانات_ماستر
+  if (targetRow !== -1) {
+    sheet.getRange(targetRow, 17).setValue('7. تم السحب والتصفية');
+    var oldNote = sheet.getRange(targetRow, 18).getValue() || '';
+    sheet.getRange(targetRow, 18).setValue(oldNote ? (oldNote + ' | ' + noteText) : noteText);
+  }
+  
+  // ب. تحديث ورقة أرصدة_الخزائن (إضافة إجمالي البيع لعمود الإيداعات بالخزينة المختارة)
+  updateTreasuryBalance(destinationVault, totalSaleLYD, true);
+  
+  // ج. تسجيل قيد محاسبي دقيق في ورقة حركة_الخزائن
+  var moveRes = recordMovement(
+    code,
+    name,
+    'تصفية وبيع دولار ($' + usdAmount.toLocaleString('en-US') + ')',
+    destinationVault,
+    totalSaleLYD,
+    'د.ل',
+    employeeName || 'المسؤول المالي ومكتب الخارج',
+    'بيع $' + usdAmount.toLocaleString('en-US') + ' بسعر ' + rate + ' د.ل | إجمالي البيع: ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل | تكلفة البطاقة: ' + totalCost.toLocaleString('en-US') + ' د.ل | صافي الأرباح: ' + netProfitLYD.toLocaleString('en-US') + ' د.ل'
+  );
+  
+  return {
+    success: true,
+    code: code,
+    name: name,
+    usdAmount: usdAmount,
+    rate: rate,
+    totalSaleLYD: totalSaleLYD,
+    totalCost: totalCost,
+    netProfitLYD: netProfitLYD,
+    destinationVault: destinationVault,
+    refNo: moveRes ? moveRes.refNo : ''
+  };
+}
+
+// 16. جلب كشف تقرير المرحلة للطباعة والتصدير
 function getStageReport(stage) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('بيانات_ماستر') || ss.getSheets()[0];
