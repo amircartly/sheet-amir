@@ -443,8 +443,8 @@ function searchCardData(query) {
         (rowCardNum && rowCardNum.indexOf(qClean) !== -1)) {
       
       var hasCostCols = (row.length >= 18);
-      var depAmt = hasCostCols ? (row[7] || '19800') : (row[7] || '19800');
-      var cardPrice = hasCostCols ? (row[8] || '2500') : '2500';
+      var depAmt = hasCostCols ? (row[7] || '0') : (row[7] || '0');
+      var cardPrice = hasCostCols ? (row[8] || '0') : '0';
       var totalCost = hasCostCols ? (row[9] || '') : '';
       var depDate = hasCostCols ? formatDateValue(row[10]) : formatDateValue(row[8]);
       var bookDate = hasCostCols ? formatDateValue(row[11]) : formatDateValue(row[9]);

@@ -753,18 +753,18 @@
         <div class="row-2">
           <div class="form-group">
             <label>قيمة الإيداع بالمصرف (د.ل) *</label>
-            <input type="number" id="depositAmt" value="19800" oninput="calculateTotalCost()">
+            <input type="number" id="depositAmt" value="0" placeholder="0" oninput="calculateTotalCost()">
           </div>
           <div class="form-group">
             <label style="color:#0f766e;">سعر شراء البطاقة (د.ل) *</label>
-            <input type="number" id="cardPrice" value="2500" placeholder="مثال: 2500" oninput="calculateTotalCost()">
+            <input type="number" id="cardPrice" value="0" placeholder="0" oninput="calculateTotalCost()">
           </div>
         </div>
 
         <div class="row-2">
           <div class="form-group">
             <label style="color:#1e40af;">إجمالي التكلفة الكلية (د.ل)</label>
-            <input type="text" id="totalCostDisplay" readonly value="22,300 د.ل" style="background:#eff6ff; font-weight:bold; color:#1e40af;">
+            <input type="text" id="totalCostDisplay" readonly value="0 د.ل" style="background:#eff6ff; font-weight:bold; color:#1e40af;">
           </div>
           <div class="form-group">
             <label>تاريخ الإيداع</label>
@@ -1378,8 +1378,8 @@
             document.getElementById('bank').value = card.bank || 'مصرف التجارة والتنمية';
             document.getElementById('accountNumber').value = card.accountNumber || '';
             document.getElementById('iban').value = card.iban || '';
-            document.getElementById('depositAmt').value = card.depositAmt || '19800';
-            document.getElementById('cardPrice').value = card.cardPrice || '2500';
+            document.getElementById('depositAmt').value = card.depositAmt || '0';
+            document.getElementById('cardPrice').value = card.cardPrice || '0';
             calculateTotalCost();
 
             document.getElementById('depositDate').value = card.depositDate || '';
@@ -1525,8 +1525,8 @@
       document.getElementById('cardCode').value = '';
       document.getElementById('cardStatusBadge').innerText = 'تسجيل بطاقة جديدة';
       document.getElementById('statusMsg').innerText = '';
-      document.getElementById('depositAmt').value = '19800';
-      document.getElementById('cardPrice').value = '2500';
+      document.getElementById('depositAmt').value = '0';
+      document.getElementById('cardPrice').value = '0';
       document.getElementById('expiry').value = '09/29';
       calculateTotalCost();
       applyRoleRestrictions(currentEmployee.role);

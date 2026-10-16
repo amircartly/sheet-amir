@@ -43,8 +43,8 @@ export function CardInputForm({
   const [bankName, setBankName] = useState("مصرف التجارة والتنمية");
   const [accountNumber, setAccountNumber] = useState("");
   const [iban, setIban] = useState("");
-  const [depositAmount, setDepositAmount] = useState("19800");
-  const [cardPrice, setCardPrice] = useState("2500");
+  const [depositAmount, setDepositAmount] = useState("0");
+  const [cardPrice, setCardPrice] = useState("0");
   const [depositDate, setDepositDate] = useState("2026-10-15");
   const [bookingDate, setBookingDate] = useState("2026-10-15");
   const [cardNumber, setCardNumber] = useState("");
@@ -167,8 +167,8 @@ export function CardInputForm({
     setCblPhone("");
     setAccountNumber("");
     setIban("");
-    setDepositAmount("19800");
-    setCardPrice("2500");
+    setDepositAmount("0");
+    setCardPrice("0");
     setCardNumber("");
     setCardPin("");
     setPinDollar("");
