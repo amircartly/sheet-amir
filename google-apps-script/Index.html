@@ -28,6 +28,8 @@
       border-radius: 12px;
       margin-bottom: 12px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .top-bar-title {
       display: flex;
@@ -39,6 +41,11 @@
       font-weight: 700;
       letter-spacing: -0.3px;
     }
+    .top-bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
     .badge-mode {
       background: #2563eb;
       color: #fff;
@@ -46,6 +53,58 @@
       font-weight: bold;
       padding: 4px 10px;
       border-radius: 6px;
+    }
+    
+    /* User Role Badge in Header */
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .user-role-tag {
+      background: #0284c7;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    .btn-switch-user {
+      background: #f59e0b;
+      color: #0f172a;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.2s;
+    }
+    .btn-switch-user:hover {
+      opacity: 0.9;
+    }
+    
+    /* Role Alert Banner */
+    .role-banner {
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
+      color: #0369a1;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     
     /* Controls Bar */
@@ -97,22 +156,23 @@
     .report-box {
       display: flex;
       gap: 6px;
-      background: #ecfdf5;
+      align-items: center;
+      background: white;
       padding: 7px 12px;
       border-radius: 10px;
-      border: 1px solid #a7f3d0;
-      align-items: center;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
     .report-box select {
-      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
       border-radius: 6px;
-      border: 1px solid #6ee7b7;
+      padding: 6px 8px;
       font-size: 12px;
-      background: white;
       outline: none;
+      background: white;
     }
     .btn-print {
-      background: #059669;
+      background: #0f766e;
       color: white;
       border: none;
       border-radius: 6px;
@@ -120,10 +180,12 @@
       font-size: 12px;
       font-weight: bold;
       cursor: pointer;
-      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     .btn-print:hover {
-      background: #047857;
+      background: #115e59;
     }
 
     /* Grid Layout */
@@ -131,83 +193,102 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
+      margin-bottom: 12px;
     }
+    @media (max-width: 860px) {
+      .grid-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .card {
       background: white;
-      border: 1px solid #e2e8f0;
       border-radius: 12px;
       padding: 14px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     .card-title {
       font-size: 13px;
-      font-weight: 700;
-      color: #0f766e;
-      margin-bottom: 10px;
-      border-bottom: 2px solid #f1f5f9;
-      padding-bottom: 5px;
+      font-weight: bold;
+      color: #0f172a;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+    
     .form-group {
-      margin-bottom: 9px;
+      margin-bottom: 10px;
     }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      outline: none;
+      transition: all 0.15s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+    .form-group input:disabled, .form-group select:disabled {
+      background: #f8fafc;
+      color: #94a3b8;
+      cursor: not-allowed;
+      border-color: #e2e8f0;
+    }
+    
     .row-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
-    label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      color: #475569;
-      margin-bottom: 3px;
-    }
-    input, select {
-      width: 100%;
-      padding: 7px 9px;
-      border: 1px solid #cbd5e1;
-      border-radius: 7px;
-      font-size: 12px;
-      outline: none;
-      transition: border-color 0.15s;
-      background: #ffffff;
-    }
-    input:focus, select:focus {
-      border-color: #0d9488;
-    }
-    
-    /* Highlight special fields */
-    .pin-dollar {
-      background: #eff6ff !important;
-      border-color: #93c5fd !important;
-      font-weight: bold;
-      color: #1e40af;
-    }
-    .pin-local {
-      background: #f8fafc;
-      font-weight: 600;
-    }
     .iban-input {
       font-family: monospace;
       letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .pin-dollar {
+      font-weight: bold;
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+    .pin-local {
+      font-weight: bold;
+      color: #b45309;
+      background: #fefce8;
+    }
+    .pin-locked {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      font-style: italic;
     }
 
-    /* Actions Bar */
+    /* Actions */
     .actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 12px;
       background: white;
-      padding: 10px 14px;
-      border-radius: 10px;
+      padding: 12px 16px;
+      border-radius: 12px;
       border: 1px solid #e2e8f0;
     }
     .btn-save {
-      background: #15803d;
+      background: #059669;
       color: white;
       border: none;
       border-radius: 8px;
@@ -215,64 +296,235 @@
       font-size: 13px;
       font-weight: bold;
       cursor: pointer;
+      box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
       transition: background 0.15s;
     }
     .btn-save:hover {
-      background: #166534;
+      background: #047857;
     }
     .btn-clear {
-      background: #f1f5f9;
+      background: #f8fafc;
       color: #475569;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      padding: 9px 16px;
+      padding: 9px 18px;
       font-size: 12px;
-      cursor: pointer;
       font-weight: 600;
+      cursor: pointer;
     }
     .btn-clear:hover {
-      background: #e2e8f0;
+      background: #f1f5f9;
     }
 
-    /* Report Modal */
+    /* Report Print Overlay */
     #reportModal {
       display: none;
       position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.65);
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
       z-index: 9999;
-      padding: 20px;
       overflow-y: auto;
+      padding: 20px;
     }
     .report-content {
       background: white;
       max-width: 960px;
-      margin: auto;
-      padding: 25px;
+      margin: 0 auto;
       border-radius: 12px;
-      direction: rtl;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     }
     .report-table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 15px;
-      font-size: 11px;
-    }
-    .report-table th, .report-table td {
-      border: 1px solid #cbd5e1;
-      padding: 6px 8px;
-      text-align: right;
+      font-size: 12px;
     }
     .report-table th {
+      background: #0f172a;
+      color: white;
+      padding: 8px;
+      text-align: right;
+      font-weight: 600;
+    }
+    .report-table td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 8px;
+    }
+    .report-table tr:nth-child(even) {
       background: #f8fafc;
+    }
+
+    /* Success Modal */
+    #successModal, #loginModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(3px);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      background: white;
+      width: 90%;
+      max-width: 440px;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+      border: 1px solid #e2e8f0;
+      animation: popIn 0.25s ease-out;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-icon-wrap {
+      width: 58px;
+      height: 58px;
+      background: #dcfce7;
+      color: #15803d;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
       font-weight: bold;
+      margin: 0 auto 14px auto;
+      border: 3px solid #bbf7d0;
+    }
+    .login-icon-wrap {
+      width: 58px;
+      height: 58px;
+      background: #fef3c7;
+      color: #b45309;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: bold;
+      margin: 0 auto 14px auto;
+      border: 3px solid #fde68a;
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 800;
       color: #0f172a;
+      margin-bottom: 8px;
     }
-    .report-table tbody tr:nth-child(even) {
+    .modal-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .pin-input {
+      font-size: 24px;
+      text-align: center;
+      letter-spacing: 8px;
+      padding: 8px;
+      width: 160px;
+      margin: 0 auto 14px auto;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      outline: none;
+    }
+    .pin-input:focus {
+      border-color: #2563eb;
+    }
+    .quick-roles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .btn-quick-role {
       background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
     }
-    
+    .btn-quick-role:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+    .btn-primary-action {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .btn-secondary-action {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    .success-badge {
+      display: inline-block;
+      background: #f1f5f9;
+      color: #1e293b;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 1px solid #cbd5e1;
+      margin-bottom: 14px;
+    }
+    .success-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .btn-new-customer {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      flex: 1;
+    }
+    .btn-close-modal {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      flex: 1;
+    }
+
     @media print {
       body * {
         visibility: hidden;
@@ -292,125 +544,32 @@
         display: none !important;
       }
     }
-
-    /* Success Modal & Toast Styling */
-    #successModal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(5px);
-      z-index: 10000;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.2s ease-out;
-    }
-    .success-card {
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 28px 24px;
-      max-width: 440px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      border: 1px solid #e2e8f0;
-      direction: rtl;
-      animation: popScale 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .success-icon-wrap {
-      width: 68px;
-      height: 68px;
-      background: #ecfdf5;
-      color: #059669;
-      border: 3px solid #6ee7b7;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 34px;
-      font-weight: 900;
-      margin: 0 auto 16px auto;
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
-    }
-    .success-title {
-      font-size: 19px;
-      font-weight: 800;
-      color: #065f46;
-      margin-bottom: 8px;
-      letter-spacing: -0.3px;
-    }
-    .success-subtitle {
-      font-size: 13px;
-      color: #475569;
-      margin-bottom: 14px;
-      line-height: 1.6;
-    }
-    .success-badge {
-      display: inline-block;
-      background: #f8fafc;
-      border: 1.5px dashed #0d9488;
-      padding: 6px 16px;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 14px;
-      font-weight: bold;
-      color: #0f766e;
-      margin-bottom: 22px;
-    }
-    .success-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .btn-new-customer {
-      background: #059669;
-      color: #ffffff;
-      border: none;
-      border-radius: 9px;
-      padding: 10px 20px;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-    }
-    .btn-new-customer:hover {
-      background: #047857;
-      transform: translateY(-1px);
-    }
-    .btn-close-modal {
-      background: #f1f5f9;
-      color: #475569;
-      border: 1px solid #cbd5e1;
-      border-radius: 9px;
-      padding: 10px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-close-modal:hover {
-      background: #e2e8f0;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes popScale {
-      from { opacity: 0; transform: scale(0.92); }
-      to { opacity: 1; transform: scale(1); }
-    }
   </style>
 </head>
 <body>
 
-  <!-- Top Bar -->
+  <!-- Top Bar with User Role Switcher -->
   <div class="top-bar">
     <div class="top-bar-title">
       <h2>💎 منظومة بطاقات مصرفية (AMIR)</h2>
       <span style="font-size: 11px; opacity: 0.85;">مخصصات النقد الأجنبي للأفراد ($4,000)</span>
     </div>
-    <span id="cardStatusBadge" class="badge-mode">تسجيل بطاقة جديدة</span>
+
+    <div class="top-bar-actions">
+      <!-- Active User Profile Indicator -->
+      <div class="user-profile-badge">
+        <span class="user-role-tag" id="currentRoleTag">موظف استقبال</span>
+        <span id="currentUserName">👤 موظف الاستقبال</span>
+        <button type="button" class="btn-switch-user" onclick="openLoginModal()">🔑 تبديل (PIN)</button>
+      </div>
+      <span id="cardStatusBadge" class="badge-mode">تسجيل بطاقة جديدة</span>
+    </div>
+  </div>
+
+  <!-- Role Instruction Banner -->
+  <div id="roleBanner" class="role-banner">
+    <span id="roleInstructionText">📌 صلاحيتك الحالية (موظف استقبال): تسجيل الزبائن الجدد وحجز المخصصات (المراحل 1 و 2 فقط).</span>
+    <span id="roleSecurityBadge" style="font-size: 11px; background:#dbeafe; padding: 2px 8px; border-radius: 4px; color:#1e40af;">🔒 الأرقام السرية محمية ومحجوبة</span>
   </div>
 
   <!-- Search & Reports Tool Bar -->
@@ -533,11 +692,11 @@
 
         <div class="row-2">
           <div class="form-group">
-            <label>PIN المحلي (الدينار)</label>
+            <label id="pinLocalLabel">PIN المحلي (الدينار)</label>
             <input type="text" id="pinLocal" class="pin-local" placeholder="****">
           </div>
           <div class="form-group">
-            <label style="color:#1d4ed8;">الرقم السري الدولي (السري دولار) *</label>
+            <label id="pinDollarLabel" style="color:#1d4ed8;">الرقم السري الدولي (السري دولار) *</label>
             <input type="text" id="pinDollar" class="pin-dollar" placeholder="السري دولار">
           </div>
         </div>
@@ -550,12 +709,7 @@
           <div class="form-group">
             <label>المرحلة الحالية للبطاقة *</label>
             <select id="status">
-              <option value="1. إدخال البيانات">1. إدخال البيانات</option>
-              <option value="2. محجوزة">2. محجوزة</option>
-              <option value="3. مودعة">3. مودعة</option>
-              <option value="4. انتظار شحن">4. انتظار شحن</option>
-              <option value="5. مشحونة">5. مشحونة</option>
-              <option value="6. مرسلة للسحب">6. مرسلة للسحب</option>
+              <!-- Dynamically populated based on employee role -->
             </select>
           </div>
         </div>
@@ -574,6 +728,29 @@
       <button type="button" class="btn-save" onclick="sendData()">💾 ترحيل وحفظ البطاقة</button>
     </div>
   </form>
+
+  <!-- Login / Switch Role Modal -->
+  <div id="loginModal">
+    <div class="modal-card">
+      <div class="login-icon-wrap">🔑</div>
+      <div class="modal-title">تسجيل الدخول / تبديل الموظف</div>
+      <div class="modal-subtitle">أدخل رمز الدخول (PIN) المكون من 4 أرقام لضبط الصلاحيات والشاشات المسموحة</div>
+      
+      <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="••••" autofocus onkeypress="if(event.key==='Enter'){event.preventDefault();submitPinLogin();}">
+      <div id="pinErrorMsg" style="color:#dc2626; font-size:12px; font-weight:bold; margin-bottom:10px;"></div>
+
+      <div style="font-size:11px; color:#64748b; font-weight:bold; margin-bottom:8px;">أو اختر الموظف بنقرة سريعة (تجربة فورية):</div>
+      <div class="quick-roles">
+        <button type="button" class="btn-quick-role" onclick="quickLogin('1111')">👤 موظف استقبال<br><span style="color:#0284c7;">PIN: 1111</span></button>
+        <button type="button" class="btn-quick-role" onclick="quickLogin('2222')">🏦 مسؤول إيداع وخزينة<br><span style="color:#059669;">PIN: 2222</span></button>
+        <button type="button" class="btn-quick-role" onclick="quickLogin('3333')">✈️ مالي ومكتب الخارج<br><span style="color:#d97706;">PIN: 3333</span></button>
+        <button type="button" class="btn-quick-role" onclick="quickLogin('9999')">👑 المدير العام (أمير)<br><span style="color:#7c3aed;">PIN: 9999</span></button>
+      </div>
+
+      <button type="button" class="btn-primary-action" onclick="submitPinLogin()">تأكيد الدخول</button>
+      <button type="button" class="btn-secondary-action" onclick="closeLoginModal()">إلغاء</button>
+    </div>
+  </div>
 
   <!-- Report / Print Modal -->
   <div id="reportModal">
@@ -619,10 +796,10 @@
 
   <!-- Success Modal Dialog -->
   <div id="successModal">
-    <div class="success-card">
+    <div class="modal-card">
       <div class="success-icon-wrap">✓</div>
-      <div class="success-title">تم حفظ بيانات الزبون بنجاح</div>
-      <div id="successDetails" class="success-subtitle"></div>
+      <div class="modal-title">تم حفظ بيانات الزبون بنجاح</div>
+      <div id="successDetails" class="modal-subtitle"></div>
       <div>
         <span id="successCodeBadge" class="success-badge"></span>
       </div>
@@ -634,6 +811,191 @@
   </div>
 
   <script>
+    // الحالة الافتراضية للموظف الحالي
+    var currentEmployee = {
+      name: 'موظف الاستقبال',
+      role: 'موظف استقبال',
+      allowedStages: 'المرحلة 1 و 2 (إدخال وحجز فقط)'
+    };
+
+    var ALL_STAGES = [
+      '1. إدخال البيانات',
+      '2. محجوزة',
+      '3. مودعة',
+      '4. انتظار شحن',
+      '5. مشحونة',
+      '6. مرسلة للسحب',
+      '7. تم السحب والتصفية'
+    ];
+
+    // تهيئة الصفحة وتطبيق الصلاحيات عند البدء
+    window.onload = function() {
+      applyRoleRestrictions(currentEmployee.role);
+    };
+
+    // تطبيق قواعد الصلاحيات والأمان حسب الدور
+    function applyRoleRestrictions(role) {
+      var statusSelect = document.getElementById('status');
+      statusSelect.innerHTML = '';
+
+      var pinLocalInput = document.getElementById('pinLocal');
+      var pinDollarInput = document.getElementById('pinDollar');
+      var roleBanner = document.getElementById('roleBanner');
+      var roleText = document.getElementById('roleInstructionText');
+      var securityBadge = document.getElementById('roleSecurityBadge');
+      var roleTag = document.getElementById('currentRoleTag');
+      var userLabel = document.getElementById('currentUserName');
+
+      roleTag.innerText = role;
+      userLabel.innerText = '👤 ' + currentEmployee.name;
+
+      var allowedOptions = [];
+
+      if (role === 'موظف استقبال') {
+        allowedOptions = ['1. إدخال البيانات', '2. محجوزة'];
+        roleBanner.style.background = '#e0f2fe';
+        roleBanner.style.borderColor = '#bae6fd';
+        roleText.innerText = '📌 صلاحيتك (موظف استقبال): تسجيل الزبائن الجدد وحجز المخصصات (المراحل 1 و 2 فقط).';
+        securityBadge.innerText = '🔒 الأرقام السرية محمية ومحجوبة';
+        securityBadge.style.color = '#0369a1';
+        securityBadge.style.background = '#dbeafe';
+
+        // حجب الأرقام السرية
+        pinLocalInput.value = '••••';
+        pinLocalInput.disabled = true;
+        pinLocalInput.classList.add('pin-locked');
+
+        pinDollarInput.value = '••••';
+        pinDollarInput.disabled = true;
+        pinDollarInput.classList.add('pin-locked');
+
+      } else if (role === 'مسؤول إيداع وخزينة') {
+        allowedOptions = ['1. إدخال البيانات', '2. محجوزة', '3. مودعة'];
+        roleBanner.style.background = '#dcfce7';
+        roleBanner.style.borderColor = '#bbf7d0';
+        roleText.innerText = '📌 صلاحيتك (مسؤول إيداع وخزينة): تأكيد التوريد بالمصرف (المرحلة 3) وإدخال رقم البطاقة.';
+        securityBadge.innerText = '🔒 السري دولار مقيد للفرع الخارجي';
+        securityBadge.style.color = '#15803d';
+        securityBadge.style.background = '#dcfce7';
+
+        pinLocalInput.disabled = false;
+        pinLocalInput.classList.remove('pin-locked');
+        if (pinLocalInput.value === '••••') pinLocalInput.value = '';
+
+        pinDollarInput.value = '••••';
+        pinDollarInput.disabled = true;
+        pinDollarInput.classList.add('pin-locked');
+
+      } else if (role === 'مسؤول مالي ومكتب الخارج') {
+        allowedOptions = ['4. انتظار شحن', '5. مشحونة', '6. مرسلة للسحب', '7. تم السحب والتصفية'];
+        roleBanner.style.background = '#fef3c7';
+        roleBanner.style.borderColor = '#fde68a';
+        roleText.innerText = '📌 صلاحيتك (مكتب الخارج والمالي): شحن البطاقات، كشف السري دولار، وإتمام السحب والتصفية.';
+        securityBadge.innerText = '🔓 السري دولار مفتوح للسحب الخارجي';
+        securityBadge.style.color = '#b45309';
+        securityBadge.style.background = '#fef3c7';
+
+        pinLocalInput.disabled = false;
+        pinLocalInput.classList.remove('pin-locked');
+        if (pinLocalInput.value === '••••') pinLocalInput.value = '';
+
+        pinDollarInput.disabled = false;
+        pinDollarInput.classList.remove('pin-locked');
+        if (pinDollarInput.value === '••••') pinDollarInput.value = '';
+
+      } else {
+        // المدير العام (صلاحيات كاملة)
+        allowedOptions = ALL_STAGES;
+        roleBanner.style.background = '#f3e8ff';
+        roleBanner.style.borderColor = '#e9d5ff';
+        roleText.innerText = '👑 صلاحيتك (المدير العام): إشراف كامل على كافة المراحل 1-7، الخزائن، والأرباح.';
+        securityBadge.innerText = '⚡ صلاحيات إدارية مطلقة';
+        securityBadge.style.color = '#7c3aed';
+        securityBadge.style.background = '#f3e8ff';
+
+        pinLocalInput.disabled = false;
+        pinLocalInput.classList.remove('pin-locked');
+        if (pinLocalInput.value === '••••') pinLocalInput.value = '';
+
+        pinDollarInput.disabled = false;
+        pinDollarInput.classList.remove('pin-locked');
+        if (pinDollarInput.value === '••••') pinDollarInput.value = '';
+      }
+
+      // ملء خيارات المرحلة المسموحة
+      allowedOptions.forEach(function(stg) {
+        var opt = document.createElement('option');
+        opt.value = stg;
+        opt.innerText = stg;
+        statusSelect.appendChild(opt);
+      });
+    }
+
+    // فتح نافذة الدخول والتبديل
+    function openLoginModal() {
+      document.getElementById('pinInput').value = '';
+      document.getElementById('pinErrorMsg').innerText = '';
+      document.getElementById('loginModal').style.display = 'flex';
+      document.getElementById('pinInput').focus();
+    }
+
+    function closeLoginModal() {
+      document.getElementById('loginModal').style.display = 'none';
+    }
+
+    // تسجيل الدخول السريع
+    function quickLogin(pin) {
+      document.getElementById('pinInput').value = pin;
+      submitPinLogin();
+    }
+
+    // التحقق من رمز PIN
+    function submitPinLogin() {
+      var pin = document.getElementById('pinInput').value.trim();
+      var errBox = document.getElementById('pinErrorMsg');
+
+      if (!pin) {
+        errBox.innerText = 'الرجاء إدخال رمز PIN';
+        return;
+      }
+
+      // فحص محلي فوري
+      var profileMap = {
+        '1111': { name: 'موظف الاستقبال', role: 'موظف استقبال' },
+        '2222': { name: 'مسؤول الإيداع والخزينة', role: 'مسؤول إيداع وخزينة' },
+        '3333': { name: 'المسؤول المالي ومكتب الخارج', role: 'مسؤول مالي ومكتب الخارج' },
+        '9999': { name: 'المدير العام (أمير)', role: 'مدير عام' }
+      };
+
+      if (profileMap[pin]) {
+        currentEmployee = profileMap[pin];
+        applyRoleRestrictions(currentEmployee.role);
+        closeLoginModal();
+        return;
+      }
+
+      // إذا لم يكن من الأرقام الافتراضية، نتحقق من الشيت مباشرة عبر Apps Script
+      errBox.innerText = 'جاري التحقق من الصلاحيات...';
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              currentEmployee = res.user;
+              applyRoleRestrictions(currentEmployee.role);
+              closeLoginModal();
+            } else {
+              errBox.innerText = res.message || 'رمز الدخول غير صحيح';
+            }
+          })
+          .withFailureHandler(function(err) {
+            errBox.innerText = 'خطأ بالتحقق: ' + err.message;
+          })
+          .verifyEmployeePin(pin);
+      } else {
+        errBox.innerText = 'رمز PIN غير معتمد (جرب 1111 أو 2222 أو 3333 أو 9999)';
+      }
+    }
+
     // حساب التكلفة الكلية لحظياً
     function calculateTotalCost() {
       var dep = parseFloat(document.getElementById('depositAmt').value) || 0;
@@ -654,43 +1016,56 @@
       msg.innerText = 'جاري البحث...';
       msg.style.color = '#2563eb';
 
-      google.script.run
-        .withSuccessHandler(function(card) {
-          if (!card || !card.found) {
-            alert('لم يتم العثور على أي زبون مطابق لكلمة: ' + q);
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(card) {
+            if (!card || !card.found) {
+              alert('لم يتم العثور على أي زبون مطابق لكلمة: ' + q);
+              msg.innerText = '';
+              return;
+            }
+
+            document.getElementById('cardCode').value = card.code || '';
+            document.getElementById('cardStatusBadge').innerText = 'تعديل المعاملة: ' + card.code;
+            document.getElementById('name').value = card.name || '';
+            document.getElementById('nationalId').value = card.nationalId || '';
+            document.getElementById('cblPhone').value = card.cblPhone || '';
+            document.getElementById('bank').value = card.bank || 'مصرف التجارة والتنمية';
+            document.getElementById('accountNumber').value = card.accountNumber || '';
+            document.getElementById('iban').value = card.iban || '';
+            document.getElementById('depositAmt').value = card.depositAmt || '19800';
+            document.getElementById('cardPrice').value = card.cardPrice || '2500';
+            calculateTotalCost();
+
+            document.getElementById('depositDate').value = card.depositDate || '';
+            document.getElementById('bookingDate').value = card.bookingDate || '';
+            document.getElementById('cardNum').value = card.cardNum || '';
+
+            // حماية الأرقام السرية حسب الدور
+            if (currentEmployee.role === 'موظف استقبال') {
+              document.getElementById('pinLocal').value = '••••';
+              document.getElementById('pinDollar').value = '••••';
+            } else if (currentEmployee.role === 'مسؤول إيداع وخزينة') {
+              document.getElementById('pinLocal').value = card.pinLocal || '';
+              document.getElementById('pinDollar').value = '••••';
+            } else {
+              document.getElementById('pinLocal').value = card.pinLocal || '';
+              document.getElementById('pinDollar').value = card.pinDollar || '';
+            }
+
+            document.getElementById('expiry').value = card.expiry || '09/29';
+            document.getElementById('status').value = card.status || '1. إدخال البيانات';
+            document.getElementById('notes').value = card.notes || '';
+
+            msg.innerText = '✓ تم استرجاع بيانات: ' + card.name;
+            msg.style.color = '#15803d';
+          })
+          .withFailureHandler(function(err) {
+            alert('حدث خطأ أثناء البحث: ' + err.message);
             msg.innerText = '';
-            return;
-          }
-
-          document.getElementById('cardCode').value = card.code || '';
-          document.getElementById('cardStatusBadge').innerText = 'تعديل المعاملة: ' + card.code;
-          document.getElementById('name').value = card.name || '';
-          document.getElementById('nationalId').value = card.nationalId || '';
-          document.getElementById('cblPhone').value = card.cblPhone || '';
-          document.getElementById('bank').value = card.bank || 'مصرف التجارة والتنمية';
-          document.getElementById('accountNumber').value = card.accountNumber || '';
-          document.getElementById('iban').value = card.iban || '';
-          document.getElementById('depositAmt').value = card.depositAmt || '19800';
-          document.getElementById('cardPrice').value = card.cardPrice || '2500';
-          calculateTotalCost();
-
-          document.getElementById('depositDate').value = card.depositDate || '';
-          document.getElementById('bookingDate').value = card.bookingDate || '';
-          document.getElementById('cardNum').value = card.cardNum || '';
-          document.getElementById('pinLocal').value = card.pinLocal || '';
-          document.getElementById('pinDollar').value = card.pinDollar || '';
-          document.getElementById('expiry').value = card.expiry || '09/29';
-          document.getElementById('status').value = card.status || '1. إدخال البيانات';
-          document.getElementById('notes').value = card.notes || '';
-
-          msg.innerText = '✓ تم استرجاع بيانات: ' + card.name;
-          msg.style.color = '#15803d';
-        })
-        .withFailureHandler(function(err) {
-          alert('حدث خطأ أثناء البحث: ' + err.message);
-          msg.innerText = '';
-        })
-        .searchCardData(q);
+          })
+          .searchCardData(q);
+      }
     }
 
     // 2. ترحيل وحفظ البيانات
@@ -714,8 +1089,8 @@
         depositDate: document.getElementById('depositDate').value,
         bookingDate: document.getElementById('bookingDate').value,
         cardNum: document.getElementById('cardNum').value.trim(),
-        pinLocal: document.getElementById('pinLocal').value.trim(),
-        pinDollar: document.getElementById('pinDollar').value.trim(),
+        pinLocal: document.getElementById('pinLocal').value === '••••' ? '' : document.getElementById('pinLocal').value.trim(),
+        pinDollar: document.getElementById('pinDollar').value === '••••' ? '' : document.getElementById('pinDollar').value.trim(),
         expiry: document.getElementById('expiry').value.trim(),
         status: document.getElementById('status').value,
         notes: document.getElementById('notes').value.trim()
@@ -725,16 +1100,18 @@
       msg.innerText = 'جاري الترحيل والحفظ...';
       msg.style.color = '#2563eb';
 
-      google.script.run
-        .withSuccessHandler(function(res) {
-          msg.innerText = '';
-          showSuccessDialog(card.name, res.code, card.bank, card.status, res.totalCost);
-        })
-        .withFailureHandler(function(err) {
-          alert('حدث خطأ أثناء الحفظ: ' + err.message);
-          msg.innerText = '';
-        })
-        .saveCardData(card);
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            msg.innerText = '';
+            showSuccessDialog(card.name, res.code, card.bank, card.status, res.totalCost);
+          })
+          .withFailureHandler(function(err) {
+            alert('حدث خطأ أثناء الحفظ: ' + err.message);
+            msg.innerText = '';
+          })
+          .saveCardData(card, currentEmployee.name);
+      }
     }
 
     // عرض نافذة نجاح الحفظ الأنيقة
@@ -760,44 +1137,48 @@
     function closeDialog() {
       document.getElementById('successModal').style.display = 'none';
       clearForm();
-      google.script.host.close();
+      if (typeof google !== 'undefined' && google.script && google.script.host) {
+        google.script.host.close();
+      }
     }
 
     // 3. فتح تقرير المرحلة للطباعة
     function openPrintReport() {
       var stage = document.getElementById('reportStage').value;
-      google.script.run.withSuccessHandler(function(rep) {
-        document.getElementById('reportTitle').innerText = 'كشف معاملات المرحلة: ' + rep.stage;
-        document.getElementById('reportDate').innerText = rep.date;
-        document.getElementById('reportCount').innerText = rep.totalCards;
-        document.getElementById('reportTotalDep').innerText = Number(rep.totalDeposit).toLocaleString('en-US');
-        document.getElementById('reportTotalCardPrice').innerText = Number(rep.totalCardPrice).toLocaleString('en-US');
-        document.getElementById('reportTotalCost').innerText = Number(rep.totalCostSum).toLocaleString('en-US');
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(rep) {
+          document.getElementById('reportTitle').innerText = 'كشف معاملات المرحلة: ' + rep.stage;
+          document.getElementById('reportDate').innerText = rep.date;
+          document.getElementById('reportCount').innerText = rep.totalCards;
+          document.getElementById('reportTotalDep').innerText = Number(rep.totalDeposit).toLocaleString('en-US');
+          document.getElementById('reportTotalCardPrice').innerText = Number(rep.totalCardPrice).toLocaleString('en-US');
+          document.getElementById('reportTotalCost').innerText = Number(rep.totalCostSum).toLocaleString('en-US');
 
-        var tbody = document.getElementById('reportBody');
-        tbody.innerHTML = '';
+          var tbody = document.getElementById('reportBody');
+          tbody.innerHTML = '';
 
-        if (rep.cards.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:15px; color:#94a3b8;">لا توجد معاملات مسجلة في هذه المرحلة حالياً</td></tr>';
-        } else {
-          rep.cards.forEach(function(c) {
-            var tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + c.code + '</td>' +
-                           '<td><strong>' + c.name + '</strong></td>' +
-                           '<td>' + c.nationalId + '</td>' +
-                           '<td>' + c.bank + '</td>' +
-                           '<td>' + c.accountNumber + '</td>' +
-                           '<td>' + Number(c.depositAmt).toLocaleString('en-US') + '</td>' +
-                           '<td>' + Number(c.cardPrice).toLocaleString('en-US') + '</td>' +
-                           '<td><strong>' + Number(c.totalCost).toLocaleString('en-US') + '</strong></td>' +
-                           '<td>' + c.bookingDate + '</td>' +
-                           '<td>' + c.status + '</td>';
-            tbody.appendChild(tr);
-          });
-        }
+          if (rep.cards.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:15px; color:#94a3b8;">لا توجد معاملات مسجلة في هذه المرحلة حالياً</td></tr>';
+          } else {
+            rep.cards.forEach(function(c) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + c.code + '</td>' +
+                             '<td><strong>' + c.name + '</strong></td>' +
+                             '<td>' + c.nationalId + '</td>' +
+                             '<td>' + c.bank + '</td>' +
+                             '<td>' + c.accountNumber + '</td>' +
+                             '<td>' + Number(c.depositAmt).toLocaleString('en-US') + '</td>' +
+                             '<td>' + Number(c.cardPrice).toLocaleString('en-US') + '</td>' +
+                             '<td><strong>' + Number(c.totalCost).toLocaleString('en-US') + '</strong></td>' +
+                             '<td>' + c.bookingDate + '</td>' +
+                             '<td>' + c.status + '</td>';
+              tbody.appendChild(tr);
+            });
+          }
 
-        document.getElementById('reportModal').style.display = 'block';
-      }).getStageReport(stage);
+          document.getElementById('reportModal').style.display = 'block';
+        }).getStageReport(stage);
+      }
     }
 
     // 4. تفريغ النموذج
@@ -810,6 +1191,7 @@
       document.getElementById('cardPrice').value = '2500';
       document.getElementById('expiry').value = '09/29';
       calculateTotalCost();
+      applyRoleRestrictions(currentEmployee.role);
     }
   </script>
 </body>

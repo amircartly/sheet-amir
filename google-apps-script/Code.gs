@@ -295,7 +295,51 @@ function verifyEmployeePin(pin) {
   return { success: false, message: 'رمز الدخول غير صحيح' };
 }
 
-// 7. دالة تنظيف وتوحيد النصوص العربية للبحث المرن
+// 7. جلب قائمة مستخدمي النظام
+function getSystemUsers() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('المستخدمين');
+  if (!sheet) return [];
+  var data = sheet.getDataRange().getValues();
+  var users = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[0]) continue;
+    users.push({
+      name: row[0],
+      pin: row[1] ? row[1].toString() : '',
+      role: row[2],
+      allowedStages: row[3],
+      status: row[4]
+    });
+  }
+  return users;
+}
+
+// 8. جلب أرصدة الخزائن والمصارف
+function getTreasuryBalances() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('أرصدة_الخزائن');
+  if (!sheet) return [];
+  var data = sheet.getDataRange().getValues();
+  var accounts = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[0]) continue;
+    accounts.push({
+      accountName: row[0],
+      currency: row[1],
+      initialBalance: parseFloat(row[2]) || 0,
+      totalIncome: parseFloat(row[3]) || 0,
+      totalExpenses: parseFloat(row[4]) || 0,
+      currentBalance: parseFloat(row[5]) || 0,
+      notes: row[6] || ''
+    });
+  }
+  return accounts;
+}
+
+// 9. دالة تنظيف وتوحيد النصوص العربية للبحث المرن
 function cleanText(txt) {
   if (!txt) return '';
   return txt.toString().trim().toLowerCase()
