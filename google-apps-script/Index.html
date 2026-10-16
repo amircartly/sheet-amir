@@ -246,7 +246,7 @@
     }
     .report-content {
       background: white;
-      max-width: 900px;
+      max-width: 960px;
       margin: auto;
       padding: 25px;
       border-radius: 12px;
@@ -257,11 +257,11 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 15px;
-      font-size: 12px;
+      font-size: 11px;
     }
     .report-table th, .report-table td {
       border: 1px solid #cbd5e1;
-      padding: 7px 10px;
+      padding: 6px 8px;
       text-align: right;
     }
     .report-table th {
@@ -443,7 +443,7 @@
       <!-- Section 1: Customer & Account Info -->
       <div class="card">
         <div class="card-title">
-          <span>1. بيانات العميل والحساب المصرفي</span>
+          <span>1. بيانات العميل والحساب المصرفي والتكلفة</span>
           <span style="font-size:11px; color:#64748b; font-weight:normal;">المصارف الـ 9 المعتمدة</span>
         </div>
         
@@ -489,10 +489,22 @@
           </div>
         </div>
 
+        <!-- Cost fields: Deposit + Card Price = Total Cost -->
         <div class="row-2">
           <div class="form-group">
-            <label>قيمة الإيداع (د.ل)</label>
-            <input type="number" id="depositAmt" value="19800">
+            <label>قيمة الإيداع بالمصرف (د.ل) *</label>
+            <input type="number" id="depositAmt" value="19800" oninput="calculateTotalCost()">
+          </div>
+          <div class="form-group">
+            <label style="color:#0f766e;">سعر شراء البطاقة (د.ل) *</label>
+            <input type="number" id="cardPrice" value="2500" placeholder="مثال: 2500" oninput="calculateTotalCost()">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label style="color:#1e40af;">إجمالي التكلفة الكلية (د.ل)</label>
+            <input type="text" id="totalCostDisplay" readonly value="22,300 د.ل" style="background:#eff6ff; font-weight:bold; color:#1e40af;">
           </div>
           <div class="form-group">
             <label>تاريخ الإيداع</label>
@@ -574,7 +586,9 @@
         <div style="text-align:left; font-size:12px; color:#64748b;">
           <div>تاريخ التقرير: <strong id="reportDate" style="color:#0f172a;"></strong></div>
           <div style="margin-top:3px;">إجمالي البطاقات: <strong id="reportCount" style="color:#0f172a;">0</strong> بطاقة</div>
-          <div>إجمالي المبالغ: <strong id="reportTotal" style="color:#0f172a;">0</strong> د.ل</div>
+          <div>إجمالي الإيداعات: <strong id="reportTotalDep" style="color:#0f172a;">0</strong> د.ل</div>
+          <div>إجمالي شراء البطاقات: <strong id="reportTotalCardPrice" style="color:#0f766e;">0</strong> د.ل</div>
+          <div>التكلفة الإجمالية: <strong id="reportTotalCost" style="color:#1e40af;">0</strong> د.ل</div>
         </div>
       </div>
 
@@ -584,10 +598,11 @@
             <th>كود</th>
             <th>اسم الزبون</th>
             <th>الرقم الوطني</th>
-            <th>هاتف المركزي</th>
             <th>المصرف</th>
             <th>رقم الحساب</th>
-            <th>قيمة الإيداع (د.ل)</th>
+            <th>قيمة الإيداع</th>
+            <th>سعر البطاقة</th>
+            <th>إجمالي التكلفة</th>
             <th>تاريخ الحجز</th>
             <th>المرحلة</th>
           </tr>
@@ -619,6 +634,14 @@
   </div>
 
   <script>
+    // حساب التكلفة الكلية لحظياً
+    function calculateTotalCost() {
+      var dep = parseFloat(document.getElementById('depositAmt').value) || 0;
+      var prc = parseFloat(document.getElementById('cardPrice').value) || 0;
+      var total = dep + prc;
+      document.getElementById('totalCostDisplay').value = total.toLocaleString('en-US') + ' د.ل';
+    }
+
     // 1. البحث الذكي الموحد
     function searchCustomer() {
       var q = document.getElementById('searchInput').value.trim();
@@ -648,6 +671,9 @@
           document.getElementById('accountNumber').value = card.accountNumber || '';
           document.getElementById('iban').value = card.iban || '';
           document.getElementById('depositAmt').value = card.depositAmt || '19800';
+          document.getElementById('cardPrice').value = card.cardPrice || '2500';
+          calculateTotalCost();
+
           document.getElementById('depositDate').value = card.depositDate || '';
           document.getElementById('bookingDate').value = card.bookingDate || '';
           document.getElementById('cardNum').value = card.cardNum || '';
@@ -684,6 +710,7 @@
         accountNumber: document.getElementById('accountNumber').value.trim(),
         iban: document.getElementById('iban').value.trim(),
         depositAmt: document.getElementById('depositAmt').value,
+        cardPrice: document.getElementById('cardPrice').value,
         depositDate: document.getElementById('depositDate').value,
         bookingDate: document.getElementById('bookingDate').value,
         cardNum: document.getElementById('cardNum').value.trim(),
@@ -701,7 +728,7 @@
       google.script.run
         .withSuccessHandler(function(res) {
           msg.innerText = '';
-          showSuccessDialog(card.name, res.code, card.bank, card.status);
+          showSuccessDialog(card.name, res.code, card.bank, card.status, res.totalCost);
         })
         .withFailureHandler(function(err) {
           alert('حدث خطأ أثناء الحفظ: ' + err.message);
@@ -711,10 +738,11 @@
     }
 
     // عرض نافذة نجاح الحفظ الأنيقة
-    function showSuccessDialog(customerName, code, bank, status) {
+    function showSuccessDialog(customerName, code, bank, status, totalCost) {
+      var costText = totalCost ? ' | إجمالي التكلفة: ' + Number(totalCost).toLocaleString('en-US') + ' د.ل' : '';
       document.getElementById('successDetails').innerHTML =
         'تم تسجيل المعاملة بنجاح باسم: <strong>' + customerName + '</strong><br>' +
-        '<span style="font-size:12px; color:#64748b;">' + bank + ' | ' + status + '</span>';
+        '<span style="font-size:12px; color:#64748b;">' + bank + ' | ' + status + costText + '</span>';
       document.getElementById('successCodeBadge').innerText = 'كود البطاقة: ' + code;
 
       var modal = document.getElementById('successModal');
@@ -742,23 +770,26 @@
         document.getElementById('reportTitle').innerText = 'كشف معاملات المرحلة: ' + rep.stage;
         document.getElementById('reportDate').innerText = rep.date;
         document.getElementById('reportCount').innerText = rep.totalCards;
-        document.getElementById('reportTotal').innerText = Number(rep.totalDeposit).toLocaleString('en-US');
+        document.getElementById('reportTotalDep').innerText = Number(rep.totalDeposit).toLocaleString('en-US');
+        document.getElementById('reportTotalCardPrice').innerText = Number(rep.totalCardPrice).toLocaleString('en-US');
+        document.getElementById('reportTotalCost').innerText = Number(rep.totalCostSum).toLocaleString('en-US');
 
         var tbody = document.getElementById('reportBody');
         tbody.innerHTML = '';
 
         if (rep.cards.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:15px; color:#94a3b8;">لا توجد معاملات مسجلة في هذه المرحلة حالياً</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:15px; color:#94a3b8;">لا توجد معاملات مسجلة في هذه المرحلة حالياً</td></tr>';
         } else {
           rep.cards.forEach(function(c) {
             var tr = document.createElement('tr');
             tr.innerHTML = '<td>' + c.code + '</td>' +
                            '<td><strong>' + c.name + '</strong></td>' +
                            '<td>' + c.nationalId + '</td>' +
-                           '<td>' + c.cblPhone + '</td>' +
                            '<td>' + c.bank + '</td>' +
                            '<td>' + c.accountNumber + '</td>' +
                            '<td>' + Number(c.depositAmt).toLocaleString('en-US') + '</td>' +
+                           '<td>' + Number(c.cardPrice).toLocaleString('en-US') + '</td>' +
+                           '<td><strong>' + Number(c.totalCost).toLocaleString('en-US') + '</strong></td>' +
                            '<td>' + c.bookingDate + '</td>' +
                            '<td>' + c.status + '</td>';
             tbody.appendChild(tr);
@@ -776,7 +807,9 @@
       document.getElementById('cardStatusBadge').innerText = 'تسجيل بطاقة جديدة';
       document.getElementById('statusMsg').innerText = '';
       document.getElementById('depositAmt').value = '19800';
+      document.getElementById('cardPrice').value = '2500';
       document.getElementById('expiry').value = '09/29';
+      calculateTotalCost();
     }
   </script>
 </body>

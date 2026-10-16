@@ -157,7 +157,7 @@ export function CardsTable({
               <th className="p-3.5">الرقم الوطني / الهاتف</th>
               <th className="p-3.5">المصرف المودع به</th>
               <th className="p-3.5 text-center">الأرقام السرية</th>
-              <th className="p-3.5 text-left">قيمة الإيداع</th>
+              <th className="p-3.5 text-left">التكلفة (إيداع + شراء)</th>
               <th className="p-3.5 text-center">الإجراءات والترحيل</th>
             </tr>
           </thead>
@@ -240,10 +240,15 @@ export function CardsTable({
                     </div>
                   </td>
 
-                  {/* Deposit Amount */}
-                  <td className="p-3.5 text-left font-mono font-bold text-slate-900">
-                    {c.depositAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                    <span className="text-[11px] text-slate-500 mr-1 font-sans">د.ل</span>
+                  {/* Cost & Deposit */}
+                  <td className="p-3.5 text-left font-mono">
+                    <div className="font-bold text-slate-900">
+                      {((c.depositAmount || 0) + (c.cardPrice || 0)).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      <span className="text-[11px] text-slate-500 mr-1 font-sans">د.ل</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      إيداع: {c.depositAmount.toLocaleString("en-US")} {c.cardPrice ? `| شراء: ${c.cardPrice.toLocaleString("en-US")}` : ""}
+                    </div>
                   </td>
 
                   {/* Workflow Action Buttons */}

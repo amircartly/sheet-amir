@@ -44,6 +44,7 @@ export function CardInputForm({
   const [accountNumber, setAccountNumber] = useState("");
   const [iban, setIban] = useState("");
   const [depositAmount, setDepositAmount] = useState("19800");
+  const [cardPrice, setCardPrice] = useState("2500");
   const [depositDate, setDepositDate] = useState("2026-10-15");
   const [bookingDate, setBookingDate] = useState("2026-10-15");
   const [cardNumber, setCardNumber] = useState("");
@@ -72,6 +73,7 @@ export function CardInputForm({
       setAccountNumber(editingCard.accountNumber || "");
       setIban(editingCard.iban || "");
       setDepositAmount(editingCard.depositAmount.toString());
+      setCardPrice(editingCard.cardPrice !== undefined ? editingCard.cardPrice.toString() : "2500");
       setDepositDate(editingCard.depositDate);
       setBookingDate(editingCard.bookingDate);
       setCardNumber(editingCard.cardNumber);
@@ -118,13 +120,18 @@ export function CardInputForm({
 
     const savedName = customerName.trim();
 
+    const depAmt = parseFloat(depositAmount) || 0;
+    const priceAmt = parseFloat(cardPrice) || 0;
+
     onSaveCard(
       {
         customerName: savedName,
         nationalId: nationalId.trim(),
         cblPhone: cblPhone.trim(),
         bankName,
-        depositAmount: parseFloat(depositAmount) || 0,
+        depositAmount: depAmt,
+        cardPrice: priceAmt,
+        totalCost: depAmt + priceAmt,
         depositDate,
         bookingDate,
         cardNumber: cardNumber.trim(),
@@ -160,6 +167,8 @@ export function CardInputForm({
     setCblPhone("");
     setAccountNumber("");
     setIban("");
+    setDepositAmount("19800");
+    setCardPrice("2500");
     setCardNumber("");
     setCardPin("");
     setPinDollar("");
@@ -399,11 +408,11 @@ export function CardInputForm({
           </div>
         </div>
 
-        {/* ROW 2: Deposit Amount, Deposit Date, Booking Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* ROW 2: Deposit Amount, Card Purchase Price, Total Cost, Deposit Date */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              5. قيمة الإيداع (بالدينار د.ل)
+              5. قيمة الإيداع بالمصرف (د.ل) *
             </label>
             <input
               type="number"
@@ -412,6 +421,30 @@ export function CardInputForm({
               onChange={(e) => setDepositAmount(e.target.value)}
               className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-emerald-800 mb-1">
+              سعر شراء البطاقة (د.ل) *
+            </label>
+            <input
+              type="number"
+              step="any"
+              value={cardPrice}
+              onChange={(e) => setCardPrice(e.target.value)}
+              placeholder="مثال: 2500"
+              className="w-full text-sm border border-emerald-300 bg-emerald-50/40 rounded-xl p-2.5 font-mono font-bold text-emerald-900 focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-blue-800 mb-1">
+              إجمالي التكلفة الكلية (د.ل)
+            </label>
+            <div className="w-full text-sm border border-blue-200 bg-blue-50/60 rounded-xl p-2.5 font-mono font-bold text-blue-900 flex items-center justify-between">
+              <span>{((parseFloat(depositAmount) || 0) + (parseFloat(cardPrice) || 0)).toLocaleString("en-US")}</span>
+              <span className="text-xs font-normal text-blue-700">د.ل</span>
+            </div>
           </div>
 
           <div>
@@ -425,7 +458,10 @@ export function CardInputForm({
               className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
 
+        {/* ROW 3: Booking Date, Card Number, Local PIN, Dollar PIN, Expiry */}
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               7. تاريخ الحجز بالمنظومة
@@ -437,10 +473,7 @@ export function CardInputForm({
               className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-blue-500"
             />
           </div>
-        </div>
 
-        {/* ROW 3: Card Number, Local PIN, Dollar PIN, Expiry */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               8. رقم البطاقة (16 رقم)
@@ -449,40 +482,40 @@ export function CardInputForm({
               type="text"
               value={cardNumber}
               onChange={(e) => setCardNumber(e.target.value)}
-              placeholder="4263 9811 0021 8191"
+              placeholder="4263 9811 ..."
               className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              9. الرقم السري (PIN المحلي)
+              9. PIN المحلي (الدينار)
             </label>
             <input
               type="text"
               value={cardPin}
               onChange={(e) => setCardPin(e.target.value)}
-              placeholder="PIN المحلي"
+              placeholder="PIN"
               className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-blue-700 mb-1">
-              السري دولي (السري دولار) *
+              السري دولار (الدولي) *
             </label>
             <input
               type="text"
               value={pinDollar}
               onChange={(e) => setPinDollar(e.target.value)}
-              placeholder="سري الصراف بالخارج"
+              placeholder="سري الصراف"
               className="w-full text-sm border border-blue-300 bg-blue-50/50 rounded-xl p-2.5 font-mono font-bold text-blue-900 focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              10. تاريخ الصلاحية (MM/YY)
+              10. الصلاحية (MM/YY)
             </label>
             <input
               type="text"

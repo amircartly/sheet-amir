@@ -24,6 +24,8 @@ export interface BankCardRecord {
   accountNumber?: string;
   iban?: string;
   depositAmount: number;
+  cardPrice?: number; // سعر شراء البطاقة (د.ل)
+  totalCost?: number; // إجمالي التكلفة = الإيداع + سعر البطاقة
   depositDate: string;
   bookingDate: string;
   cardNumber: string;

@@ -34,6 +34,8 @@ export function GoogleDriveSyncModal({ isOpen, onClose, cards }: Props) {
       "رقم حساب الزبون",
       "رقم الآيبان للزبون (IBAN)",
       "قيمة الإيداع (د.ل)",
+      "سعر البطاقة (د.ل)",
+      "إجمالي التكلفة (د.ل)",
       "تاريخ الإيداع",
       "تاريخ الحجز بالمنظومة",
       "رقم البطاقة",
@@ -53,6 +55,8 @@ export function GoogleDriveSyncModal({ isOpen, onClose, cards }: Props) {
       `"${c.accountNumber || ""}"`,
       `"${c.iban || ""}"`,
       c.depositAmount,
+      c.cardPrice || 0,
+      (c.depositAmount || 0) + (c.cardPrice || 0),
       c.depositDate,
       c.bookingDate,
       `"${c.cardNumber}"`,
@@ -86,10 +90,11 @@ function onOpen() {
 function setupSystem() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var master = ss.getSheetByName('بيانات_ماستر') || ss.insertSheet('بيانات_ماستر', 0);
-  var headers = ['كود', 'اسم الزبون', 'الرقم الوطني', 'هاتف المركزي', 'المصرف', 'قيمة الإيداع', 'تاريخ الإيداع', 'تاريخ الحجز', 'رقم البطاقة', 'PIN', 'السري دولار', 'الصلاحية', 'الحالة', 'الرقم الإشاري', 'مكتب السحب', 'صافي الربح', 'ملاحظات'];
-  master.getRange(1, 1, 1, headers.length).setValues([headers]).setBackground('#1e293b').setFontColor('#fff').setFontWeight('bold');
+  var headers = ['كود البطاقة', 'اسم الزبون الرباعي', 'الرقم الوطني', 'هاتف المركزي', 'المصرف', 'رقم الحساب', 'الآيبان IBAN', 'قيمة الإيداع (د.ل)', 'سعر البطاقة (د.ل)', 'إجمالي التكلفة (د.ل)', 'تاريخ الإيداع', 'تاريخ الحجز', 'رقم البطاقة', 'PIN المحلي', 'السري دولار', 'الصلاحية', 'المرحلة', 'ملاحظات'];
+  master.getRange(1, 1, 1, headers.length).setValues([headers]).setBackground('#0f172a').setFontColor('#fff').setFontWeight('bold');
   master.setFrozenRows(1);
-  SpreadsheetApp.getUi().alert('تم تجهيز الشيت بنجاح!');
+  master.setRightToLeft(true);
+  SpreadsheetApp.getUi().alert('تم تجهيز وتنسيق الشيت بنجاح بـ 18 عموداً متكاملاً!');
 }`;
     navigator.clipboard.writeText(script);
     setCopied(true);

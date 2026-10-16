@@ -154,7 +154,8 @@ export default function HomePage() {
   ) => {
     if (!cardToSettle) return;
     const totalSaleLYD = usdAmount * rate;
-    const netProfitLYD = totalSaleLYD - cardToSettle.depositAmount;
+    const totalCost = cardToSettle.depositAmount + (cardToSettle.cardPrice || 0);
+    const netProfitLYD = totalSaleLYD - totalCost;
 
     // 1. Update Card Record
     setCards(

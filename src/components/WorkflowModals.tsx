@@ -123,8 +123,10 @@ export function SettleAndSellModal({
 
   if (!isOpen) return null;
 
+  const cardPrice = card.cardPrice || 0;
+  const totalCost = card.depositAmount + cardPrice;
   const totalSaleLYD = (parseFloat(usdAmount) || 0) * (parseFloat(exchangeRate) || 0);
-  const netProfitLYD = totalSaleLYD - card.depositAmount;
+  const netProfitLYD = totalSaleLYD - totalCost;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -159,9 +161,23 @@ export function SettleAndSellModal({
               <span className="text-slate-800">{card.bankName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">قيمة الإيداع الأصلية:</span>
+              <span className="text-slate-500">قيمة الإيداع بالمصرف:</span>
               <strong className="font-mono text-slate-800">
                 {card.depositAmount.toLocaleString("en-US")} د.ل
+              </strong>
+            </div>
+            {cardPrice > 0 && (
+              <div className="flex justify-between text-emerald-800">
+                <span>سعر شراء البطاقة:</span>
+                <strong className="font-mono text-emerald-900">
+                  {cardPrice.toLocaleString("en-US")} د.ل
+                </strong>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-slate-200 pt-1 text-slate-800 font-semibold">
+              <span>إجمالي التكلفة الكلية:</span>
+              <strong className="font-mono text-blue-900">
+                {totalCost.toLocaleString("en-US")} د.ل
               </strong>
             </div>
           </div>
@@ -222,14 +238,28 @@ export function SettleAndSellModal({
                 {totalSaleLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
               </strong>
             </div>
-            <div className="flex justify-between text-xs text-emerald-800">
+            <div className="flex justify-between text-xs text-slate-600">
               <span>مطروحاً منه الإيداع:</span>
-              <span className="font-mono text-emerald-700">
+              <span className="font-mono text-slate-700">
                 - {card.depositAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
               </span>
             </div>
+            {cardPrice > 0 && (
+              <div className="flex justify-between text-xs text-amber-700">
+                <span>مطروحاً منه سعر البطاقة:</span>
+                <span className="font-mono text-amber-800">
+                  - {cardPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-xs text-slate-500 border-t border-emerald-200/60 pt-1">
+              <span>إجمالي التكلفة المخصومة:</span>
+              <span className="font-mono text-slate-700 font-semibold">
+                - {totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+              </span>
+            </div>
             <div className="border-t border-emerald-200 pt-1.5 flex justify-between text-sm font-bold text-emerald-900">
-              <span>صافي ربح المعاملة:</span>
+              <span>صافي ربح المعاملة الحقيقي:</span>
               <span className="font-mono text-base text-emerald-600">
                 + {netProfitLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
               </span>

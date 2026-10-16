@@ -5,9 +5,10 @@
  * وظائف الكود:
  * 1. إضافة قائمة مخصصة في Google Sheets لفتح واجهة الإدخال وتهيئة الشيت.
  * 2. البحث الذكي المرن (تجاهل الهمزات، الفراغات، الحروف المشابهة).
- * 3. حفظ المعاملات وتحديثها تلقائياً مع توليد كود فريد (CRD-xxx).
- * 4. إنشاء تقارير وكشوفات المراحل قابلة للطباعة والتصدير كـ PDF.
- * 5. حماية من تكرار الإيداع وتتبع الحسابات والآيبان للمصارف الـ 9.
+ * 3. إدارة التكاليف: قيمة الإيداع + سعر شراء البطاقة = إجمالي التكلفة الحقيقية.
+ * 4. حفظ المعاملات وتحديثها تلقائياً مع توليد كود فريد (CRD-xxx).
+ * 5. إنشاء تقارير وكشوفات المراحل قابلة للطباعة والتصدير كـ PDF.
+ * 6. حماية من تكرار الإيداع وتتبع الحسابات والآيبان للمصارف الـ 9.
  */
 
 // 1. إنشاء القائمة في شريط الأدوات عند فتح الشيت
@@ -16,20 +17,20 @@ function onOpen() {
     .createMenu('💎 منظومة بطاقات AMIR')
     .addItem('✨ فتح واجهة الإدخال والبحث والتقارير', 'openFormDialog')
     .addSeparator()
-    .addItem('🛠️ تهيئة وترتيب أعمدة الشيت تلقائياً', 'setupSheetColumns')
+    .addItem('🛠️ تهيئة وترتيب أعمدة الشيت تلقائياً (18 عمود)', 'setupSheetColumns')
     .addToUi();
 }
 
 // 2. فتح نافذة الإدخال المنبثقة
 function openFormDialog() {
   var html = HtmlService.createHtmlOutputFromFile('Index')
-    .setWidth(1050)
-    .setHeight(720)
+    .setWidth(1080)
+    .setHeight(750)
     .setTitle('منظومة بطاقات AMIR - إدارة البيانات والتقارير');
   SpreadsheetApp.getUi().showModalDialog(html, 'واجهة إدارة البطاقات المصرفية والتقارير');
 }
 
-// 3. تهيئة أعمدة الشيت تلقائياً بالتنسيق المعتمد الـ 16
+// 3. تهيئة أعمدة الشيت تلقائياً بالتنسيق المعتمد الـ 18
 function setupSheetColumns() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('بيانات_ماستر') || ss.insertSheet('بيانات_ماستر', 0);
@@ -43,6 +44,8 @@ function setupSheetColumns() {
     'رقم حساب الزبون',
     'رقم الآيبان للزبون (IBAN)',
     'قيمة الإيداع (د.ل)',
+    'سعر البطاقة (د.ل)',
+    'إجمالي التكلفة (د.ل)',
     'تاريخ الإيداع',
     'تاريخ الحجز بالمنظومة',
     'رقم البطاقة',
@@ -68,7 +71,7 @@ function setupSheetColumns() {
     sheet.autoResizeColumn(col);
   }
 
-  SpreadsheetApp.getUi().alert('تم تهيئة أعمدة الشيت الـ 16 بنجاح مع تثبيت الصف الأول والاتجاه من اليمين لليسار.');
+  SpreadsheetApp.getUi().alert('تم تهيئة أعمدة الشيت الـ 18 بنجاح مع إضافة حقلي «سعر البطاقة» و«إجمالي التكلفة» وتثبيت الصف الأول.');
 }
 
 // 4. دالة تنظيف وتوحيد النصوص العربية للبحث المرن
@@ -105,13 +108,28 @@ function searchCardData(query) {
     var rowName = cleanText(row[1]);
     var rowNatId = cleanText(row[2]);
     var rowPhone = cleanText(row[3]);
-    var rowCardNum = cleanText(row[10]);
+    var rowCardNum = row.length > 12 ? cleanText(row[12]) : (row.length > 10 ? cleanText(row[10]) : '');
 
     if (rowCode.indexOf(qClean) !== -1 ||
         rowName.indexOf(qClean) !== -1 ||
         rowNatId.indexOf(qClean) !== -1 ||
         rowPhone.indexOf(qClean) !== -1 ||
         (rowCardNum && rowCardNum.indexOf(qClean) !== -1)) {
+      
+      // توافق ذكي سواء كان الشيت 16 عمود قديم أو 18 عمود جديد
+      var hasCostCols = (row.length >= 18);
+      var depAmt = hasCostCols ? (row[7] || '19800') : (row[7] || '19800');
+      var cardPrice = hasCostCols ? (row[8] || '2500') : '2500';
+      var totalCost = hasCostCols ? (row[9] || '') : '';
+      var depDate = hasCostCols ? formatDateValue(row[10]) : formatDateValue(row[8]);
+      var bookDate = hasCostCols ? formatDateValue(row[11]) : formatDateValue(row[9]);
+      var cardNum = hasCostCols ? (row[12] ? row[12].toString() : '') : (row[10] ? row[10].toString() : '');
+      var pinLocal = hasCostCols ? (row[13] ? row[13].toString() : '') : (row[11] ? row[11].toString() : '');
+      var pinDollar = hasCostCols ? (row[14] ? row[14].toString() : '') : (row[12] ? row[12].toString() : '');
+      var expiry = hasCostCols ? (row[15] ? row[15].toString() : '09/29') : (row[13] ? row[13].toString() : '09/29');
+      var status = hasCostCols ? (row[16] ? row[16].toString() : '1. إدخال البيانات') : (row[14] ? row[14].toString() : '1. إدخال البيانات');
+      var notes = hasCostCols ? (row[17] ? row[17].toString() : '') : (row[15] ? row[15].toString() : '');
+
       return {
         found: true,
         rowIndex: i + 1,
@@ -122,15 +140,17 @@ function searchCardData(query) {
         bank: row[4] ? row[4].toString() : '',
         accountNumber: row[5] ? row[5].toString() : '',
         iban: row[6] ? row[6].toString() : '',
-        depositAmt: row[7] ? row[7].toString() : '19800',
-        depositDate: formatDateValue(row[8]),
-        bookingDate: formatDateValue(row[9]),
-        cardNum: row[10] ? row[10].toString() : '',
-        pinLocal: row[11] ? row[11].toString() : '',
-        pinDollar: row[12] ? row[12].toString() : '',
-        expiry: row[13] ? row[13].toString() : '09/29',
-        status: row[14] ? row[14].toString() : '1. إدخال البيانات',
-        notes: row[15] ? row[15].toString() : ''
+        depositAmt: depAmt.toString(),
+        cardPrice: cardPrice.toString(),
+        totalCost: totalCost.toString(),
+        depositDate: depDate,
+        bookingDate: bookDate,
+        cardNum: cardNum,
+        pinLocal: pinLocal,
+        pinDollar: pinDollar,
+        expiry: expiry,
+        status: status,
+        notes: notes
       };
     }
   }
@@ -164,6 +184,10 @@ function saveCardData(card) {
     code = 'CRD-' + (100 + lastRow);
   }
 
+  var deposit = parseFloat(card.depositAmt) || 0;
+  var cardPrice = parseFloat(card.cardPrice) || 0;
+  var totalCost = deposit + cardPrice;
+
   var row = [
     code,
     card.name ? card.name.toString().trim() : '',
@@ -172,7 +196,9 @@ function saveCardData(card) {
     card.bank || 'مصرف التجارة والتنمية',
     card.accountNumber ? card.accountNumber.toString().trim() : '',
     card.iban ? card.iban.toString().trim() : '',
-    parseFloat(card.depositAmt) || 0,
+    deposit,
+    cardPrice,
+    totalCost,
     card.depositDate || '',
     card.bookingDate || '',
     card.cardNum ? card.cardNum.toString().trim() : '',
@@ -188,7 +214,10 @@ function saveCardData(card) {
   return {
     success: true,
     code: code,
-    row: targetRow
+    row: targetRow,
+    deposit: deposit,
+    cardPrice: cardPrice,
+    totalCost: totalCost
   };
 }
 
@@ -199,14 +228,23 @@ function getStageReport(stage) {
   var data = sheet.getDataRange().getValues();
   var list = [];
   var totalDeposit = 0;
+  var totalCardPrice = 0;
+  var totalCostSum = 0;
 
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
-    var rowStatus = row[14] ? row[14].toString().trim() : '';
+    var hasCostCols = (row.length >= 18);
+    var rowStatus = hasCostCols ? (row[16] ? row[16].toString().trim() : '') : (row[14] ? row[14].toString().trim() : '');
 
     if (stage === 'الكل' || rowStatus === stage || (stage === '1. إدخال البيانات' && rowStatus === 'إدخال البيانات')) {
       var dep = parseFloat(row[7]) || 0;
+      var price = hasCostCols ? (parseFloat(row[8]) || 0) : 0;
+      var cost = hasCostCols ? (parseFloat(row[9]) || (dep + price)) : dep;
+
       totalDeposit += dep;
+      totalCardPrice += price;
+      totalCostSum += cost;
+
       list.push({
         code: row[0] ? row[0].toString() : '',
         name: row[1] ? row[1].toString() : '',
@@ -216,7 +254,9 @@ function getStageReport(stage) {
         accountNumber: row[5] ? row[5].toString() : '-',
         iban: row[6] ? row[6].toString() : '-',
         depositAmt: dep,
-        bookingDate: formatDateValue(row[9]),
+        cardPrice: price,
+        totalCost: cost,
+        bookingDate: hasCostCols ? formatDateValue(row[11]) : formatDateValue(row[9]),
         status: rowStatus
       });
     }
@@ -227,6 +267,8 @@ function getStageReport(stage) {
     cards: list,
     totalCards: list.length,
     totalDeposit: totalDeposit,
+    totalCardPrice: totalCardPrice,
+    totalCostSum: totalCostSum,
     date: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')
   };
 }
