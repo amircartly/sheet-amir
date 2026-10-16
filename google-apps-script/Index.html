@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>منظومة بطاقات AMIR</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", "Noto Sans Arabic", sans-serif;
+    }
+    body {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      padding: 14px;
+      direction: rtl;
+    }
+    
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .top-bar-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .top-bar h2 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .badge-mode {
+      background: #2563eb;
+      color: #fff;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      min-width: 320px;
+      background: white;
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    .search-box input {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-box input:focus {
+      border-color: #2563eb;
+    }
+    .btn-search {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-search:hover {
+      background: #1d4ed8;
+    }
+    
+    .report-box {
+      display: flex;
+      gap: 6px;
+      background: #ecfdf5;
+      padding: 7px 12px;
+      border-radius: 10px;
+      border: 1px solid #a7f3d0;
+      align-items: center;
+    }
+    .report-box select {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #6ee7b7;
+      font-size: 12px;
+      background: white;
+      outline: none;
+    }
+    .btn-print {
+      background: #059669;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-print:hover {
+      background: #047857;
+    }
+
+    /* Grid Layout */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f766e;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-group {
+      margin-bottom: 9px;
+    }
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 3px;
+    }
+    input, select {
+      width: 100%;
+      padding: 7px 9px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      background: #ffffff;
+    }
+    input:focus, select:focus {
+      border-color: #0d9488;
+    }
+    
+    /* Highlight special fields */
+    .pin-dollar {
+      background: #eff6ff !important;
+      border-color: #93c5fd !important;
+      font-weight: bold;
+      color: #1e40af;
+    }
+    .pin-local {
+      background: #f8fafc;
+      font-weight: 600;
+    }
+    .iban-input {
+      font-family: monospace;
+      letter-spacing: 0.5px;
+    }
+
+    /* Actions Bar */
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      background: white;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .btn-save {
+      background: #15803d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 24px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-save:hover {
+      background: #166534;
+    }
+    .btn-clear {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-clear:hover {
+      background: #e2e8f0;
+    }
+
+    /* Report Modal */
+    #reportModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 9999;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .report-content {
+      background: white;
+      max-width: 900px;
+      margin: auto;
+      padding: 25px;
+      border-radius: 12px;
+      direction: rtl;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 12px;
+    }
+    .report-table th, .report-table td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      text-align: right;
+    }
+    .report-table th {
+      background: #f8fafc;
+      font-weight: bold;
+      color: #0f172a;
+    }
+    .report-table tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #reportModal, #reportModal * {
+        visibility: visible;
+      }
+      #reportModal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="top-bar-title">
+      <h2>💎 منظومة بطاقات مصرفية (AMIR)</h2>
+      <span style="font-size: 11px; opacity: 0.85;">مخصصات النقد الأجنبي للأفراد ($4,000)</span>
+    </div>
+    <span id="cardStatusBadge" class="badge-mode">تسجيل بطاقة جديدة</span>
+  </div>
+
+  <!-- Search & Reports Tool Bar -->
+  <div class="controls-bar">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة..." onkeypress="if(event.key==='Enter'){event.preventDefault();searchCustomer();}">
+      <button type="button" class="btn-search" onclick="searchCustomer()">بحث فوري</button>
+    </div>
+
+    <div class="report-box">
+      <span style="font-size:12px; font-weight:bold; color:#065f46;">طباعة كشف:</span>
+      <select id="reportStage">
+        <option value="1. إدخال البيانات">1. إدخال البيانات</option>
+        <option value="2. محجوزة">2. محجوزة</option>
+        <option value="3. مودعة">3. مودعة</option>
+        <option value="4. انتظار شحن">4. انتظار شحن</option>
+        <option value="5. مشحونة">5. مشحونة</option>
+        <option value="6. مرسلة للسحب">6. مرسلة للسحب</option>
+        <option value="الكل">جميع البطاقات (سجل عام)</option>
+      </select>
+      <button type="button" class="btn-print" onclick="openPrintReport()">🖨️ فتح الكشف للطباعة</button>
+    </div>
+  </div>
+
+  <!-- Card Form -->
+  <form id="cardForm">
+    <input type="hidden" id="cardCode">
+
+    <div class="grid-container">
+      <!-- Section 1: Customer & Account Info -->
+      <div class="card">
+        <div class="card-title">
+          <span>1. بيانات العميل والحساب المصرفي</span>
+          <span style="font-size:11px; color:#64748b; font-weight:normal;">المصارف الـ 9 المعتمدة</span>
+        </div>
+        
+        <div class="form-group">
+          <label>اسم الزبون الرباعي *</label>
+          <input type="text" id="name" required placeholder="محمد عبد السلام السنوسي...">
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>الرقم الوطني (12 خانة) *</label>
+            <input type="text" id="nationalId" maxlength="12" placeholder="119xxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label>هاتف المركزي (المربوط) *</label>
+            <input type="text" id="cblPhone" placeholder="091xxxxxxx">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>المصرف *</label>
+          <select id="bank">
+            <option value="مصرف التجارة والتنمية">مصرف التجارة والتنمية</option>
+            <option value="مصرف الوحدة">مصرف الوحدة</option>
+            <option value="مصرف التجاري الوطني">مصرف التجاري الوطني</option>
+            <option value="مصرف الأمان">مصرف الأمان</option>
+            <option value="مصرف المتوسط">مصرف المتوسط</option>
+            <option value="مصرف الجمهورية">مصرف الجمهورية</option>
+            <option value="المصرف الإسلامي">المصرف الإسلامي</option>
+            <option value="مصرف شمال أفريقيا">مصرف شمال أفريقيا</option>
+            <option value="مصرف اليقين">مصرف اليقين</option>
+          </select>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>رقم حساب الزبون</label>
+            <input type="text" id="accountNumber" placeholder="01533010488074">
+          </div>
+          <div class="form-group">
+            <label>رقم الآيبان للزبون (IBAN)</label>
+            <input type="text" id="iban" class="iban-input" placeholder="LY00 0000 ...">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>قيمة الإيداع (د.ل)</label>
+            <input type="number" id="depositAmt" value="19800">
+          </div>
+          <div class="form-group">
+            <label>تاريخ الإيداع</label>
+            <input type="date" id="depositDate">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Card & Stages Info -->
+      <div class="card">
+        <div class="card-title">
+          <span>2. بيانات البطاقة ومرحلة المعاملة</span>
+          <span style="font-size:11px; color:#64748b; font-weight:normal;">المراحل والسرّيات</span>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>رقم البطاقة (16 رقم)</label>
+            <input type="text" id="cardNum" maxlength="19" placeholder="4263 9811 0021 8191">
+          </div>
+          <div class="form-group">
+            <label>تاريخ الحجز بالمنظومة</label>
+            <input type="date" id="bookingDate">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>PIN المحلي (الدينار)</label>
+            <input type="text" id="pinLocal" class="pin-local" placeholder="****">
+          </div>
+          <div class="form-group">
+            <label style="color:#1d4ed8;">الرقم السري الدولي (السري دولار) *</label>
+            <input type="text" id="pinDollar" class="pin-dollar" placeholder="السري دولار">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>تاريخ الصلاحية (MM/YY)</label>
+            <input type="text" id="expiry" value="09/29" placeholder="09/29">
+          </div>
+          <div class="form-group">
+            <label>المرحلة الحالية للبطاقة *</label>
+            <select id="status">
+              <option value="1. إدخال البيانات">1. إدخال البيانات</option>
+              <option value="2. محجوزة">2. محجوزة</option>
+              <option value="3. مودعة">3. مودعة</option>
+              <option value="4. انتظار شحن">4. انتظار شحن</option>
+              <option value="5. مشحونة">5. مشحونة</option>
+              <option value="6. مرسلة للسحب">6. مرسلة للسحب</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ملاحظات وبيان المعاملة</label>
+          <input type="text" id="notes" placeholder="ملاحظات حول الفرع، رقم الصك، أو التوريد...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="actions">
+      <button type="button" class="btn-clear" onclick="clearForm()">🔄 تفريغ الخانات (بطاقة جديدة)</button>
+      <span id="statusMsg" style="font-size:12px; font-weight:bold;"></span>
+      <button type="button" class="btn-save" onclick="sendData()">💾 ترحيل وحفظ البطاقة</button>
+    </div>
+  </form>
+
+  <!-- Report / Print Modal -->
+  <div id="reportModal">
+    <div class="report-content">
+      <div style="display:flex; justify-content:space-between; border-bottom:2px solid #0f766e; padding-bottom:10px;">
+        <div>
+          <h2 style="color:#0f172a; font-size:18px;">💎 منظومة بطاقات مصرفية (AMIR)</h2>
+          <h4 id="reportTitle" style="color:#0f766e; margin-top:4px;">كشف معاملات المرحلة</h4>
+        </div>
+        <div style="text-align:left; font-size:12px; color:#64748b;">
+          <div>تاريخ التقرير: <strong id="reportDate" style="color:#0f172a;"></strong></div>
+          <div style="margin-top:3px;">إجمالي البطاقات: <strong id="reportCount" style="color:#0f172a;">0</strong> بطاقة</div>
+          <div>إجمالي المبالغ: <strong id="reportTotal" style="color:#0f172a;">0</strong> د.ل</div>
+        </div>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>كود</th>
+            <th>اسم الزبون</th>
+            <th>الرقم الوطني</th>
+            <th>هاتف المركزي</th>
+            <th>المصرف</th>
+            <th>رقم الحساب</th>
+            <th>قيمة الإيداع (د.ل)</th>
+            <th>تاريخ الحجز</th>
+            <th>المرحلة</th>
+          </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+      </table>
+
+      <div class="no-print" style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="document.getElementById('reportModal').style.display='none'" style="padding:8px 16px; border:1px solid #cbd5e1; background:#f1f5f9; border-radius:6px; cursor:pointer; font-weight:600;">إغلاق</button>
+        <button type="button" onclick="window.print()" style="padding:8px 20px; background:#059669; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">🖨️ طباعة الآن (Print / PDF)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. البحث الذكي الموحد
+    function searchCustomer() {
+      var q = document.getElementById('searchInput').value.trim();
+      if (!q) {
+        alert('الرجاء كتابة اسم الزبون أو رقمه الوطني أو كود البطاقة للبحث.');
+        return;
+      }
+
+      var msg = document.getElementById('statusMsg');
+      msg.innerText = 'جاري البحث...';
+      msg.style.color = '#2563eb';
+
+      google.script.run
+        .withSuccessHandler(function(card) {
+          if (!card || !card.found) {
+            alert('لم يتم العثور على أي زبون مطابق لكلمة: ' + q);
+            msg.innerText = '';
+            return;
+          }
+
+          document.getElementById('cardCode').value = card.code || '';
+          document.getElementById('cardStatusBadge').innerText = 'تعديل المعاملة: ' + card.code;
+          document.getElementById('name').value = card.name || '';
+          document.getElementById('nationalId').value = card.nationalId || '';
+          document.getElementById('cblPhone').value = card.cblPhone || '';
+          document.getElementById('bank').value = card.bank || 'مصرف التجارة والتنمية';
+          document.getElementById('accountNumber').value = card.accountNumber || '';
+          document.getElementById('iban').value = card.iban || '';
+          document.getElementById('depositAmt').value = card.depositAmt || '19800';
+          document.getElementById('depositDate').value = card.depositDate || '';
+          document.getElementById('bookingDate').value = card.bookingDate || '';
+          document.getElementById('cardNum').value = card.cardNum || '';
+          document.getElementById('pinLocal').value = card.pinLocal || '';
+          document.getElementById('pinDollar').value = card.pinDollar || '';
+          document.getElementById('expiry').value = card.expiry || '09/29';
+          document.getElementById('status').value = card.status || '1. إدخال البيانات';
+          document.getElementById('notes').value = card.notes || '';
+
+          msg.innerText = '✓ تم استرجاع بيانات: ' + card.name;
+          msg.style.color = '#15803d';
+        })
+        .withFailureHandler(function(err) {
+          alert('حدث خطأ أثناء البحث: ' + err.message);
+          msg.innerText = '';
+        })
+        .searchCardData(q);
+    }
+
+    // 2. ترحيل وحفظ البيانات
+    function sendData() {
+      var name = document.getElementById('name').value.trim();
+      if (!name) {
+        alert('الرجاء كتابة اسم الزبون الرباعي.');
+        return;
+      }
+
+      var card = {
+        code: document.getElementById('cardCode').value,
+        name: name,
+        nationalId: document.getElementById('nationalId').value.trim(),
+        cblPhone: document.getElementById('cblPhone').value.trim(),
+        bank: document.getElementById('bank').value,
+        accountNumber: document.getElementById('accountNumber').value.trim(),
+        iban: document.getElementById('iban').value.trim(),
+        depositAmt: document.getElementById('depositAmt').value,
+        depositDate: document.getElementById('depositDate').value,
+        bookingDate: document.getElementById('bookingDate').value,
+        cardNum: document.getElementById('cardNum').value.trim(),
+        pinLocal: document.getElementById('pinLocal').value.trim(),
+        pinDollar: document.getElementById('pinDollar').value.trim(),
+        expiry: document.getElementById('expiry').value.trim(),
+        status: document.getElementById('status').value,
+        notes: document.getElementById('notes').value.trim()
+      };
+
+      var msg = document.getElementById('statusMsg');
+      msg.innerText = 'جاري الترحيل والحفظ...';
+      msg.style.color = '#2563eb';
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          alert('تم حفظ وترحيل البيانات بنجاح في الشيت بكود: ' + res.code);
+          clearForm();
+          google.script.host.close();
+        })
+        .withFailureHandler(function(err) {
+          alert('حدث خطأ أثناء الحفظ: ' + err.message);
+          msg.innerText = '';
+        })
+        .saveCardData(card);
+    }
+
+    // 3. فتح تقرير المرحلة للطباعة
+    function openPrintReport() {
+      var stage = document.getElementById('reportStage').value;
+      google.script.run.withSuccessHandler(function(rep) {
+        document.getElementById('reportTitle').innerText = 'كشف معاملات المرحلة: ' + rep.stage;
+        document.getElementById('reportDate').innerText = rep.date;
+        document.getElementById('reportCount').innerText = rep.totalCards;
+        document.getElementById('reportTotal').innerText = Number(rep.totalDeposit).toLocaleString('en-US');
+
+        var tbody = document.getElementById('reportBody');
+        tbody.innerHTML = '';
+
+        if (rep.cards.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:15px; color:#94a3b8;">لا توجد معاملات مسجلة في هذه المرحلة حالياً</td></tr>';
+        } else {
+          rep.cards.forEach(function(c) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + c.code + '</td>' +
+                           '<td><strong>' + c.name + '</strong></td>' +
+                           '<td>' + c.nationalId + '</td>' +
+                           '<td>' + c.cblPhone + '</td>' +
+                           '<td>' + c.bank + '</td>' +
+                           '<td>' + c.accountNumber + '</td>' +
+                           '<td>' + Number(c.depositAmt).toLocaleString('en-US') + '</td>' +
+                           '<td>' + c.bookingDate + '</td>' +
+                           '<td>' + c.status + '</td>';
+            tbody.appendChild(tr);
+          });
+        }
+
+        document.getElementById('reportModal').style.display = 'block';
+      }).getStageReport(stage);
+    }
+
+    // 4. تفريغ النموذج
+    function clearForm() {
+      document.getElementById('cardForm').reset();
+      document.getElementById('cardCode').value = '';
+      document.getElementById('cardStatusBadge').innerText = 'تسجيل بطاقة جديدة';
+      document.getElementById('statusMsg').innerText = '';
+      document.getElementById('depositAmt').value = '19800';
+      document.getElementById('expiry').value = '09/29';
+    }
+  </script>
+</body>
+</html>

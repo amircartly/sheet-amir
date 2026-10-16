@@ -27,22 +27,21 @@ export function GoogleDriveSyncModal({ isOpen, onClose, cards }: Props) {
   const downloadCSV = () => {
     const headers = [
       "كود البطاقة",
-      "اسم الزبون",
+      "اسم الزبون الرباعي",
       "الرقم الوطني",
-      "هاتف المركزي",
+      "هاتف المركزي (المربوط)",
       "المصرف",
+      "رقم حساب الزبون",
+      "رقم الآيبان للزبون (IBAN)",
       "قيمة الإيداع (د.ل)",
       "تاريخ الإيداع",
-      "تاريخ الحجز",
+      "تاريخ الحجز بالمنظومة",
       "رقم البطاقة",
-      "الرقم السري PIN",
-      "السري دولار",
+      "PIN المحلي",
+      "السري دولار (الدولي)",
       "تاريخ الصلاحية",
-      "المرحلة والحالة",
-      "الرقم الإشاري",
-      "مكتب السحب",
-      "صافي الربح (د.ل)",
-      "ملاحظات",
+      "المرحلة الحالية للبطاقة",
+      "ملاحظات وبيان المعاملة",
     ];
 
     const rows = cards.map((c) => [
@@ -51,6 +50,8 @@ export function GoogleDriveSyncModal({ isOpen, onClose, cards }: Props) {
       `"${c.nationalId}"`,
       `"${c.cblPhone}"`,
       `"${c.bankName}"`,
+      `"${c.accountNumber || ""}"`,
+      `"${c.iban || ""}"`,
       c.depositAmount,
       c.depositDate,
       c.bookingDate,
@@ -59,9 +60,6 @@ export function GoogleDriveSyncModal({ isOpen, onClose, cards }: Props) {
       `"${c.pinDollar || ""}"`,
       `"${c.expiryDate}"`,
       `"${c.status}"`,
-      `"${c.refNumber || ""}"`,
-      `"${c.withdrawalOffice || ""}"`,
-      c.netProfitLYD || 0,
       `"${c.notes || ""}"`,
     ]);
 

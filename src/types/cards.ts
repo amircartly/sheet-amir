@@ -1,6 +1,8 @@
 export type CardStatus =
+  | "إدخال البيانات"
   | "محجوزة"
   | "مودعة"
+  | "انتظار شحن"
   | "انتظار الشحن"
   | "مشحونة"
   | "مرسلة للسحب"
@@ -19,6 +21,8 @@ export interface BankCardRecord {
   nationalId: string;
   cblPhone: string;
   bankName: string;
+  accountNumber?: string;
+  iban?: string;
   depositAmount: number;
   depositDate: string;
   bookingDate: string;

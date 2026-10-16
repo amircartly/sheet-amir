@@ -40,16 +40,20 @@ export function CardsTable({
 
   const stages = [
     { label: "الكل", count: cards.length },
+    { label: "إدخال البيانات", count: cards.filter((c) => c.status === "إدخال البيانات").length },
     { label: "محجوزة", count: cards.filter((c) => c.status === "محجوزة").length },
     { label: "مودعة", count: cards.filter((c) => c.status === "مودعة").length },
-    { label: "انتظار الشحن", count: cards.filter((c) => c.status === "انتظار الشحن").length },
+    { label: "انتظار شحن", count: cards.filter((c) => c.status === "انتظار شحن" || c.status === "انتظار الشحن").length },
     { label: "مشحونة", count: cards.filter((c) => c.status === "مشحونة").length },
     { label: "مرسلة للسحب", count: cards.filter((c) => c.status === "مرسلة للسحب").length },
     { label: "تم السحب والتصفية", count: cards.filter((c) => c.status === "تم السحب والتصفية").length },
   ];
 
   const filteredCards = cards.filter((c) => {
-    const matchesStage = activeStage === "الكل" || c.status === activeStage;
+    const matchesStage =
+      activeStage === "الكل" ||
+      c.status === activeStage ||
+      (activeStage === "انتظار شحن" && (c.status === "انتظار شحن" || c.status === "انتظار الشحن"));
     const q = searchQuery.trim().toLowerCase();
     const matchesSearch =
       q === "" ||
@@ -57,6 +61,8 @@ export function CardsTable({
       c.nationalId.includes(q) ||
       c.cardPin.includes(q) ||
       (c.pinDollar && c.pinDollar.includes(q)) ||
+      (c.accountNumber && c.accountNumber.includes(q)) ||
+      (c.iban && c.iban.toLowerCase().includes(q)) ||
       c.cblPhone.includes(q) ||
       c.cardNumber.replace(/\s+/g, "").includes(q.replace(/\s+/g, ""));
     return matchesStage && matchesSearch;
@@ -64,10 +70,13 @@ export function CardsTable({
 
   const getStatusBadge = (status: CardStatus) => {
     switch (status) {
+      case "إدخال البيانات":
+        return "bg-slate-100 text-slate-800 border-slate-300";
       case "محجوزة":
         return "bg-amber-100 text-amber-800 border-amber-200";
       case "مودعة":
         return "bg-blue-100 text-blue-800 border-blue-200";
+      case "انتظار شحن":
       case "انتظار الشحن":
         return "bg-indigo-100 text-indigo-800 border-indigo-200";
       case "مشحونة":
@@ -201,7 +210,10 @@ export function CardsTable({
                   {/* Bank */}
                   <td className="p-3.5">
                     <div className="text-slate-800 font-medium">{c.bankName}</div>
-                    <div className="text-[11px] text-slate-400">حجز: {c.bookingDate}</div>
+                    {c.accountNumber && (
+                      <div className="text-[11px] font-mono text-slate-500">حساب: {c.accountNumber}</div>
+                    )}
+                    <div className="text-[10px] text-slate-400">حجز: {c.bookingDate}</div>
                   </td>
 
                   {/* PINs */}
@@ -238,6 +250,15 @@ export function CardsTable({
                   <td className="p-3.5 text-center">
                     <div className="flex items-center justify-center gap-1.5">
                       {/* Step Advancement Buttons */}
+                      {c.status === "إدخال البيانات" && (
+                        <button
+                          onClick={() => onAdvanceStatus(c, "محجوزة")}
+                          className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold shadow-2xs"
+                        >
+                          تأكيد الحجز
+                        </button>
+                      )}
+
                       {c.status === "محجوزة" && (
                         <button
                           onClick={() => onAdvanceStatus(c, "مودعة")}
@@ -249,14 +270,14 @@ export function CardsTable({
 
                       {c.status === "مودعة" && (
                         <button
-                          onClick={() => onAdvanceStatus(c, "انتظار الشحن")}
+                          onClick={() => onAdvanceStatus(c, "انتظار شحن")}
                           className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold"
                         >
                           طلب الشحن
                         </button>
                       )}
 
-                      {c.status === "انتظار الشحن" && (
+                      {(c.status === "انتظار شحن" || c.status === "انتظار الشحن") && (
                         <button
                           onClick={() => onAdvanceStatus(c, "مشحونة")}
                           className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold"

@@ -40,7 +40,9 @@ export function CardInputForm({
   const [customerName, setCustomerName] = useState("");
   const [nationalId, setNationalId] = useState("");
   const [cblPhone, setCblPhone] = useState("");
-  const [bankName, setBankName] = useState("مصرف الأمان - بنغازي");
+  const [bankName, setBankName] = useState("مصرف التجارة والتنمية");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [iban, setIban] = useState("");
   const [depositAmount, setDepositAmount] = useState("19800");
   const [depositDate, setDepositDate] = useState("2026-10-15");
   const [bookingDate, setBookingDate] = useState("2026-10-15");
@@ -49,7 +51,7 @@ export function CardInputForm({
   const [pinDollar, setPinDollar] = useState("");
   const [expiryDate, setExpiryDate] = useState("09/29");
   const [notes, setNotes] = useState("");
-  const [status, setStatus] = useState<BankCardRecord["status"]>("محجوزة");
+  const [status, setStatus] = useState<BankCardRecord["status"]>("إدخال البيانات");
 
   // Deposit funding source
   const [depositSource, setDepositSource] = useState<string>("خزينة الكاش");
@@ -66,6 +68,8 @@ export function CardInputForm({
       setNationalId(editingCard.nationalId);
       setCblPhone(editingCard.cblPhone);
       setBankName(editingCard.bankName);
+      setAccountNumber(editingCard.accountNumber || "");
+      setIban(editingCard.iban || "");
       setDepositAmount(editingCard.depositAmount.toString());
       setDepositDate(editingCard.depositDate);
       setBookingDate(editingCard.bookingDate);
@@ -126,11 +130,13 @@ export function CardInputForm({
         expiryDate: expiryDate.trim(),
         notes: notes.trim(),
         status,
-        depositBank: status !== "محجوزة" ? bankName : undefined,
-        depositAccount: status !== "محجوزة" ? depositSource : undefined,
+        accountNumber: accountNumber.trim(),
+        iban: iban.trim(),
+        depositBank: status !== "إدخال البيانات" && status !== "محجوزة" ? bankName : undefined,
+        depositAccount: status !== "إدخال البيانات" && status !== "محجوزة" ? depositSource : undefined,
         customFields: dynamicValues,
       },
-      status !== "محجوزة",
+      status !== "إدخال البيانات" && status !== "محجوزة",
       depositSource
     );
 
@@ -144,12 +150,14 @@ export function CardInputForm({
     setCustomerName("");
     setNationalId("");
     setCblPhone("");
+    setAccountNumber("");
+    setIban("");
     setCardNumber("");
     setCardPin("");
     setPinDollar("");
     setNotes("");
     setDynamicValues({});
-    setStatus("محجوزة");
+    setStatus("إدخال البيانات");
   };
 
   const handleAddNewCustomField = () => {
@@ -266,7 +274,7 @@ export function CardInputForm({
                 required
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="اسم العميل كما في الجواز"
+                placeholder="اسم العميل الرباعي"
                 className="w-full text-sm border border-slate-300 rounded-xl pr-9 pl-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -307,27 +315,58 @@ export function CardInputForm({
           </div>
         </div>
 
-        {/* ROW 2: Bank, Deposit Amount, Deposit Date, Booking Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {/* ROW 1.5: Bank, Account Number, IBAN */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              4. المصرف والفرع *
+              4. المصرف (المصارف المعتمدة) *
             </label>
             <select
               value={bankName}
               onChange={(e) => setBankName(e.target.value)}
               className="w-full text-sm border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500"
             >
-              <option value="مصرف الأمان - بنغازي">مصرف الأمان - بنغازي</option>
-              <option value="مصرف الجمهورية - الفويهات">مصرف الجمهورية - الفويهات</option>
-              <option value="مصرف التجاري الوطني - الصابري">مصرف التجاري الوطني - الصابري</option>
-              <option value="مصرف الصحارى - الرشيد">مصرف الصحارى - الرشيد</option>
-              <option value="مصرف شمال أفريقيا - الرئيسي">مصرف شمال أفريقيا - الرئيسي</option>
-              <option value="مصرف الوحدة - المدارس">مصرف الوحدة - المدارس</option>
-              <option value="مصرف التنمية - الميناء">مصرف التنمية - الميناء</option>
+              <option value="مصرف التجارة والتنمية">مصرف التجارة والتنمية</option>
+              <option value="مصرف الوحدة">مصرف الوحدة</option>
+              <option value="مصرف التجاري الوطني">مصرف التجاري الوطني</option>
+              <option value="مصرف الأمان">مصرف الأمان</option>
+              <option value="مصرف المتوسط">مصرف المتوسط</option>
+              <option value="مصرف الجمهورية">مصرف الجمهورية</option>
+              <option value="المصرف الإسلامي">المصرف الإسلامي</option>
+              <option value="مصرف شمال أفريقيا">مصرف شمال أفريقيا</option>
+              <option value="مصرف اليقين">مصرف اليقين</option>
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              رقم حساب الزبون
+            </label>
+            <input
+              type="text"
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              placeholder="01533010488074"
+              className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              رقم الآيبان للزبون (IBAN)
+            </label>
+            <input
+              type="text"
+              value={iban}
+              onChange={(e) => setIban(e.target.value)}
+              placeholder="LY00 0000 0000 ..."
+              className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* ROW 2: Deposit Amount, Deposit Date, Booking Date */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               5. قيمة الإيداع (بالدينار د.ل)
@@ -432,12 +471,13 @@ export function CardInputForm({
               onChange={(e) => setStatus(e.target.value as BankCardRecord["status"])}
               className="w-full text-sm border border-slate-300 rounded-xl p-2.5 font-medium focus:ring-2 focus:ring-blue-500"
             >
-              <option value="محجوزة">1. محجوزة (مرحلة الحجز)</option>
-              <option value="مودعة">2. مودعة (تم الإيداع المالي)</option>
-              <option value="انتظار الشحن">3. انتظار شحن البطاقة بالدولار</option>
-              <option value="مشحونة">4. مشحونة بالدولار</option>
-              <option value="مرسلة للسحب">5. مرسلة للسحب بالخارج</option>
-              <option value="تم السحب والتصفية">6. تم السحب وتوريد الأرباح</option>
+              <option value="إدخال البيانات">1. إدخال البيانات (تسجيل أولي)</option>
+              <option value="محجوزة">2. محجوزة (تم الحجز بالمركزي)</option>
+              <option value="مودعة">3. مودعة (تم الإيداع المالي)</option>
+              <option value="انتظار شحن">4. انتظار شحن الرصيد</option>
+              <option value="مشحونة">5. مشحونة ($4,000)</option>
+              <option value="مرسلة للسحب">6. مرسلة للسحب بالخارج</option>
+              <option value="تم السحب والتصفية">7. تم السحب وتوريد الأرباح</option>
             </select>
           </div>
 
