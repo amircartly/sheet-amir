@@ -60,6 +60,7 @@ export function CardInputForm({
   const [dynamicValues, setDynamicValues] = useState<Record<string, string>>({});
   const [newFieldName, setNewFieldName] = useState("");
   const [showAddField, setShowAddField] = useState(false);
+  const [savedSuccessName, setSavedSuccessName] = useState<string | null>(null);
 
   // Populate when editing
   useEffect(() => {
@@ -115,9 +116,11 @@ export function CardInputForm({
       if (!confirmForce) return;
     }
 
+    const savedName = customerName.trim();
+
     onSaveCard(
       {
-        customerName: customerName.trim(),
+        customerName: savedName,
         nationalId: nationalId.trim(),
         cblPhone: cblPhone.trim(),
         bankName,
@@ -139,6 +142,11 @@ export function CardInputForm({
       status !== "إدخال البيانات" && status !== "محجوزة",
       depositSource
     );
+
+    setSavedSuccessName(savedName);
+    setTimeout(() => {
+      setSavedSuccessName(null);
+    }, 4500);
 
     // Reset if not editing
     if (!editingCard) {
@@ -234,6 +242,32 @@ export function CardInputForm({
             className="px-2.5 py-2 text-slate-500 text-xs hover:bg-blue-100 rounded-lg"
           >
             إغلاق
+          </button>
+        </div>
+      )}
+
+      {/* SUCCESS NOTIFICATION BANNER */}
+      {savedSuccessName && (
+        <div className="mb-5 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <div className="font-bold text-sm text-emerald-900">
+                ✓ تم حفظ بيانات الزبون بنجاح ({savedSuccessName})
+              </div>
+              <div className="text-xs text-emerald-700">
+                تم ترحيل المعاملة وتحديث السجل وحفظ كافة البيانات.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSavedSuccessName(null)}
+            className="text-emerald-700 hover:text-emerald-900 text-xs font-bold px-2 py-1 rounded-md hover:bg-emerald-100/60"
+          >
+            ✕ إغلاق
           </button>
         </div>
       )}

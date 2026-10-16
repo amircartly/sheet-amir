@@ -292,6 +292,114 @@
         display: none !important;
       }
     }
+
+    /* Success Modal & Toast Styling */
+    #successModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(5px);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .success-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 28px 24px;
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid #e2e8f0;
+      direction: rtl;
+      animation: popScale 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .success-icon-wrap {
+      width: 68px;
+      height: 68px;
+      background: #ecfdf5;
+      color: #059669;
+      border: 3px solid #6ee7b7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 900;
+      margin: 0 auto 16px auto;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+    }
+    .success-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: #065f46;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    .success-subtitle {
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .success-badge {
+      display: inline-block;
+      background: #f8fafc;
+      border: 1.5px dashed #0d9488;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: bold;
+      color: #0f766e;
+      margin-bottom: 22px;
+    }
+    .success-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-new-customer {
+      background: #059669;
+      color: #ffffff;
+      border: none;
+      border-radius: 9px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-new-customer:hover {
+      background: #047857;
+      transform: translateY(-1px);
+    }
+    .btn-close-modal {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-close-modal:hover {
+      background: #e2e8f0;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes popScale {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
@@ -494,6 +602,22 @@
     </div>
   </div>
 
+  <!-- Success Modal Dialog -->
+  <div id="successModal">
+    <div class="success-card">
+      <div class="success-icon-wrap">✓</div>
+      <div class="success-title">تم حفظ بيانات الزبون بنجاح</div>
+      <div id="successDetails" class="success-subtitle"></div>
+      <div>
+        <span id="successCodeBadge" class="success-badge"></span>
+      </div>
+      <div class="success-actions">
+        <button type="button" class="btn-new-customer" onclick="continueNewCustomer()">➕ إضافة زبون جديد</button>
+        <button type="button" class="btn-close-modal" onclick="closeDialog()">✕ إغلاق النافذة</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // 1. البحث الذكي الموحد
     function searchCustomer() {
@@ -576,15 +700,39 @@
 
       google.script.run
         .withSuccessHandler(function(res) {
-          alert('تم حفظ وترحيل البيانات بنجاح في الشيت بكود: ' + res.code);
-          clearForm();
-          google.script.host.close();
+          msg.innerText = '';
+          showSuccessDialog(card.name, res.code, card.bank, card.status);
         })
         .withFailureHandler(function(err) {
           alert('حدث خطأ أثناء الحفظ: ' + err.message);
           msg.innerText = '';
         })
         .saveCardData(card);
+    }
+
+    // عرض نافذة نجاح الحفظ الأنيقة
+    function showSuccessDialog(customerName, code, bank, status) {
+      document.getElementById('successDetails').innerHTML =
+        'تم تسجيل المعاملة بنجاح باسم: <strong>' + customerName + '</strong><br>' +
+        '<span style="font-size:12px; color:#64748b;">' + bank + ' | ' + status + '</span>';
+      document.getElementById('successCodeBadge').innerText = 'كود البطاقة: ' + code;
+
+      var modal = document.getElementById('successModal');
+      modal.style.display = 'flex';
+    }
+
+    // المتابعة لإدخال زبون جديد
+    function continueNewCustomer() {
+      document.getElementById('successModal').style.display = 'none';
+      clearForm();
+      document.getElementById('name').focus();
+    }
+
+    // إغلاق النافذة المنبثقة
+    function closeDialog() {
+      document.getElementById('successModal').style.display = 'none';
+      clearForm();
+      google.script.host.close();
     }
 
     // 3. فتح تقرير المرحلة للطباعة
