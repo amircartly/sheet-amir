@@ -120,6 +120,8 @@ export default function AmirClassicApp() {
   const [status, setStatus] = useState("1. إدخال البيانات");
   const [notes, setNotes] = useState("");
 
+  const [dbConnected, setDbConnected] = useState<boolean | null>(null);
+
   // UI / Status messages
   const [statusMsg, setStatusMsg] = useState("");
   const [isDepositLocked, setIsDepositLocked] = useState(false);
@@ -161,19 +163,47 @@ export default function AmirClassicApp() {
   const [resetCashLYD, setResetCashLYD] = useState("0");
   const [resetDollarUSD, setResetDollarUSD] = useState("0");
 
-  // Load from LocalStorage on Mount
+  // Load from MySQL API on Mount (with localStorage fallback)
   useEffect(() => {
     try {
+      const savedRole = localStorage.getItem("amir_active_role_v2");
+      if (savedRole && ROLES_MAP[savedRole]) setCurrentEmployee(ROLES_MAP[savedRole]);
+
       const savedCards = localStorage.getItem("amir_cards_v2");
       const savedVaults = localStorage.getItem("amir_vaults_v2");
-      const savedRole = localStorage.getItem("amir_active_role_v2");
-
       if (savedCards) setCards(JSON.parse(savedCards));
       if (savedVaults) setVaults(JSON.parse(savedVaults));
-      if (savedRole && ROLES_MAP[savedRole]) setCurrentEmployee(ROLES_MAP[savedRole]);
     } catch {
       // fallback
     }
+
+    // Fetch initial data from MySQL database
+    fetch("/api/cards")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.success) {
+          setDbConnected(true);
+          if (Array.isArray(data.cards) && data.cards.length > 0) {
+            setCards(data.cards);
+            localStorage.setItem("amir_cards_v2", JSON.stringify(data.cards));
+          }
+        } else {
+          setDbConnected(false);
+        }
+      })
+      .catch(() => {
+        setDbConnected(false);
+      });
+
+    fetch("/api/vaults")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.success && Array.isArray(data.vaults) && data.vaults.length > 0) {
+          setVaults(data.vaults);
+          localStorage.setItem("amir_vaults_v2", JSON.stringify(data.vaults));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Sync to LocalStorage on update
@@ -316,14 +346,15 @@ export default function AmirClassicApp() {
   };
 
   // Instant Search
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
       triggerAlert("البحث في المنظومة", "الرجاء كتابة اسم الزبون أو رقمه الوطني أو كود البطاقة للبحث.", "search");
       return;
     }
 
-    const found = cards.find(
+    // Try finding in current local cards first
+    let found = cards.find(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.nationalId.includes(q) ||
@@ -331,6 +362,26 @@ export default function AmirClassicApp() {
         c.code.toLowerCase().includes(q) ||
         (c.cardNum && c.cardNum.includes(q))
     );
+
+    // If not found in local memory, query the central MySQL database
+    if (!found) {
+      try {
+        const res = await fetch(`/api/cards?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.cards) && data.cards.length > 0) {
+            found = data.cards[0];
+            // Merge into local cards
+            setCards((prev) => {
+              const exists = prev.some((x) => x.id === found!.id || x.code === found!.code);
+              return exists ? prev : [found!, ...prev];
+            });
+          }
+        }
+      } catch {
+        // Network or DB error
+      }
+    }
 
     if (!found) {
       triggerAlert(
@@ -418,6 +469,13 @@ export default function AmirClassicApp() {
       setCards([newCard, ...cards]);
     }
 
+    // Persist to central MySQL database asynchronously
+    fetch("/api/cards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newCard),
+    }).catch((err) => console.error("Error saving card to MySQL:", err));
+
     setCardCode(assignedCode);
     evaluateProtection(newCard);
 
@@ -481,27 +539,43 @@ export default function AmirClassicApp() {
     };
 
     const exIndex = cards.findIndex((c) => c.code === targetCode);
+    let updatedCardsList: BankCard[];
     if (exIndex >= 0) {
       const list = [...cards];
       list[exIndex] = updatedCard;
+      updatedCardsList = list;
       setCards(list);
     } else {
-      setCards([updatedCard, ...cards]);
+      updatedCardsList = [updatedCard, ...cards];
+      setCards(updatedCardsList);
     }
 
-    // Update Treasury Vaults
-    setVaults((prevVaults) =>
-      prevVaults.map((v) => {
-        if (v.name === settleVault || (settleVault.includes("الكاش") && v.id === "cash_lyd")) {
-          return {
-            ...v,
-            balance: v.balance + totalSaleLYD,
-            totalIncome: v.totalIncome + totalSaleLYD,
-          };
-        }
-        return v;
-      })
-    );
+    // Persist settled card to MySQL
+    fetch("/api/cards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedCard),
+    }).catch((err) => console.error("Error saving settled card to MySQL:", err));
+
+    // Update Treasury Vaults locally and in MySQL
+    const updatedVaultsList = vaults.map((v) => {
+      if (v.name === settleVault || (settleVault.includes("الكاش") && v.id === "cash_lyd")) {
+        return {
+          ...v,
+          balance: v.balance + totalSaleLYD,
+          totalIncome: v.totalIncome + totalSaleLYD,
+        };
+      }
+      return v;
+    });
+
+    setVaults(updatedVaultsList);
+
+    fetch("/api/vaults", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sync_all", vaults: updatedVaultsList }),
+    }).catch((err) => console.error("Error syncing vaults to MySQL:", err));
 
     setStatus("7. تم السحب والتصفية");
     setShowSettleModal(false);
@@ -531,6 +605,19 @@ export default function AmirClassicApp() {
       })
     );
 
+    // Persist fund change to MySQL
+    fetch("/api/vaults", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "fund",
+        vaultId: fundVaultId,
+        amount: amt,
+        mode: fundMode,
+        performedBy: `${currentEmployee.name} (${currentEmployee.role})`,
+      }),
+    }).catch((err) => console.error("Error funding vault in MySQL:", err));
+
     setFundAmount("");
     setShowFundModal(false);
   };
@@ -557,6 +644,17 @@ export default function AmirClassicApp() {
 
     localStorage.removeItem("amir_cards_v2");
     localStorage.setItem("amir_vaults_v2", JSON.stringify(zeroedVaults));
+
+    // Persist system reset to MySQL database
+    fetch("/api/system-reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pin: resetPin,
+        initialCashLYD: cashLYD,
+        initialDollarUSD: dollarUSD,
+      }),
+    }).catch((err) => console.error("Error executing system reset in MySQL:", err));
 
     setShowResetSystemModal(false);
     setShowTreasuryModal(false);
@@ -603,7 +701,22 @@ export default function AmirClassicApp() {
             </button>
           </div>
 
-          <span className="badge-mode">{cardCode ? `تعديل المعاملة: ${cardCode}` : "تسجيل بطاقة جديدة"}</span>
+          <span
+            className="badge-mode"
+            style={{
+              background: dbConnected === true ? "#065f46" : dbConnected === false ? "#991b1b" : "#475569",
+              color: "#fff",
+            }}
+            title={
+              dbConnected === true
+                ? "متصل بقاعدة بيانات MySQL المركزية"
+                : dbConnected === false
+                ? "جاري العمل بالتخزين المحلي (قاعدة البيانات غير مفعلة محلياً أو جارٍ الاتصال)"
+                : "جاري فحص الاتصال..."
+            }
+          >
+            {dbConnected === true ? "🟢 قاعدة MySQL متصلة" : cardCode ? `تعديل المعاملة: ${cardCode}` : "تسجيل بطاقة جديدة"}
+          </span>
         </div>
       </div>
 
@@ -696,6 +809,28 @@ export default function AmirClassicApp() {
           </div>
           <button type="button" className="btn-search" onClick={handleSearch}>
             بحث فوري
+          </button>
+          <button
+            type="button"
+            className="btn-search"
+            style={{ background: "#059669", marginRight: "6px" }}
+            onClick={() => {
+              setStatusMsg("🔄 جاري مزامنة وتحديث البيانات من السيرفر...");
+              fetch("/api/cards")
+                .then((r) => r.json())
+                .then((d) => {
+                  if (d && d.success && Array.isArray(d.cards)) {
+                    setCards(d.cards);
+                    localStorage.setItem("amir_cards_v2", JSON.stringify(d.cards));
+                    setStatusMsg(`✓ تم تحديث ${d.cards.length} بطاقة من قاعدة البيانات`);
+                    setTimeout(() => setStatusMsg(""), 3000);
+                  }
+                })
+                .catch(() => setStatusMsg("خطأ في الاتصال بقاعدة البيانات"));
+            }}
+            title="تحديث البيانات فورياً من قاعدة بيانات السيرفر"
+          >
+            🔄 تحديث
           </button>
         </div>
 
