@@ -1387,6 +1387,18 @@
       if (profileMap[pin]) {
         currentEmployee = profileMap[pin];
         applyRoleRestrictions(currentEmployee.role);
+        
+        // إعادة تقييم الحماية فوراً إذا كانت هناك معاملة مفتوحة
+        var curCode = document.getElementById('cardCode').value;
+        if (curCode) {
+          evaluateProtectionRules({
+            status: document.getElementById('status').value,
+            depositAmt: document.getElementById('depositAmt').value,
+            depositDate: document.getElementById('depositDate').value,
+            bookingDate: document.getElementById('bookingDate').value
+          });
+        }
+        
         closeLoginModal();
         return;
       }
@@ -1398,6 +1410,17 @@
             if (res && res.success) {
               currentEmployee = res.user;
               applyRoleRestrictions(currentEmployee.role);
+              
+              var curCode = document.getElementById('cardCode').value;
+              if (curCode) {
+                evaluateProtectionRules({
+                  status: document.getElementById('status').value,
+                  depositAmt: document.getElementById('depositAmt').value,
+                  depositDate: document.getElementById('depositDate').value,
+                  bookingDate: document.getElementById('bookingDate').value
+                });
+              }
+
               closeLoginModal();
             } else {
               errBox.innerText = res.message || 'رمز الدخول غير صحيح';
@@ -1532,6 +1555,10 @@
           .withSuccessHandler(function(res) {
             msg.innerText = '';
             showSuccessDialog(card.name, res.code, card.bank, card.status, res.totalCost);
+
+            // تحديث بطاقة التعديل ورسالة الحماية فوراً بالقيم الجديدة
+            card.code = res.code;
+            evaluateProtectionRules(card);
           })
           .withFailureHandler(function(err) {
             alert('حدث خطأ أثناء الحفظ: ' + err.message);
@@ -1672,6 +1699,7 @@
 
       var warnBanner = document.getElementById('protectionWarningBanner');
       var warnings = [];
+      var isAdmin = (currentEmployee.role === 'مدير عام');
 
       // 1. حماية الإيداع المزدوج (إذا كانت المعاملة مودعة مسبقاً)
       if (isDeposited && depositAmt > 0) {
@@ -1681,16 +1709,42 @@
         var depDateTag = document.getElementById('depositDateLockTag');
         var btnUnlockDep = document.getElementById('btnUnlockDeposit');
 
-        depInput.readOnly = true;
-        depInput.classList.add('field-locked-danger');
-        depDateInput.readOnly = true;
-        depDateInput.classList.add('field-locked-danger');
+        if (isAdmin) {
+          // المدير العام: الخانات مفتوحة له بالكامل للتعديل بحرية دون قفل
+          depInput.readOnly = false;
+          depInput.classList.remove('field-locked-danger');
+          depDateInput.readOnly = false;
+          depDateInput.classList.remove('field-locked-danger');
 
-        if (depTag) depTag.style.display = 'inline-block';
-        if (depDateTag) depDateTag.style.display = 'inline-block';
-        if (btnUnlockDep) btnUnlockDep.style.display = 'inline-block';
+          if (depTag) {
+            depTag.style.display = 'inline-block';
+            depTag.innerText = '👑 مودعة سابقاً (صلاحية تعديل للمدير)';
+            depTag.style.background = '#ede9fe';
+            depTag.style.color = '#6d28d9';
+            depTag.style.borderColor = '#ddd6fe';
+          }
+          if (btnUnlockDep) btnUnlockDep.style.display = 'none';
 
-        warnings.push('⛔ <strong>تحذير مالي:</strong> هذه المعاملة <u>مودعة بالفعل مسبقاً</u> بقيمة (' + depositAmt.toLocaleString('en-US') + ' د.ل)' + (depositDate ? ' بتاريخ ' + depositDate : '') + '. تم قفل خانات الإيداع باللون الأحمر لمنع التكرار.');
+          warnings.push('⛔ <strong>تنبيه إداري:</strong> هذه المعاملة <u>مودعة مسبقاً</u> بقيمة (' + depositAmt.toLocaleString('en-US') + ' د.ل)' + (depositDate ? ' بتاريخ ' + depositDate : '') + '. <span style="color:#7c3aed;">وبصفتك المدير العام؛ كافة الخانات مفتوحة لك مباشرة للتعديل.</span>');
+        } else {
+          // للموظفين العاديين: قفل صارم باللون الأحمر لمنع التكرار
+          depInput.readOnly = true;
+          depInput.classList.add('field-locked-danger');
+          depDateInput.readOnly = true;
+          depDateInput.classList.add('field-locked-danger');
+
+          if (depTag) {
+            depTag.style.display = 'inline-block';
+            depTag.innerText = '🔒 مودعة سابقاً (للقراءة فقط)';
+            depTag.style.background = '#fee2e2';
+            depTag.style.color = '#b91c1c';
+            depTag.style.borderColor = '#fca5a5';
+          }
+          if (depDateTag) depDateTag.style.display = 'inline-block';
+          if (btnUnlockDep) btnUnlockDep.style.display = 'inline-block';
+
+          warnings.push('⛔ <strong>تحذير مالي:</strong> هذه المعاملة <u>مودعة بالفعل مسبقاً</u> بقيمة (' + depositAmt.toLocaleString('en-US') + ' د.ل)' + (depositDate ? ' بتاريخ ' + depositDate : '') + '. تم قفل خانات الإيداع باللون الأحمر لمنع التكرار.');
+        }
       }
 
       // 2. حماية الحجز المزدوج (إذا كانت المعاملة محجوزة مسبقاً)
@@ -1699,18 +1753,47 @@
         var bookingTag = document.getElementById('bookingDateLockTag');
         var btnUnlockBooking = document.getElementById('btnUnlockBooking');
 
-        bookingInput.readOnly = true;
-        bookingInput.classList.add('field-locked-danger');
+        if (isAdmin) {
+          bookingInput.readOnly = false;
+          bookingInput.classList.remove('field-locked-danger');
 
-        if (bookingTag) bookingTag.style.display = 'inline-block';
-        if (btnUnlockBooking) btnUnlockBooking.style.display = 'inline-block';
+          if (bookingTag) {
+            bookingTag.style.display = 'inline-block';
+            bookingTag.innerText = '👑 محجوزة (صلاحية تعديل للمدير)';
+            bookingTag.style.background = '#ede9fe';
+            bookingTag.style.color = '#6d28d9';
+            bookingTag.style.borderColor = '#ddd6fe';
+          }
+          if (btnUnlockBooking) btnUnlockBooking.style.display = 'none';
 
-        warnings.push('⚠️ <strong>تنبيه:</strong> هذا الزبون <u>محجوز له بالمنظومة مسبقاً</u> بتاريخ (' + bookingDate + '). تم قفل خانة تاريخ الحجز.');
+          warnings.push('⚠️ <strong>تنبيه:</strong> هذا الزبون محجوز بالمنظومة مسبقاً بتاريخ (' + bookingDate + '). خانة الحجز مفتوحة لك للتعديل.');
+        } else {
+          bookingInput.readOnly = true;
+          bookingInput.classList.add('field-locked-danger');
+
+          if (bookingTag) {
+            bookingTag.style.display = 'inline-block';
+            bookingTag.innerText = '🔒 محجوزة مسبقاً (للقراءة فقط)';
+            bookingTag.style.background = '#fee2e2';
+            bookingTag.style.color = '#b91c1c';
+            bookingTag.style.borderColor = '#fca5a5';
+          }
+          if (btnUnlockBooking) btnUnlockBooking.style.display = 'inline-block';
+
+          warnings.push('⚠️ <strong>تنبيه:</strong> هذا الزبون <u>محجوز له بالمنظومة مسبقاً</u> بتاريخ (' + bookingDate + '). تم قفل خانة تاريخ الحجز.');
+        }
       }
 
       if (warnings.length > 0) {
         warnBanner.style.display = 'block';
-        warnBanner.className = isDeposited ? 'warning-banner-bar warning-banner-danger' : 'warning-banner-bar warning-banner-warning';
+        if (isAdmin) {
+          warnBanner.className = 'warning-banner-bar';
+          warnBanner.style.background = '#f5f3ff';
+          warnBanner.style.borderColor = '#ddd6fe';
+          warnBanner.style.color = '#5b21b6';
+        } else {
+          warnBanner.className = isDeposited ? 'warning-banner-bar warning-banner-danger' : 'warning-banner-bar warning-banner-warning';
+        }
         warnBanner.innerHTML = warnings.join('<br>');
       }
     }
