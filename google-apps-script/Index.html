@@ -297,6 +297,61 @@
       font-style: italic;
     }
 
+    /* Protection styles for booked/deposited locked fields */
+    .field-locked-danger {
+      background-color: #fef2f2 !important;
+      border: 2px solid #ef4444 !important;
+      color: #991b1b !important;
+      font-weight: 700 !important;
+      cursor: not-allowed !important;
+    }
+    .field-locked-danger:focus {
+      border-color: #dc2626 !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    }
+    .lock-label-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+      margin-right: 6px;
+    }
+    .btn-admin-override {
+      background: none;
+      border: none;
+      color: #dc2626;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+      float: left;
+    }
+    .warning-banner-bar {
+      display: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.6;
+      border: 1px solid transparent;
+      animation: popIn 0.25s ease-out;
+    }
+    .warning-banner-danger {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
+    }
+    .warning-banner-warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+
     /* Actions */
     .actions {
       display: flex;
@@ -695,6 +750,9 @@
     </div>
   </div>
 
+  <!-- Smart Status / Protection Warning Banner -->
+  <div id="protectionWarningBanner" class="warning-banner-bar"></div>
+
   <!-- Card Form -->
   <form id="cardForm">
     <input type="hidden" id="cardCode">
@@ -752,8 +810,12 @@
         <!-- Cost fields: Deposit + Card Price = Total Cost -->
         <div class="row-2">
           <div class="form-group">
-            <label>قيمة الإيداع بالمصرف (د.ل) *</label>
-            <input type="number" id="depositAmt" value="0" placeholder="0" oninput="calculateTotalCost()">
+            <label>
+              قيمة الإيداع بالمصرف (د.ل) *
+              <span id="depositLockTag" class="lock-label-tag" style="display:none;">🔒 مودعة سابقاً (للقراءة فقط)</span>
+              <button type="button" id="btnUnlockDeposit" class="btn-admin-override" style="display:none;" onclick="requestUnlockDeposit()">🔓 تعديل استثنائي</button>
+            </label>
+            <input type="number" id="depositAmt" value="0" placeholder="0" oninput="onDepositInputChanged()">
           </div>
           <div class="form-group">
             <label style="color:#0f766e;">سعر شراء البطاقة (د.ل) *</label>
@@ -767,8 +829,11 @@
             <input type="text" id="totalCostDisplay" readonly value="0 د.ل" style="background:#eff6ff; font-weight:bold; color:#1e40af;">
           </div>
           <div class="form-group">
-            <label>تاريخ الإيداع</label>
-            <input type="date" id="depositDate">
+            <label>
+              تاريخ الإيداع
+              <span id="depositDateLockTag" class="lock-label-tag" style="display:none;">🔒 مسجل سابقاً</span>
+            </label>
+            <input type="date" id="depositDate" onchange="onDepositDateChanged()">
           </div>
         </div>
       </div>
@@ -786,8 +851,12 @@
             <input type="text" id="cardNum" maxlength="19" placeholder="4263 9811 0021 8191">
           </div>
           <div class="form-group">
-            <label>تاريخ الحجز بالمنظومة</label>
-            <input type="date" id="bookingDate">
+            <label>
+              تاريخ الحجز بالمنظومة
+              <span id="bookingDateLockTag" class="lock-label-tag" style="display:none;">🔒 محجوزة مسبقاً (للقراءة فقط)</span>
+              <button type="button" id="btnUnlockBooking" class="btn-admin-override" style="display:none;" onclick="requestUnlockBooking()">🔓 تعديل</button>
+            </label>
+            <input type="date" id="bookingDate" onchange="onBookingDateChanged()">
           </div>
         </div>
 
@@ -1401,6 +1470,9 @@
             document.getElementById('status').value = card.status || '1. إدخال البيانات';
             document.getElementById('notes').value = card.notes || '';
 
+            // تطبيق فحص الحماية الذكية من تكرار الحجز والإيداع
+            evaluateProtectionRules(card);
+
             msg.innerText = '✓ تم استرجاع بيانات: ' + card.name;
             msg.style.color = '#15803d';
           })
@@ -1419,6 +1491,18 @@
         return;
       }
 
+      var depositAmtVal = parseFloat(document.getElementById('depositAmt').value) || 0;
+      var statusVal = document.getElementById('status').value;
+
+      // فحص ذكي قبل الحفظ: في حالة نسيان اختيار المرحلة وكان هناك إيداع
+      if (depositAmtVal > 0 && (statusVal === '1. إدخال البيانات' || statusVal === '2. محجوزة')) {
+        var autoUpgrade = confirm('💡 تم رصد قيمة إيداع مسجلة بمبلغ (' + depositAmtVal.toLocaleString('en-US') + ' د.ل) بينما المرحلة الحالية هي (' + statusVal + ').\n\nهل تريد ترقية المرحلة تلقائياً إلى (3. مودعة) قبل الحفظ؟');
+        if (autoUpgrade) {
+          statusVal = '3. مودعة';
+          document.getElementById('status').value = statusVal;
+        }
+      }
+
       var card = {
         code: document.getElementById('cardCode').value,
         name: name,
@@ -1435,7 +1519,7 @@
         pinLocal: document.getElementById('pinLocal').value === '••••' ? '' : document.getElementById('pinLocal').value.trim(),
         pinDollar: document.getElementById('pinDollar').value === '••••' ? '' : document.getElementById('pinDollar').value.trim(),
         expiry: document.getElementById('expiry').value.trim(),
-        status: document.getElementById('status').value,
+        status: statusVal,
         notes: document.getElementById('notes').value.trim()
       };
 
@@ -1528,8 +1612,204 @@
       document.getElementById('depositAmt').value = '0';
       document.getElementById('cardPrice').value = '0';
       document.getElementById('expiry').value = '09/29';
+      
+      resetProtectionStyles();
       calculateTotalCost();
       applyRoleRestrictions(currentEmployee.role);
+    }
+
+    // =========================================================================
+    // منظومة الحماية الذكية وتفادي تكرار الحجز والإيداع والترقية التلقائية
+    // =========================================================================
+
+    function resetProtectionStyles() {
+      var warnBanner = document.getElementById('protectionWarningBanner');
+      if (warnBanner) {
+        warnBanner.style.display = 'none';
+        warnBanner.innerHTML = '';
+        warnBanner.className = 'warning-banner-bar';
+      }
+
+      var bookingInput = document.getElementById('bookingDate');
+      var bookingTag = document.getElementById('bookingDateLockTag');
+      var btnUnlockBooking = document.getElementById('btnUnlockBooking');
+      if (bookingInput) {
+        bookingInput.readOnly = false;
+        bookingInput.classList.remove('field-locked-danger');
+      }
+      if (bookingTag) bookingTag.style.display = 'none';
+      if (btnUnlockBooking) btnUnlockBooking.style.display = 'none';
+
+      var depInput = document.getElementById('depositAmt');
+      var depDateInput = document.getElementById('depositDate');
+      var depTag = document.getElementById('depositLockTag');
+      var depDateTag = document.getElementById('depositDateLockTag');
+      var btnUnlockDep = document.getElementById('btnUnlockDeposit');
+
+      if (depInput) {
+        depInput.readOnly = false;
+        depInput.classList.remove('field-locked-danger');
+      }
+      if (depDateInput) {
+        depDateInput.readOnly = false;
+        depDateInput.classList.remove('field-locked-danger');
+      }
+      if (depTag) depTag.style.display = 'none';
+      if (depDateTag) depDateTag.style.display = 'none';
+      if (btnUnlockDep) btnUnlockDep.style.display = 'none';
+    }
+
+    function evaluateProtectionRules(card) {
+      resetProtectionStyles();
+
+      var status = card.status || '1. إدخال البيانات';
+      var depositAmt = parseFloat(card.depositAmt) || 0;
+      var depositDate = card.depositDate || '';
+      var bookingDate = card.bookingDate || '';
+
+      var isBooked = (status.indexOf('2. محجوزة') !== -1 || (bookingDate && status !== '1. إدخال البيانات'));
+      var isDeposited = (status.indexOf('3. مودعة') !== -1 || status.indexOf('4.') !== -1 || status.indexOf('5.') !== -1 || status.indexOf('6.') !== -1 || status.indexOf('7.') !== -1 || depositAmt > 0);
+
+      var warnBanner = document.getElementById('protectionWarningBanner');
+      var warnings = [];
+
+      // 1. حماية الإيداع المزدوج (إذا كانت المعاملة مودعة مسبقاً)
+      if (isDeposited && depositAmt > 0) {
+        var depInput = document.getElementById('depositAmt');
+        var depDateInput = document.getElementById('depositDate');
+        var depTag = document.getElementById('depositLockTag');
+        var depDateTag = document.getElementById('depositDateLockTag');
+        var btnUnlockDep = document.getElementById('btnUnlockDeposit');
+
+        depInput.readOnly = true;
+        depInput.classList.add('field-locked-danger');
+        depDateInput.readOnly = true;
+        depDateInput.classList.add('field-locked-danger');
+
+        if (depTag) depTag.style.display = 'inline-block';
+        if (depDateTag) depDateTag.style.display = 'inline-block';
+        if (btnUnlockDep) btnUnlockDep.style.display = 'inline-block';
+
+        warnings.push('⛔ <strong>تحذير مالي:</strong> هذه المعاملة <u>مودعة بالفعل مسبقاً</u> بقيمة (' + depositAmt.toLocaleString('en-US') + ' د.ل)' + (depositDate ? ' بتاريخ ' + depositDate : '') + '. تم قفل خانات الإيداع باللون الأحمر لمنع التكرار.');
+      }
+
+      // 2. حماية الحجز المزدوج (إذا كانت المعاملة محجوزة مسبقاً)
+      if (isBooked && bookingDate) {
+        var bookingInput = document.getElementById('bookingDate');
+        var bookingTag = document.getElementById('bookingDateLockTag');
+        var btnUnlockBooking = document.getElementById('btnUnlockBooking');
+
+        bookingInput.readOnly = true;
+        bookingInput.classList.add('field-locked-danger');
+
+        if (bookingTag) bookingTag.style.display = 'inline-block';
+        if (btnUnlockBooking) btnUnlockBooking.style.display = 'inline-block';
+
+        warnings.push('⚠️ <strong>تنبيه:</strong> هذا الزبون <u>محجوز له بالمنظومة مسبقاً</u> بتاريخ (' + bookingDate + '). تم قفل خانة تاريخ الحجز.');
+      }
+
+      if (warnings.length > 0) {
+        warnBanner.style.display = 'block';
+        warnBanner.className = isDeposited ? 'warning-banner-bar warning-banner-danger' : 'warning-banner-bar warning-banner-warning';
+        warnBanner.innerHTML = warnings.join('<br>');
+      }
+    }
+
+    // الترقية التلقائية عند إدخال قيمة الإيداع
+    function onDepositInputChanged() {
+      calculateTotalCost();
+      var depVal = parseFloat(document.getElementById('depositAmt').value) || 0;
+      var statusSelect = document.getElementById('status');
+      var curStatus = statusSelect.value;
+
+      // إذا كان الزبون في مرحلة الإدخال أو محجوزة وكتب قيمة إيداع، نرقيه فوراً لمودعة
+      if (depVal > 0 && (curStatus === '1. إدخال البيانات' || curStatus === '2. محجوزة')) {
+        // نتحقق إن كان خيار 3. مودعة متاح في القائمة الحالية، أو نضيفه
+        ensureOptionExists(statusSelect, '3. مودعة');
+        statusSelect.value = '3. مودعة';
+        flashAutoPromotionBadge('تمت الترقية التلقائية إلى (3. مودعة) لوجود قيمة إيداع');
+      }
+    }
+
+    // الترقية التلقائية عند تحديد تاريخ الإيداع
+    function onDepositDateChanged() {
+      var depDate = document.getElementById('depositDate').value;
+      var statusSelect = document.getElementById('status');
+      var curStatus = statusSelect.value;
+
+      if (depDate && (curStatus === '1. إدخال البيانات' || curStatus === '2. محجوزة')) {
+        ensureOptionExists(statusSelect, '3. مودعة');
+        statusSelect.value = '3. مودعة';
+        flashAutoPromotionBadge('تمت الترقية التلقائية إلى (3. مودعة)');
+      }
+    }
+
+    // الترقية التلقائية عند اختيار تاريخ الحجز
+    function onBookingDateChanged() {
+      var bookDate = document.getElementById('bookingDate').value;
+      var statusSelect = document.getElementById('status');
+      var curStatus = statusSelect.value;
+
+      if (bookDate && curStatus === '1. إدخال البيانات') {
+        ensureOptionExists(statusSelect, '2. محجوزة');
+        statusSelect.value = '2. محجوزة';
+        flashAutoPromotionBadge('تمت الترقية التلقائية إلى (2. محجوزة) لتسجيل الحجز');
+      }
+    }
+
+    function ensureOptionExists(selectElement, val) {
+      for (var i = 0; i < selectElement.options.length; i++) {
+        if (selectElement.options[i].value === val) return;
+      }
+      var opt = document.createElement('option');
+      opt.value = val;
+      opt.innerText = val;
+      selectElement.appendChild(opt);
+    }
+
+    function flashAutoPromotionBadge(text) {
+      var msg = document.getElementById('statusMsg');
+      if (msg) {
+        msg.innerText = '⚡ ' + text;
+        msg.style.color = '#059669';
+        setTimeout(function() {
+          if (msg.innerText.indexOf('⚡') !== -1) msg.innerText = '';
+        }, 4000);
+      }
+    }
+
+    // فك القفل الاستثنائي (طلب رمز المدير أو مسؤول الخزينة)
+    function requestUnlockDeposit() {
+      var pin = prompt('⚠️ لإجراء تعديل استثنائي على قيمة الإيداع، الرجاء إدخال رمز PIN المصرح له (المدير 9999 أو مسؤول الخزينة 2222):');
+      if (pin === '9999' || pin === '2222') {
+        var depInput = document.getElementById('depositAmt');
+        var depDateInput = document.getElementById('depositDate');
+        depInput.readOnly = false;
+        depInput.classList.remove('field-locked-danger');
+        depDateInput.readOnly = false;
+        depDateInput.classList.remove('field-locked-danger');
+
+        var depTag = document.getElementById('depositLockTag');
+        if (depTag) depTag.innerText = '🔓 تم فتح القفل استثنائياً للتعديل';
+        alert('تم فتح خانات الإيداع للتعديل بنجاح.');
+      } else if (pin !== null) {
+        alert('رمز PIN غير صحيح. عملية التعديل مقفلة لحماية البيانات.');
+      }
+    }
+
+    function requestUnlockBooking() {
+      var pin = prompt('⚠️ لتعديل تاريخ الحجز المسجل، الرجاء إدخال رمز PIN المصرح له:');
+      if (pin === '9999' || pin === '1111') {
+        var bookingInput = document.getElementById('bookingDate');
+        bookingInput.readOnly = false;
+        bookingInput.classList.remove('field-locked-danger');
+
+        var bookingTag = document.getElementById('bookingDateLockTag');
+        if (bookingTag) bookingTag.innerText = '🔓 تم فك القفل للتعديل';
+        alert('تم فتح تاريخ الحجز للتعديل بنجاح.');
+      } else if (pin !== null) {
+        alert('رمز PIN غير صحيح.');
+      }
     }
   </script>
 </body>

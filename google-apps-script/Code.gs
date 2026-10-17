@@ -373,13 +373,28 @@ function cleanText(txt) {
     .replace(/[\s\-_/\\,.]/g, '');
 }
 
-// 11. تنسيق التاريخ بصيغة yyyy-MM-dd
+// 11. تنسيق التاريخ بصيغة yyyy-MM-dd وتنسيق الصلاحية MM/YY
 function formatDateValue(val) {
   if (!val) return '';
   if (val instanceof Date) {
     return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
   return val.toString();
+}
+
+function formatExpiryValue(val) {
+  if (!val) return '09/29';
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, Session.getScriptTimeZone(), 'MM/yy');
+  }
+  var str = val.toString().trim();
+  if (str.indexOf('GMT') !== -1 || str.indexOf(':') !== -1) {
+    var parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      return Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'MM/yy');
+    }
+  }
+  return str;
 }
 
 // 12. جلب كافة البطاقات للربط السحابي
@@ -410,7 +425,7 @@ function getAllCards() {
       cardNumber: hasCostCols ? (row[12] ? row[12].toString() : '') : (row[10] ? row[10].toString() : ''),
       pinLocal: hasCostCols ? (row[13] ? row[13].toString() : '') : '',
       pinDollar: hasCostCols ? (row[14] ? row[14].toString() : '') : '',
-      expiryDate: hasCostCols ? (row[15] ? row[15].toString() : '09/29') : '09/29',
+      expiryDate: hasCostCols ? formatExpiryValue(row[15]) : formatExpiryValue(row[13]),
       status: hasCostCols ? (row[16] ? row[16].toString() : '1. إدخال البيانات') : '1. إدخال البيانات',
       notes: hasCostCols ? (row[17] ? row[17].toString() : '') : ''
     });
@@ -451,7 +466,7 @@ function searchCardData(query) {
       var cardNum = hasCostCols ? (row[12] ? row[12].toString() : '') : (row[10] ? row[10].toString() : '');
       var pinLocal = hasCostCols ? (row[13] ? row[13].toString() : '') : (row[11] ? row[11].toString() : '');
       var pinDollar = hasCostCols ? (row[14] ? row[14].toString() : '') : (row[12] ? row[12].toString() : '');
-      var expiry = hasCostCols ? (row[15] ? row[15].toString() : '09/29') : (row[13] ? row[13].toString() : '09/29');
+      var expiry = hasCostCols ? formatExpiryValue(row[15]) : formatExpiryValue(row[13]);
       var status = hasCostCols ? (row[16] ? row[16].toString() : '1. إدخال البيانات') : (row[14] ? row[14].toString() : '1. إدخال البيانات');
       var notes = hasCostCols ? (row[17] ? row[17].toString() : '') : (row[15] ? row[15].toString() : '');
 
@@ -538,6 +553,11 @@ function saveCardData(card, employeeName) {
   
   if (isNew) {
     recordMovement(code, card.name, 'تسجيل معاملة جديدة', card.bank, deposit, 'د.ل', employeeName || 'موظف الاستقبال', 'تم إدخال الزبون مبدئياً');
+  } else {
+    // إذا تغيرت المرحلة إلى مودعة وكان هناك إيداع مسجل
+    if (card.status === '3. مودعة' && deposit > 0) {
+      recordMovement(code, card.name, 'تأكيد إيداع بالمصرف', card.bank, deposit, 'د.ل', employeeName || 'مسؤول الإيداع والخزينة', 'تم تأكيد إيداع المعاملة بالمصرف');
+    }
   }
 
   return {
