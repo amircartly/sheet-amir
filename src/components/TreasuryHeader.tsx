@@ -15,6 +15,7 @@ export function TreasuryHeader({ treasury, onUpdateTreasury, totalProfitLYD }: P
   const [showAddFundModal, setShowAddFundModal] = useState(false);
   const [fundAccount, setFundAccount] = useState<string>("cash");
   const [fundAmount, setFundAmount] = useState<string>("");
+  const [operationType, setOperationType] = useState<"add" | "set">("add");
 
   const totalBankBalances = treasury.bankAccounts.reduce((acc, b) => acc + b.balanceLYD, 0);
   const totalLiquidLYD = treasury.cashVaultLYD + totalBankBalances;
@@ -22,23 +23,25 @@ export function TreasuryHeader({ treasury, onUpdateTreasury, totalProfitLYD }: P
   const handleAddFunds = (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(fundAmount);
-    if (!amt || amt <= 0) return;
+    if (isNaN(amt) || amt < 0) return;
 
     if (fundAccount === "cash") {
       onUpdateTreasury({
         ...treasury,
-        cashVaultLYD: treasury.cashVaultLYD + amt,
+        cashVaultLYD: operationType === "set" ? amt : treasury.cashVaultLYD + amt,
       });
     } else if (fundAccount === "dollar") {
       onUpdateTreasury({
         ...treasury,
-        dollarVaultUSD: treasury.dollarVaultUSD + amt,
+        dollarVaultUSD: operationType === "set" ? amt : treasury.dollarVaultUSD + amt,
       });
     } else {
       onUpdateTreasury({
         ...treasury,
         bankAccounts: treasury.bankAccounts.map((b) =>
-          b.id === fundAccount ? { ...b, balanceLYD: b.balanceLYD + amt } : b
+          b.id === fundAccount
+            ? { ...b, balanceLYD: operationType === "set" ? amt : b.balanceLYD + amt }
+            : b
         ),
       });
     }
@@ -167,6 +170,31 @@ export function TreasuryHeader({ treasury, onUpdateTreasury, totalProfitLYD }: P
               إضافة مبالغ تمويلية جديدة إلى خزينة الكاش، أو أحد المصارف، أو خزينة الدولار
             </p>
             <form onSubmit={handleAddFunds} className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setOperationType("add")}
+                  className={`py-1.5 text-xs font-bold rounded-md transition ${
+                    operationType === "add"
+                      ? "bg-white text-emerald-700 shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  ➕ إضافة رصيد (تغذية)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOperationType("set")}
+                  className={`py-1.5 text-xs font-bold rounded-md transition ${
+                    operationType === "set"
+                      ? "bg-white text-blue-700 shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  ✏️ ضبط الرصيد الفعلي
+                </button>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   اختر الخزينة / الحساب
@@ -188,15 +216,16 @@ export function TreasuryHeader({ treasury, onUpdateTreasury, totalProfitLYD }: P
 
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
-                  المبلغ المراد إضافته
+                  {operationType === "set" ? "الرصيد الفعلي الجديد" : "المبلغ المراد إضافته"}
                 </label>
                 <input
                   type="number"
                   step="any"
+                  min="0"
                   value={fundAmount}
                   onChange={(e) => setFundAmount(e.target.value)}
                   required
-                  placeholder="مثال: 50000"
+                  placeholder={operationType === "set" ? "مثال: 0 أو 50000" : "مثال: 50000"}
                   className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono"
                 />
               </div>
@@ -213,7 +242,7 @@ export function TreasuryHeader({ treasury, onUpdateTreasury, totalProfitLYD }: P
                   type="submit"
                   className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg shadow-xs"
                 >
-                  تأكيد الإضافة
+                  {operationType === "set" ? "تأكيد ضبط الرصيد" : "تأكيد الإضافة"}
                 </button>
               </div>
             </form>

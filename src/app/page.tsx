@@ -6,9 +6,9 @@ import { INITIAL_CARDS, INITIAL_TREASURY } from "@/data/initialData";
 import { TreasuryHeader } from "@/components/TreasuryHeader";
 import { CardInputForm } from "@/components/CardInputForm";
 import { CardsTable } from "@/components/CardsTable";
-import { SendToWithdrawalModal, SettleAndSellModal } from "@/components/WorkflowModals";
+import { SendToWithdrawalModal, SettleAndSellModal, ResetSystemModal } from "@/components/WorkflowModals";
 import { GoogleDriveSyncModal } from "@/components/GoogleDriveSyncModal";
-import { Cloud, RotateCcw, Sparkles } from "lucide-react";
+import { Cloud, RotateCcw, Trash2, Sparkles } from "lucide-react";
 
 export default function HomePage() {
   const [cards, setCards] = useState<BankCardRecord[]>([]);
@@ -20,6 +20,7 @@ export default function HomePage() {
   const [cardToSend, setCardToSend] = useState<BankCardRecord | null>(null);
   const [cardToSettle, setCardToSettle] = useState<BankCardRecord | null>(null);
   const [showDriveModal, setShowDriveModal] = useState<boolean>(false);
+  const [showResetModal, setShowResetModal] = useState<boolean>(false);
 
   // Load from LocalStorage on mount
   useEffect(() => {
@@ -28,13 +29,21 @@ export default function HomePage() {
       const savedTreasury = localStorage.getItem("amir_treasury");
       const savedFields = localStorage.getItem("amir_custom_fields");
 
-      if (savedCards) setCards(JSON.parse(savedCards));
-      else setCards(INITIAL_CARDS);
+      if (savedCards !== null) {
+        setCards(JSON.parse(savedCards));
+      } else {
+        setCards(INITIAL_CARDS);
+      }
 
-      if (savedTreasury) setTreasury(JSON.parse(savedTreasury));
-      else setTreasury(INITIAL_TREASURY);
+      if (savedTreasury !== null) {
+        setTreasury(JSON.parse(savedTreasury));
+      } else {
+        setTreasury(INITIAL_TREASURY);
+      }
 
-      if (savedFields) setCustomFields(JSON.parse(savedFields));
+      if (savedFields !== null) {
+        setCustomFields(JSON.parse(savedFields));
+      }
     } catch (e) {
       setCards(INITIAL_CARDS);
       setTreasury(INITIAL_TREASURY);
@@ -43,9 +52,7 @@ export default function HomePage() {
 
   // Sync to LocalStorage on update
   useEffect(() => {
-    if (cards.length > 0) {
-      localStorage.setItem("amir_bank_cards", JSON.stringify(cards));
-    }
+    localStorage.setItem("amir_bank_cards", JSON.stringify(cards));
   }, [cards]);
 
   useEffect(() => {
@@ -212,10 +219,22 @@ export default function HomePage() {
       setCards(INITIAL_CARDS);
       setTreasury(INITIAL_TREASURY);
       setCustomFields([]);
-      localStorage.removeItem("amir_bank_cards");
-      localStorage.removeItem("amir_treasury");
+      localStorage.setItem("amir_bank_cards", JSON.stringify([]));
+      localStorage.setItem("amir_treasury", JSON.stringify(INITIAL_TREASURY));
       localStorage.removeItem("amir_custom_fields");
     }
+  };
+
+  const handleConfirmFullReset = (newTreasury: TreasuryState) => {
+    setCards([]);
+    setTreasury(newTreasury);
+    setCustomFields([]);
+    setEditingCard(null);
+    setCardToSend(null);
+    setCardToSettle(null);
+    localStorage.setItem("amir_bank_cards", JSON.stringify([]));
+    localStorage.setItem("amir_treasury", JSON.stringify(newTreasury));
+    localStorage.removeItem("amir_custom_fields");
   };
 
   return (
@@ -248,12 +267,12 @@ export default function HomePage() {
             دليل Google Drive و Sheets
           </button>
           <button
-            onClick={handleResetDemoData}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs sm:text-sm font-medium transition"
-            title="إعادة تعيين البيانات التجريبية"
+            onClick={() => setShowResetModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-700 hover:text-white border border-red-200 hover:border-red-600 text-xs sm:text-sm font-bold shadow-2xs transition"
+            title="تصفير المنظومة نهائياً للبدء الفعلي"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            استعادة النموذج
+            <Trash2 className="w-4 h-4 text-red-600 group-hover:text-white" />
+            تصفير المنظومة للبدء الفعلي
           </button>
         </div>
       </div>
@@ -318,6 +337,14 @@ export default function HomePage() {
         isOpen={showDriveModal}
         onClose={() => setShowDriveModal(false)}
         cards={cards}
+      />
+
+      {/* Full Reset System Modal */}
+      <ResetSystemModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirmReset={handleConfirmFullReset}
+        currentTreasury={treasury}
       />
     </main>
   );
