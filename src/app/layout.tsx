@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./amir-classic.css";
 
 export const metadata: Metadata = {
   title: "منظومة بطاقات مصرفية (AMIR) - إدارة الحجوزات والخزائن",
