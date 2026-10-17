@@ -145,18 +145,47 @@
       border-radius: 10px;
       border: 1px solid #cbd5e1;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      align-items: center;
     }
-    .search-box input {
+    .search-input-wrap {
+      position: relative;
       flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    .search-input-wrap input {
+      width: 100%;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      padding: 6px 10px;
+      padding: 6px 30px 6px 10px;
       font-size: 13px;
       outline: none;
       transition: border-color 0.15s;
     }
-    .search-box input:focus {
+    .search-input-wrap input:focus {
       border-color: #2563eb;
+    }
+    .btn-search-clear {
+      position: absolute;
+      left: 8px;
+      background: #e2e8f0;
+      color: #64748b;
+      border: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.15s;
+    }
+    .btn-search-clear:hover {
+      background: #cbd5e1;
+      color: #0f172a;
     }
     .btn-search {
       background: #2563eb;
@@ -168,6 +197,7 @@
       font-weight: bold;
       cursor: pointer;
       transition: background 0.15s;
+      white-space: nowrap;
     }
     .btn-search:hover {
       background: #1d4ed8;
@@ -411,7 +441,7 @@
     }
 
     /* Modal Overlays */
-    #reportModal, #successModal, #loginModal, #settleModal, #treasuryModal {
+    #reportModal, #successModal, #loginModal, #settleModal, #treasuryModal, #customAlertModal {
       display: none;
       position: fixed;
       top: 0;
@@ -544,9 +574,42 @@
       width: 100%;
       margin-bottom: 8px;
       box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);
+      transition: all 0.2s;
     }
-    .btn-confirm-settle:hover {
+    .btn-confirm-settle:hover:not(:disabled) {
       background: #047857;
+    }
+    .btn-confirm-settle:disabled {
+      background: #94a3b8 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      opacity: 0.65;
+    }
+    .alert-icon-wrap {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: bold;
+      margin: 0 auto 12px auto;
+    }
+    .alert-icon-warning {
+      background: #fef3c7;
+      color: #b45309;
+      border: 3px solid #fde68a;
+    }
+    .alert-icon-info {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 3px solid #bfdbfe;
+    }
+    .alert-icon-danger {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 3px solid #fca5a5;
     }
     .btn-secondary-action {
       background: #f1f5f9;
@@ -730,7 +793,10 @@
   <!-- Search & Reports Tool Bar -->
   <div class="controls-bar">
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة..." onkeypress="if(event.key==='Enter'){event.preventDefault();searchCustomer();}">
+      <div class="search-input-wrap">
+        <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة..." oninput="onSearchInputChange()" onkeypress="if(event.key==='Enter'){event.preventDefault();searchCustomer();}">
+        <button type="button" id="btnSearchClear" class="btn-search-clear" onclick="clearSearchField()" title="مسح خانة البحث">✕</button>
+      </div>
       <button type="button" class="btn-search" onclick="searchCustomer()">بحث فوري</button>
     </div>
 
@@ -920,11 +986,22 @@
       <div class="row-2">
         <div class="form-group">
           <label>المبلغ المسحوب بالدولار ($) *</label>
-          <input type="number" id="settleUsdAmount" value="4000" oninput="calculateSettlement()">
+          <input type="number" id="settleUsdAmount" value="4000" oninput="calculateSettlement(); validateSettleForm();">
         </div>
         <div class="form-group">
           <label style="color:#b45309;">سعر بيع الدولار بالسوق الموازي (د.ل) *</label>
-          <input type="number" step="0.01" id="settleExchangeRate" value="10.00" oninput="calculateSettlement()">
+          <input type="number" step="0.01" id="settleExchangeRate" value="10.00" oninput="calculateSettlement(); validateSettleForm();">
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="form-group">
+          <label style="color:#0f172a; font-weight:bold;">الرقم الإشاري (Slip / Ref No) *</label>
+          <input type="text" id="settleRefSlipNo" placeholder="مثال: REF-9942 / إشعار رقم 204" oninput="validateSettleForm()">
+        </div>
+        <div class="form-group">
+          <label style="color:#0f172a; font-weight:bold;">مكان ودولة السحب (كتابة حرة) *</label>
+          <input type="text" id="settleWithdrawLocation" placeholder="مثال: تركيا - إسطنبول، دبي، تونس..." oninput="validateSettleForm()">
         </div>
       </div>
 
@@ -942,7 +1019,7 @@
 
       <div class="form-group">
         <label style="color:#065f46; font-weight:bold;">الخزينة المستلمة لتوريد المبلغ بالدينار *</label>
-        <select id="settleDestinationVault">
+        <select id="settleDestinationVault" onchange="validateSettleForm()">
           <option value="خزينة الكاش بالدينار">خزينة الكاش بالدينار (السيولة النقدية بمقر المكتب)</option>
           <option value="حساب مصرف التجارة والتنمية">حساب مصرف التجارة والتنمية</option>
           <option value="حساب مصرف الوحدة">حساب مصرف الوحدة</option>
@@ -956,9 +1033,13 @@
         </select>
       </div>
 
+      <div id="settleValidationNotice" style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:6px 12px; border-radius:8px; font-size:11px; margin-bottom:10px; text-align:center;">
+        🔒 زر التأكيد مقفل: يرجى كتابة الرقم الإشاري ومكان السحب ومبلغ وسعر البيع للتفعيل
+      </div>
+
       <div id="settleErrorMsg" style="color:#dc2626; font-size:12px; font-weight:bold; margin-bottom:8px; text-align:center;"></div>
 
-      <button type="button" class="btn-confirm-settle" onclick="confirmSettleAndSell()">
+      <button type="button" id="btnConfirmSettle" class="btn-confirm-settle" onclick="confirmSettleAndSell()" disabled>
         🚀 تأكيد التصفية وتوريد المبلغ فوراً للخزينة
       </button>
       <button type="button" class="btn-secondary-action" onclick="closeSettleModal()">
@@ -1078,6 +1159,16 @@
         <button type="button" class="btn-new-customer" onclick="continueNewCustomer()">➕ إضافة زبون جديد</button>
         <button type="button" class="btn-close-modal" onclick="closeDialog()">✕ إغلاق النافذة</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Custom Alert / Notification Modal -->
+  <div id="customAlertModal">
+    <div class="modal-card">
+      <div id="customAlertIcon" class="alert-icon-wrap alert-icon-warning">🔍</div>
+      <div id="customAlertTitle" class="modal-title">تنبيه البحث</div>
+      <div id="customAlertMessage" class="modal-subtitle" style="font-size:13px; color:#334155; line-height:1.6; margin-bottom:16px;"></div>
+      <button type="button" class="btn-primary-action" onclick="closeCustomAlert()" style="margin-bottom:0;">حسناً، فهمت</button>
     </div>
   </div>
 
@@ -1218,7 +1309,7 @@
       var code = document.getElementById('cardCode').value.trim();
 
       if (!name) {
-        alert('الرجاء اختيار أو إدخال بيانات الزبون أولاً قبل التصفية.');
+        showCustomAlert('بيانات التصفية', 'الرجاء اختيار أو إدخال بيانات الزبون أولاً قبل فتح نافذة التصفية.', 'warning');
         return;
       }
 
@@ -1226,7 +1317,18 @@
       document.getElementById('settleCardCode').innerText = code || 'بطاقة جديدة';
       document.getElementById('settleErrorMsg').innerText = '';
 
+      // إعطاء قيم افتراضية ذكية إذا كانت الخانات فارغة
+      var slipInput = document.getElementById('settleRefSlipNo');
+      if (slipInput && !slipInput.value.trim()) {
+        slipInput.value = 'REF-' + Math.floor(1000 + Math.random() * 9000);
+      }
+      var locInput = document.getElementById('settleWithdrawLocation');
+      if (locInput && !locInput.value.trim()) {
+        locInput.value = 'تركيا - إسطنبول';
+      }
+
       calculateSettlement();
+      validateSettleForm();
       document.getElementById('settleModal').style.display = 'flex';
     }
 
@@ -1249,6 +1351,38 @@
       document.getElementById('settleNetProfitDisplay').innerText = netProfit.toLocaleString('en-US') + ' د.ل';
     }
 
+    // التحقق من اكتمال حقول التصفية وقفل/فتح زر التأكيد
+    function validateSettleForm() {
+      var usdAmount = parseFloat(document.getElementById('settleUsdAmount').value) || 0;
+      var rate = parseFloat(document.getElementById('settleExchangeRate').value) || 0;
+      var refSlipNo = (document.getElementById('settleRefSlipNo').value || '').trim();
+      var location = (document.getElementById('settleWithdrawLocation').value || '').trim();
+      var vault = (document.getElementById('settleDestinationVault').value || '').trim();
+
+      var btn = document.getElementById('btnConfirmSettle');
+      var notice = document.getElementById('settleValidationNotice');
+
+      var isValid = (usdAmount > 0 && rate > 0 && refSlipNo.length > 0 && location.length > 0 && vault.length > 0);
+
+      if (btn) {
+        btn.disabled = !isValid;
+      }
+
+      if (notice) {
+        if (isValid) {
+          notice.style.display = 'none';
+        } else {
+          notice.style.display = 'block';
+          var missing = [];
+          if (usdAmount <= 0) missing.push('مبلغ الدولار');
+          if (rate <= 0) missing.push('سعر الصرف');
+          if (refSlipNo.length === 0) missing.push('الرقم الإشاري');
+          if (location.length === 0) missing.push('مكان ودولة السحب');
+          notice.innerHTML = '🔒 زر التأكيد مقفل: يرجى كتابة (' + missing.join('، ') + ') لتفعيل التصفية';
+        }
+      }
+    }
+
     // تأكيد التصفية وبيع الدولار وتوريد القيمة للخزينة
     function confirmSettleAndSell() {
       var name = document.getElementById('name').value.trim();
@@ -1256,13 +1390,16 @@
       var usdAmount = parseFloat(document.getElementById('settleUsdAmount').value) || 0;
       var rate = parseFloat(document.getElementById('settleExchangeRate').value) || 0;
       var destinationVault = document.getElementById('settleDestinationVault').value;
+      var refSlipNo = (document.getElementById('settleRefSlipNo').value || '').trim();
+      var withdrawLocation = (document.getElementById('settleWithdrawLocation').value || '').trim();
 
       var dep = parseFloat(document.getElementById('depositAmt').value) || 0;
       var cardPrice = parseFloat(document.getElementById('cardPrice').value) || 0;
       var totalCost = dep + cardPrice;
 
-      if (usdAmount <= 0 || rate <= 0) {
-        document.getElementById('settleErrorMsg').innerText = 'الرجاء إدخال مبلغ الدولار وسعر البيع بشكل صحيح';
+      if (usdAmount <= 0 || rate <= 0 || !refSlipNo || !withdrawLocation) {
+        document.getElementById('settleErrorMsg').innerText = 'الرجاء إكمال كافة الحقول المطلوبة (مبلغ الدولار، سعر البيع، الرقم الإشاري، ومكان السحب)';
+        validateSettleForm();
         return;
       }
 
@@ -1272,7 +1409,9 @@
         usdAmount: usdAmount,
         rate: rate,
         totalCost: totalCost,
-        destinationVault: destinationVault
+        destinationVault: destinationVault,
+        refSlipNo: refSlipNo,
+        withdrawLocation: withdrawLocation
       };
 
       var errBox = document.getElementById('settleErrorMsg');
@@ -1288,7 +1427,7 @@
             showSuccessDialog(
               res.name,
               res.code,
-              'تم بيع $' + res.usdAmount.toLocaleString('en-US') + ' بسعر ' + res.rate + ' د.ل وتوريد ' + res.totalSaleLYD.toLocaleString('en-US') + ' د.ل إلى (' + res.destinationVault + ')',
+              'تم بيع $' + res.usdAmount.toLocaleString('en-US') + ' بسعر ' + res.rate + ' د.ل وتوريد ' + res.totalSaleLYD.toLocaleString('en-US') + ' د.ل إلى (' + res.destinationVault + ') | رقم إشاري: ' + res.refSlipNo + ' | موقع السحب: ' + res.withdrawLocation,
               'صافي الأرباح المحققة: ' + res.netProfitLYD.toLocaleString('en-US') + ' د.ل',
               res.totalCost
             );
@@ -1300,7 +1439,15 @@
           .settleAndSellCard(settleData, currentEmployee.name);
       } else {
         closeSettleModal();
-        alert('تمت التصفية بنجاح في البيئة التجريبية!');
+        var totalSaleLYD = usdAmount * rate;
+        var netProfitLYD = totalSaleLYD - totalCost;
+        showSuccessDialog(
+          name,
+          code || 'CRD-TEST',
+          'تم بيع $' + usdAmount.toLocaleString('en-US') + ' بسعر ' + rate + ' د.ل وتوريد ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل إلى (' + destinationVault + ') | إشاري: ' + refSlipNo + ' | مكان: ' + withdrawLocation,
+          'صافي الأرباح المحققة: ' + netProfitLYD.toLocaleString('en-US') + ' د.ل',
+          totalCost
+        );
       }
     }
 
@@ -1442,10 +1589,68 @@
       document.getElementById('totalCostDisplay').value = total.toLocaleString('en-US') + ' د.ل';
     }
 
+    function escapeHtml(text) {
+      if (!text) return '';
+      var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // نافذة التنبيهات المخصصة والأنيقة بديلة لـ alert() الافتراضية
+    function showCustomAlert(title, message, type) {
+      var modal = document.getElementById('customAlertModal');
+      var titleEl = document.getElementById('customAlertTitle');
+      var msgEl = document.getElementById('customAlertMessage');
+      var iconEl = document.getElementById('customAlertIcon');
+
+      titleEl.innerText = title || 'تنبيه المنظومة';
+      msgEl.innerHTML = message || '';
+
+      if (type === 'danger' || type === 'error') {
+        iconEl.className = 'alert-icon-wrap alert-icon-danger';
+        iconEl.innerText = '❌';
+      } else if (type === 'info') {
+        iconEl.className = 'alert-icon-wrap alert-icon-info';
+        iconEl.innerText = 'ℹ️';
+      } else if (type === 'search') {
+        iconEl.className = 'alert-icon-wrap alert-icon-warning';
+        iconEl.innerText = '🔍';
+      } else {
+        iconEl.className = 'alert-icon-wrap alert-icon-warning';
+        iconEl.innerText = '⚠️';
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closeCustomAlert() {
+      document.getElementById('customAlertModal').style.display = 'none';
+    }
+
+    // إدارة زر المسح السريع في صندوق البحث
+    function onSearchInputChange() {
+      var val = document.getElementById('searchInput').value;
+      var btnClear = document.getElementById('btnSearchClear');
+      if (btnClear) {
+        btnClear.style.display = val.trim().length > 0 ? 'inline-flex' : 'none';
+      }
+    }
+
+    function clearSearchField() {
+      var input = document.getElementById('searchInput');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      var btnClear = document.getElementById('btnSearchClear');
+      if (btnClear) btnClear.style.display = 'none';
+      var msg = document.getElementById('statusMsg');
+      if (msg && msg.innerText.indexOf('استرجاع') === -1) msg.innerText = '';
+    }
+
     function searchCustomer() {
       var q = document.getElementById('searchInput').value.trim();
       if (!q) {
-        alert('الرجاء كتابة اسم الزبون أو رقمه الوطني أو كود البطاقة للبحث.');
+        showCustomAlert('البحث في المنظومة', 'الرجاء كتابة اسم الزبون أو رقمه الوطني أو كود البطاقة للبحث.', 'search');
         return;
       }
 
@@ -1457,7 +1662,11 @@
         google.script.run
           .withSuccessHandler(function(card) {
             if (!card || !card.found) {
-              alert('لم يتم العثور على أي زبون مطابق لكلمة: ' + q);
+              showCustomAlert(
+                'لم يتم العثور على أي زبون',
+                'لم يتم العثور على أي نتائج مطابقة لكلمة: <strong style="color:#0f172a;">' + escapeHtml(q) + '</strong><br><br><span style="font-size:12px; color:#64748b;">يرجى التأكد من كتابة الاسم الرباعي أو الرقم الوطني المربوط بشكل صحيح، أو البدء بإضافة زبون جديد.</span>',
+                'search'
+              );
               msg.innerText = '';
               return;
             }
@@ -1500,7 +1709,7 @@
             msg.style.color = '#15803d';
           })
           .withFailureHandler(function(err) {
-            alert('حدث خطأ أثناء البحث: ' + err.message);
+            showCustomAlert('خطأ في البحث', 'حدث خطأ أثناء البحث: ' + err.message, 'danger');
             msg.innerText = '';
           })
           .searchCardData(q);
@@ -1510,7 +1719,7 @@
     function sendData() {
       var name = document.getElementById('name').value.trim();
       if (!name) {
-        alert('الرجاء كتابة اسم الزبون الرباعي.');
+        showCustomAlert('حقل مطلوب', 'الرجاء كتابة اسم الزبون الرباعي أولاً قبل الحفظ.', 'warning');
         return;
       }
 
@@ -1561,7 +1770,7 @@
             evaluateProtectionRules(card);
           })
           .withFailureHandler(function(err) {
-            alert('حدث خطأ أثناء الحفظ: ' + err.message);
+            showCustomAlert('خطأ أثناء الحفظ', 'حدث خطأ أثناء الحفظ: ' + err.message, 'danger');
             msg.innerText = '';
           })
           .saveCardData(card, currentEmployee.name);
@@ -1640,6 +1849,7 @@
       document.getElementById('cardPrice').value = '0';
       document.getElementById('expiry').value = '09/29';
       
+      clearSearchField();
       resetProtectionStyles();
       calculateTotalCost();
       applyRoleRestrictions(currentEmployee.role);

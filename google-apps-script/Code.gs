@@ -582,6 +582,8 @@ function settleAndSellCard(settleData, employeeName) {
   var rate = parseFloat(settleData.rate) || 10;
   var totalSaleLYD = usdAmount * rate;
   var destinationVault = settleData.destinationVault || 'خزينة الكاش بالدينار';
+  var refSlipNo = settleData.refSlipNo ? settleData.refSlipNo.toString().trim() : '';
+  var withdrawLocation = settleData.withdrawLocation ? settleData.withdrawLocation.toString().trim() : '';
   
   var targetRow = -1;
   var deposit = 0;
@@ -603,7 +605,13 @@ function settleAndSellCard(settleData, employeeName) {
   if (totalCost === 0 && settleData.totalCost) totalCost = parseFloat(settleData.totalCost);
   var netProfitLYD = totalSaleLYD - totalCost;
   
-  var noteText = 'تصفية وبيع: سحب $' + usdAmount.toLocaleString('en-US') + ' وبيع بسعر ' + rate + ' د.ل بإجمالي ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل وتوريد لـ (' + destinationVault + ') | صافي الربح: ' + netProfitLYD.toLocaleString('en-US') + ' د.ل';
+  var noteParts = [
+    'تصفية وبيع: سحب $' + usdAmount.toLocaleString('en-US') + ' وبيع بسعر ' + rate + ' د.ل بإجمالي ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل وتوريد لـ (' + destinationVault + ')',
+    refSlipNo ? ('رقم إشاري: ' + refSlipNo) : '',
+    withdrawLocation ? ('مكان السحب: ' + withdrawLocation) : '',
+    'صافي الربح: ' + netProfitLYD.toLocaleString('en-US') + ' د.ل'
+  ].filter(function(p) { return p !== ''; });
+  var noteText = noteParts.join(' | ');
   
   // أ. تحديث مرحلة البطاقة وملاحظاتها في بيانات_ماستر
   if (targetRow !== -1) {
@@ -616,15 +624,24 @@ function settleAndSellCard(settleData, employeeName) {
   updateTreasuryBalance(destinationVault, totalSaleLYD, true);
   
   // ج. تسجيل قيد محاسبي دقيق في ورقة حركة_الخزائن
+  var movementDetails = [
+    'بيع $' + usdAmount.toLocaleString('en-US') + ' بسعر ' + rate + ' د.ل',
+    'إجمالي البيع: ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل',
+    refSlipNo ? ('رقم إشاري: ' + refSlipNo) : '',
+    withdrawLocation ? ('مكان السحب: ' + withdrawLocation) : '',
+    'تكلفة البطاقة: ' + totalCost.toLocaleString('en-US') + ' د.ل',
+    'صافي الأرباح: ' + netProfitLYD.toLocaleString('en-US') + ' د.ل'
+  ].filter(function(p) { return p !== ''; }).join(' | ');
+
   var moveRes = recordMovement(
     code,
     name,
-    'تصفية وبيع دولار ($' + usdAmount.toLocaleString('en-US') + ')',
+    'تصفية وبيع دولار ($' + usdAmount.toLocaleString('en-US') + ')' + (refSlipNo ? ' - إشاري: ' + refSlipNo : ''),
     destinationVault,
     totalSaleLYD,
     'د.ل',
     employeeName || 'المسؤول المالي ومكتب الخارج',
-    'بيع $' + usdAmount.toLocaleString('en-US') + ' بسعر ' + rate + ' د.ل | إجمالي البيع: ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل | تكلفة البطاقة: ' + totalCost.toLocaleString('en-US') + ' د.ل | صافي الأرباح: ' + netProfitLYD.toLocaleString('en-US') + ' د.ل'
+    movementDetails
   );
   
   return {
@@ -637,6 +654,8 @@ function settleAndSellCard(settleData, employeeName) {
     totalCost: totalCost,
     netProfitLYD: netProfitLYD,
     destinationVault: destinationVault,
+    refSlipNo: refSlipNo,
+    withdrawLocation: withdrawLocation,
     refNo: moveRes ? moveRes.refNo : ''
   };
 }

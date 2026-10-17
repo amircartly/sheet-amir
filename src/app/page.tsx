@@ -150,7 +150,9 @@ export default function HomePage() {
   const handleConfirmSettleAndSell = (
     usdAmount: number,
     rate: number,
-    destinationVault: string
+    destinationVault: string,
+    refSlipNo?: string,
+    withdrawalLocation?: string
   ) => {
     if (!cardToSettle) return;
     const totalSaleLYD = usdAmount * rate;
@@ -164,6 +166,8 @@ export default function HomePage() {
           ? {
               ...c,
               status: "تم السحب والتصفية",
+              refNumber: refSlipNo || c.refNumber,
+              withdrawalOffice: withdrawalLocation || c.withdrawalOffice,
               usdSoldAmount: usdAmount,
               exchangeRateLYD: rate,
               saleDestinationVault: destinationVault,

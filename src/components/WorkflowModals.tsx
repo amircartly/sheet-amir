@@ -106,7 +106,9 @@ interface SettleAndSellProps {
   onConfirm: (
     usdAmount: number,
     rate: number,
-    destinationVault: string
+    destinationVault: string,
+    refSlipNo?: string,
+    withdrawalLocation?: string
   ) => void;
 }
 
@@ -120,6 +122,8 @@ export function SettleAndSellModal({
   const [usdAmount, setUsdAmount] = useState((card.withdrawalAmountUSD || 4000).toString());
   const [exchangeRate, setExchangeRate] = useState("7.32");
   const [destinationVault, setDestinationVault] = useState("خزينة الكاش");
+  const [refSlipNo, setRefSlipNo] = useState(card.refNumber || `REF-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [withdrawalLocation, setWithdrawalLocation] = useState(card.withdrawalOffice || "تركيا - إسطنبول");
 
   if (!isOpen) return null;
 
@@ -127,6 +131,13 @@ export function SettleAndSellModal({
   const totalCost = card.depositAmount + cardPrice;
   const totalSaleLYD = (parseFloat(usdAmount) || 0) * (parseFloat(exchangeRate) || 0);
   const netProfitLYD = totalSaleLYD - totalCost;
+
+  const isFormValid =
+    (parseFloat(usdAmount) || 0) > 0 &&
+    (parseFloat(exchangeRate) || 0) > 0 &&
+    refSlipNo.trim().length > 0 &&
+    withdrawalLocation.trim().length > 0 &&
+    destinationVault.trim().length > 0;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -142,10 +153,13 @@ export function SettleAndSellModal({
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (!isFormValid) return;
             onConfirm(
               parseFloat(usdAmount) || 0,
               parseFloat(exchangeRate) || 0,
-              destinationVault
+              destinationVault,
+              refSlipNo.trim(),
+              withdrawalLocation.trim()
             );
           }}
           className="space-y-4"
@@ -185,7 +199,7 @@ export function SettleAndSellModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                كمية الدولار المسحوبة ($)
+                كمية الدولار المسحوبة ($) *
               </label>
               <input
                 type="number"
@@ -198,7 +212,7 @@ export function SettleAndSellModal({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                سعر بيع الدولار (د.ل)
+                سعر بيع الدولار (د.ل) *
               </label>
               <input
                 type="number"
@@ -212,9 +226,39 @@ export function SettleAndSellModal({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                الرقم الإشاري (Slip / Ref No) *
+              </label>
+              <input
+                type="text"
+                required
+                value={refSlipNo}
+                onChange={(e) => setRefSlipNo(e.target.value)}
+                placeholder="مثال: REF-9921"
+                className="w-full text-sm border border-slate-300 rounded-lg p-2.5 font-mono focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                مكان ودولة السحب *
+              </label>
+              <input
+                type="text"
+                required
+                value={withdrawalLocation}
+                onChange={(e) => setWithdrawalLocation(e.target.value)}
+                placeholder="تركيا - إسطنبول، دبي..."
+                className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              خزينة توريد حصيلة البيع (دينار ليبي)
+              خزينة توريد حصيلة البيع (دينار ليبي) *
             </label>
             <select
               value={destinationVault}
@@ -266,6 +310,12 @@ export function SettleAndSellModal({
             </div>
           </div>
 
+          {!isFormValid && (
+            <div className="p-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg text-center">
+              🔒 زر التأكيد مقفل: يرجى كتابة الرقم الإشاري ومكان السحب وقيمة وسعر البيع لتفعيل التصفية
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
@@ -276,7 +326,8 @@ export function SettleAndSellModal({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-sm"
+              disabled={!isFormValid}
+              className="px-4 py-2 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-lg shadow-sm transition-all"
             >
               تأكيد البيع والتوريد للخزينة
             </button>
