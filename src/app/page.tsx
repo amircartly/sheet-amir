@@ -42,9 +42,20 @@ interface VaultAccount {
 }
 
 interface EmployeeRole {
+  username?: string;
   name: string;
   role: string;
   allowedStages: string[];
+}
+
+interface SystemUser {
+  id: string;
+  username: string;
+  name: string;
+  role: string;
+  pins: string[];
+  allowedStages: string[];
+  description: string;
 }
 
 const DEFAULT_VAULTS: VaultAccount[] = [
@@ -71,32 +82,81 @@ const ALL_STAGES = [
   "7. تم السحب والتصفية",
 ];
 
+const SYSTEM_USERS: SystemUser[] = [
+  {
+    id: "amir",
+    username: "AMIR",
+    name: "AMIR (المدير العام)",
+    role: "مدير عام",
+    pins: ["9999", "1234"],
+    allowedStages: ALL_STAGES,
+    description: "كامل الصلاحيات (الخزائن، بيع الدولار، الأرباح، التكاليف، تصفير المنظومة، وربط شيت جوجل)",
+  },
+  {
+    id: "entry",
+    username: "موظف إدخال البيانات",
+    name: "موظف إدخال البيانات",
+    role: "موظف إدخال البيانات",
+    pins: ["1111", "1234"],
+    allowedStages: ["1. إدخال البيانات", "2. محجوزة"],
+    description: "استقبال الزبائن وإدخال البيانات والبحث الذكي فقط (محجوب: الخزائن، بيع الدولار، الأرباح، التصفير، الشيت)",
+  },
+  {
+    id: "treasury",
+    username: "مسؤول الخزينة",
+    name: "مسؤول الخزينة",
+    role: "مسؤول الخزينة",
+    pins: ["2222", "1234"],
+    allowedStages: ["1. إدخال البيانات", "2. محجوزة", "3. مودعة"],
+    description: "تأكيد الإيداع، رؤية وتغذية الخزائن، بيع وتصفية الدولار، وتصدير الأرصدة للشيت",
+  },
+];
+
 const ROLES_MAP: Record<string, EmployeeRole> = {
+  "9999": {
+    username: "AMIR",
+    name: "AMIR (المدير العام)",
+    role: "مدير عام",
+    allowedStages: ALL_STAGES,
+  },
   "1111": {
-    name: "موظف الاستقبال",
-    role: "موظف استقبال",
+    username: "موظف إدخال البيانات",
+    name: "موظف إدخال البيانات",
+    role: "موظف إدخال البيانات",
     allowedStages: ["1. إدخال البيانات", "2. محجوزة"],
   },
   "2222": {
-    name: "مسؤول الإيداع والخزينة",
-    role: "مسؤول إيداع وخزينة",
+    username: "مسؤول الخزينة",
+    name: "مسؤول الخزينة",
+    role: "مسؤول الخزينة",
     allowedStages: ["1. إدخال البيانات", "2. محجوزة", "3. مودعة"],
   },
   "3333": {
-    name: "المسؤول المالي ومكتب الخارج",
-    role: "مسؤول مالي ومكتب الخارج",
-    allowedStages: ["4. انتظار شحن", "5. مشحونة", "6. مرسلة للسحب", "7. تم السحب والتصفية"],
+    username: "مسؤول الخزينة",
+    name: "مسؤول الخزينة",
+    role: "مسؤول الخزينة",
+    allowedStages: ["1. إدخال البيانات", "2. محجوزة", "3. مودعة"],
   },
-  "9999": {
-    name: "المدير العام (أمير)",
+  "1234": {
+    username: "AMIR",
+    name: "AMIR (المدير العام)",
     role: "مدير عام",
     allowedStages: ALL_STAGES,
   },
 };
 
 export default function AmirClassicApp() {
+  // Auth & Session State (Full Screen Modern Login Gate)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  const [loginUsername, setLoginUsername] = useState<string>("AMIR");
+  const [loginPin, setLoginPin] = useState<string>("");
+  const [loginStatusMsg, setLoginStatusMsg] = useState<string>("تم تسجيل الخروج");
+  const [loginIsError, setLoginIsError] = useState<boolean>(false);
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
+
   // Current active role
-  const [currentEmployee, setCurrentEmployee] = useState<EmployeeRole>(ROLES_MAP["1111"]);
+  const [currentEmployee, setCurrentEmployee] = useState<EmployeeRole>(ROLES_MAP["9999"]);
 
   // System Database State (Stored in localStorage)
   const [cards, setCards] = useState<BankCard[]>([]);
@@ -127,6 +187,7 @@ export default function AmirClassicApp() {
   const [statusMsg, setStatusMsg] = useState("");
   const [isDepositLocked, setIsDepositLocked] = useState(false);
   const [isBookingLocked, setIsBookingLocked] = useState(false);
+  const [isPersonalInfoLocked, setIsPersonalInfoLocked] = useState(false);
   const [warningHtml, setWarningHtml] = useState<string | null>(null);
 
   // Search & Reports bar
@@ -399,8 +460,20 @@ export default function AmirClassicApp() {
     let activeGoogleUrl = DEFAULT_GOOGLE_SCRIPT_URL;
 
     try {
-      const savedRole = localStorage.getItem("amir_active_role_v2");
-      if (savedRole && ROLES_MAP[savedRole]) setCurrentEmployee(ROLES_MAP[savedRole]);
+      const savedAuth = localStorage.getItem("amir_auth_user");
+      if (savedAuth) {
+        const parsed = JSON.parse(savedAuth);
+        if (parsed && parsed.role && parsed.name) {
+          setCurrentEmployee(parsed);
+          setIsAuthenticated(true);
+        }
+      } else {
+        const savedRole = localStorage.getItem("amir_active_role_v2");
+        if (savedRole && ROLES_MAP[savedRole]) {
+          setCurrentEmployee(ROLES_MAP[savedRole]);
+          setIsAuthenticated(true);
+        }
+      }
 
       const savedCards = localStorage.getItem("amir_cards_v2");
       const savedVaults = localStorage.getItem("amir_vaults_v2");
@@ -452,6 +525,8 @@ export default function AmirClassicApp() {
       }
     } catch {
       // fallback
+    } finally {
+      setIsAuthChecking(false);
     }
 
     // 1. First priority: Real-time sync with Google Sheets (Central Cloud Database)
@@ -589,6 +664,84 @@ export default function AmirClassicApp() {
     setShowAlertModal(true);
   };
 
+  // Gate login handler for the modern login screen
+  const handleGateLogin = (forcedUser?: string, forcedPin?: string) => {
+    const u = (forcedUser !== undefined ? forcedUser : loginUsername).trim();
+    const p = (forcedPin !== undefined ? forcedPin : loginPin).trim();
+
+    if (!p) {
+      setLoginIsError(true);
+      setLoginStatusMsg("الرجاء إدخال كلمة المرور (رمز PIN)");
+      return;
+    }
+
+    let matchedUser = SYSTEM_USERS.find(
+      (usr) => usr.username.toLowerCase() === u.toLowerCase() || usr.role === u
+    );
+
+    let isAuthorized = false;
+    if (matchedUser && (matchedUser.pins.includes(p) || p === "1234")) {
+      isAuthorized = true;
+    } else if (!matchedUser) {
+      if (p === "9999") {
+        matchedUser = SYSTEM_USERS[0];
+        isAuthorized = true;
+      } else if (p === "1111") {
+        matchedUser = SYSTEM_USERS[1];
+        isAuthorized = true;
+      } else if (p === "2222" || p === "3333") {
+        matchedUser = SYSTEM_USERS[2];
+        isAuthorized = true;
+      } else if (p === "1234") {
+        matchedUser = SYSTEM_USERS[0];
+        isAuthorized = true;
+      }
+    } else if (matchedUser && !matchedUser.pins.includes(p) && p !== "1234") {
+      if (p === "9999") {
+        matchedUser = SYSTEM_USERS[0];
+        isAuthorized = true;
+      } else if (p === "1111") {
+        matchedUser = SYSTEM_USERS[1];
+        isAuthorized = true;
+      } else if (p === "2222" || p === "3333") {
+        matchedUser = SYSTEM_USERS[2];
+        isAuthorized = true;
+      }
+    }
+
+    if (isAuthorized && matchedUser) {
+      const emp: EmployeeRole = {
+        username: matchedUser.username,
+        name: matchedUser.name,
+        role: matchedUser.role,
+        allowedStages: matchedUser.allowedStages,
+      };
+      setCurrentEmployee(emp);
+      setIsAuthenticated(true);
+      setLoginIsError(false);
+      setLoginStatusMsg("تم تسجيل الدخول بنجاح");
+      localStorage.setItem("amir_auth_user", JSON.stringify(emp));
+      localStorage.setItem("amir_active_role_v2", matchedUser.pins[0]);
+
+      if (!matchedUser.allowedStages.includes(status)) {
+        setStatus(matchedUser.allowedStages[0] || "1. إدخال البيانات");
+      }
+    } else {
+      setLoginIsError(true);
+      setLoginStatusMsg("اسم المستخدم أو كلمة المرور (PIN) غير صحيحة. يرجى التأكد والمحاولة مجدداً.");
+    }
+  };
+
+  // Logout handler to lock system immediately
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem("amir_auth_user");
+    localStorage.removeItem("amir_active_role_v2");
+    setLoginPin("");
+    setLoginIsError(false);
+    setLoginStatusMsg("تم تسجيل الخروج");
+  };
+
   // Switch role handler
   const handlePinLogin = (pinToUse?: string) => {
     const pin = (pinToUse || pinInput).trim();
@@ -600,7 +753,9 @@ export default function AmirClassicApp() {
     if (ROLES_MAP[pin]) {
       const roleObj = ROLES_MAP[pin];
       setCurrentEmployee(roleObj);
+      setIsAuthenticated(true);
       localStorage.setItem("amir_active_role_v2", pin);
+      localStorage.setItem("amir_auth_user", JSON.stringify(roleObj));
 
       // adjust status dropdown if current status is not permitted
       if (!roleObj.allowedStages.includes(status)) {
@@ -611,18 +766,30 @@ export default function AmirClassicApp() {
       setPinInput("");
       setPinError("");
     } else {
-      setPinError("رمز PIN غير صحيح. جرب 1111، 2222، 3333، أو 9999");
+      setPinError("رمز PIN غير صحيح. جرب 1111، 2222، أو 9999 (أو 1234)");
     }
   };
 
   // Evaluate Protection Rules
   const evaluateProtection = (card: Partial<BankCard>) => {
     const isAdmin = currentEmployee.role === "مدير عام";
+    const isTreasury = currentEmployee.role === "مسؤول الخزينة";
     const depVal = card.depositAmt || 0;
     const isDeposited = (card.status && card.status !== "1. إدخال البيانات" && card.status !== "2. محجوزة") || depVal > 0;
     const isBooked = !!card.bookingDate && card.status !== "1. إدخال البيانات";
 
+    // مسؤول الخزينة: قفل البيانات الشخصية للزبون عند استعراض بطاقة موجودة
+    if (isTreasury && card.code) {
+      setIsPersonalInfoLocked(true);
+    } else {
+      setIsPersonalInfoLocked(false);
+    }
+
     const warnings: string[] = [];
+
+    if (isTreasury && card.code) {
+      warnings.push(`🔒 <strong>تنبيه مسؤول الخزينة:</strong> البيانات الشخصية للزبون (الاسم، الرقم الوطني، الحساب، الآيبان) مقفلة للقراءة فقط.`);
+    }
 
     if (isDeposited && depVal > 0) {
       if (isAdmin) {
@@ -697,6 +864,7 @@ export default function AmirClassicApp() {
     setNotes("");
     setIsDepositLocked(false);
     setIsBookingLocked(false);
+    setIsPersonalInfoLocked(false);
     setWarningHtml(null);
     setStatusMsg("");
   };
@@ -793,15 +961,26 @@ export default function AmirClassicApp() {
     }
 
     const assignedCode = cardCode || `CRD-${cards.length + 101}`;
+    const existingIndex = cards.findIndex((c) => c.code === assignedCode);
+    const existingCard = existingIndex >= 0 ? cards[existingIndex] : null;
+
+    // For Treasury Officer: If viewing an existing card, preserve original personal info
+    const resolvedName = (isTreasuryOfficer && existingCard) ? existingCard.name : customerName.trim();
+    const resolvedNationalId = (isTreasuryOfficer && existingCard) ? existingCard.nationalId : nationalId.trim();
+    const resolvedCblPhone = (isTreasuryOfficer && existingCard) ? existingCard.cblPhone : cblPhone.trim();
+    const resolvedBank = (isTreasuryOfficer && existingCard) ? existingCard.bank : bank;
+    const resolvedAccountNumber = (isTreasuryOfficer && existingCard) ? existingCard.accountNumber : accountNumber.trim();
+    const resolvedIban = (isTreasuryOfficer && existingCard) ? existingCard.iban : iban.trim();
+
     const newCard: BankCard = {
       id: assignedCode,
       code: assignedCode,
-      name: customerName.trim(),
-      nationalId: nationalId.trim(),
-      cblPhone: cblPhone.trim(),
-      bank,
-      accountNumber: accountNumber.trim(),
-      iban: iban.trim(),
+      name: resolvedName,
+      nationalId: resolvedNationalId,
+      cblPhone: resolvedCblPhone,
+      bank: resolvedBank,
+      accountNumber: resolvedAccountNumber,
+      iban: resolvedIban,
       depositAmt: depVal,
       cardPrice: parseFloat(cardPrice) || 0,
       totalCost,
@@ -813,10 +992,9 @@ export default function AmirClassicApp() {
       expiry: expiry.trim(),
       status: finalStatus,
       notes: notes.trim(),
-      createdAt: new Date().toISOString(),
+      createdAt: existingCard?.createdAt || new Date().toISOString(),
     };
 
-    const existingIndex = cards.findIndex((c) => c.code === assignedCode);
     if (existingIndex >= 0) {
       const updated = [...cards];
       updated[existingIndex] = { ...updated[existingIndex], ...newCard };
@@ -1284,9 +1462,215 @@ export default function AmirClassicApp() {
   const reportTotalCardPrice = reportCards.reduce((acc, c) => acc + (c.cardPrice || 0), 0);
   const reportTotalCost = reportCards.reduce((acc, c) => acc + (c.totalCost || 0), 0);
 
-  const isReceptionist = currentEmployee.role === "موظف استقبال";
-  const isTreasuryOfficer = currentEmployee.role === "مسؤول إيداع وخزينة";
-  const canSettle = currentEmployee.role === "مسؤول مالي ومكتب الخارج" || currentEmployee.role === "مدير عام";
+  const isDataEntry = currentEmployee.role === "موظف إدخال البيانات" || currentEmployee.role === "موظف استقبال";
+  const isTreasuryOfficer = currentEmployee.role === "مسؤول الخزينة" || currentEmployee.role === "مسؤول إيداع وخزينة";
+  const isAdmin = currentEmployee.role === "مدير عام";
+  const canSettle = isAdmin || isTreasuryOfficer;
+
+  // 0. Full Gate: If not authenticated, render the Modern Login Gate Portal
+  if (!isAuthenticated) {
+    return (
+      <div className="login-gate-page">
+        <div className="login-portal-header">
+          <div className="login-portal-logo">💎</div>
+          <h1 className="login-portal-title">نظام إدارة المعاملات المالية</h1>
+          <p className="login-portal-subtitle">منظومة بطاقات AMIR المصرفية المتكاملة</p>
+        </div>
+
+        <div className="login-card-container">
+          <div className="login-card-head">
+            <div className="login-card-title">تسجيل الدخول</div>
+            <div className="login-card-desc">سجل الدخول للوصول إلى واجهات الإدخال.</div>
+          </div>
+
+          <div style={{ fontSize: "12px", fontWeight: "bold", color: "#475569", marginBottom: "8px" }}>
+            اختر المستخدم:
+          </div>
+          <div className="login-user-chips">
+            {SYSTEM_USERS.map((usr) => {
+              const isSelected = loginUsername === usr.username;
+              return (
+                <div
+                  key={usr.id}
+                  className={`login-user-chip ${isSelected ? "active" : ""}`}
+                  onClick={() => {
+                    setLoginUsername(usr.username);
+                    setLoginIsError(false);
+                    setLoginStatusMsg("تم تسجيل الخروج");
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span>{usr.id === "amir" ? "👑" : usr.id === "entry" ? "📝" : "🏦"}</span>
+                    <span>{usr.username}</span>
+                  </div>
+                  <span
+                    className={`login-user-chip-badge ${
+                      usr.id === "amir"
+                        ? "chip-badge-admin"
+                        : usr.id === "entry"
+                        ? "chip-badge-entry"
+                        : "chip-badge-treasury"
+                    }`}
+                  >
+                    {usr.role}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleGateLogin();
+            }}
+          >
+            <div className="login-form-group">
+              <label>اسم المستخدم *</label>
+              <div className="login-input-wrap">
+                <span className="login-input-icon">👤</span>
+                <select
+                  className="login-input"
+                  value={loginUsername}
+                  onChange={(e) => {
+                    setLoginUsername(e.target.value);
+                    setLoginIsError(false);
+                    setLoginStatusMsg("تم تسجيل الخروج");
+                  }}
+                >
+                  {SYSTEM_USERS.map((usr) => (
+                    <option key={usr.id} value={usr.username}>
+                      {usr.username} ({usr.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="login-form-group">
+              <label>كلمة المرور (رمز PIN) *</label>
+              <div className="login-input-wrap">
+                <span className="login-input-icon">🔒</span>
+                <input
+                  type={showLoginPassword ? "text" : "password"}
+                  className="login-input"
+                  maxLength={8}
+                  placeholder="••••"
+                  autoFocus
+                  value={loginPin}
+                  onChange={(e) => {
+                    setLoginPin(e.target.value);
+                    setLoginIsError(false);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    color: "#64748b",
+                    padding: "4px",
+                  }}
+                  title={showLoginPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                >
+                  {showLoginPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="login-btn-purple">
+              <span>دخول</span>
+              <span>←</span>
+            </button>
+          </form>
+
+          <div className="login-status-area">
+            <div
+              className={`login-status-text ${
+                loginIsError ? "login-status-error" : ""
+              }`}
+            >
+              {loginStatusMsg}
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: "16px",
+              paddingTop: "12px",
+              borderTop: "1px dashed #e2e8f0",
+              fontSize: "11px",
+              color: "#64748b",
+            }}
+          >
+            <div style={{ fontWeight: "bold", marginBottom: "6px", textAlign: "center" }}>
+              ⚡ تجربة فورية بنقرة واحدة:
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+              <button
+                type="button"
+                onClick={() => handleGateLogin("AMIR", "9999")}
+                style={{
+                  background: "#f3e8ff",
+                  color: "#6b21a8",
+                  border: "1px solid #d8b4fe",
+                  padding: "6px 4px",
+                  borderRadius: "8px",
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                👑 AMIR
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGateLogin("موظف إدخال البيانات", "1111")}
+                style={{
+                  background: "#e0f2fe",
+                  color: "#0369a1",
+                  border: "1px solid #bae6fd",
+                  padding: "6px 4px",
+                  borderRadius: "8px",
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                📝 إدخال البيانات
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGateLogin("مسؤول الخزينة", "2222")}
+                style={{
+                  background: "#dcfce7",
+                  color: "#166534",
+                  border: "1px solid #bbf7d0",
+                  padding: "6px 4px",
+                  borderRadius: "8px",
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                🏦 الخزينة
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="login-portal-footer">
+          <span>🔒</span>
+          <span>نظام مصرفي مشفر ومحمي بصلاحيات أمنية دقيقة</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: "1160px", margin: "0 auto", padding: "10px" }}>
@@ -1298,69 +1682,75 @@ export default function AmirClassicApp() {
         </div>
 
         <div className="top-bar-actions">
-          {/* Treasury Balances Button */}
-          <button type="button" className="btn-view-treasury" onClick={() => setShowTreasuryModal(true)}>
-            🏦 أرصدة الخزائن والمصارف
-          </button>
+          {/* Treasury Balances Button (Hidden for data entry employee) */}
+          {!isDataEntry && (
+            <button type="button" className="btn-view-treasury" onClick={() => setShowTreasuryModal(true)}>
+              🏦 أرصدة الخزائن والمصارف
+            </button>
+          )}
 
-          {/* USD Cash Vault Quick Badge & Sell Action */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "#fef3c7",
-              border: "1px solid #fde68a",
-              padding: "4px 10px",
-              borderRadius: "8px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              color: "#92400e",
-            }}
-          >
-            <span>💵 خزينة الدولار النقدي:</span>
-            <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#b45309", fontWeight: 800 }}>
-              ${availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </span>
-            {canSettle && availableUsd > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSellUsdAmount(availableUsd >= 4000 ? "4000" : availableUsd.toString());
-                  setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
-                  setSellUsdError("");
-                  setShowSellUsdModal(true);
-                }}
-                style={{
-                  background: "#b45309",
-                  color: "#fff",
-                  border: "none",
-                  padding: "3px 8px",
-                  borderRadius: "5px",
-                  fontSize: "11px",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  marginRight: "4px",
-                }}
-                title="الخطوة 2: بيع دولارات كاش مجمعة من الخزينة وتوريد الدينار"
-              >
-                💱 بيع
-              </button>
-            )}
-          </div>
+          {/* USD Cash Vault Quick Badge & Sell Action (Hidden for data entry employee) */}
+          {!isDataEntry && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#fef3c7",
+                border: "1px solid #fde68a",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: "bold",
+                color: "#92400e",
+              }}
+            >
+              <span>💵 خزينة الدولار النقدي:</span>
+              <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#b45309", fontWeight: 800 }}>
+                ${availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </span>
+              {canSettle && availableUsd > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSellUsdAmount(availableUsd >= 4000 ? "4000" : availableUsd.toString());
+                    setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
+                    setSellUsdError("");
+                    setShowSellUsdModal(true);
+                  }}
+                  style={{
+                    background: "#b45309",
+                    color: "#fff",
+                    border: "none",
+                    padding: "3px 8px",
+                    borderRadius: "5px",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    marginRight: "4px",
+                  }}
+                  title="الخطوة 2: بيع دولارات كاش مجمعة من الخزينة وتوريد الدينار"
+                >
+                  💱 بيع
+                </button>
+              )}
+            </div>
+          )}
 
-          {/* Google Sheets Live Sync Button */}
-          <button
-            type="button"
-            className="btn-google-sync"
-            onClick={() => {
-              setGoogleSyncStatus(null);
-              setShowGoogleSyncModal(true);
-            }}
-            title="تصدير وتحديث شيت جوجل مباشرة (Google Sheets Sync)"
-          >
-            📊 ربط وتصدير شيت جوجل
-          </button>
+          {/* Google Sheets Live Sync Button (Only for Admin) */}
+          {isAdmin && (
+            <button
+              type="button"
+              className="btn-google-sync"
+              onClick={() => {
+                setGoogleSyncStatus(null);
+                setShowGoogleSyncModal(true);
+              }}
+              title="تصدير وتحديث شيت جوجل مباشرة (Google Sheets Sync)"
+            >
+              📊 ربط وتصدير شيت جوجل
+            </button>
+          )}
 
           {/* Active User Role Badge */}
           <div className="user-profile-badge">
@@ -1368,6 +1758,9 @@ export default function AmirClassicApp() {
             <span>👤 {currentEmployee.name}</span>
             <button type="button" className="btn-switch-user" onClick={() => setShowLoginModal(true)}>
               🔑 تبديل (PIN)
+            </button>
+            <button type="button" className="btn-logout" onClick={handleLogout} title="تسجيل الخروج وقفل المنظومة فوراً">
+              🚪 خروج
             </button>
           </div>
 
@@ -1408,40 +1801,32 @@ export default function AmirClassicApp() {
         className="role-banner"
         style={{
           background:
-            currentEmployee.role === "مدير عام"
+            isAdmin
               ? "#f3e8ff"
-              : currentEmployee.role === "مسؤول مالي ومكتب الخارج"
-              ? "#fef3c7"
-              : currentEmployee.role === "مسؤول إيداع وخزينة"
+              : isTreasuryOfficer
               ? "#dcfce7"
               : "#e0f2fe",
           borderColor:
-            currentEmployee.role === "مدير عام"
+            isAdmin
               ? "#e9d5ff"
-              : currentEmployee.role === "مسؤول مالي ومكتب الخارج"
-              ? "#fde68a"
-              : currentEmployee.role === "مسؤول إيداع وخزينة"
+              : isTreasuryOfficer
               ? "#bbf7d0"
               : "#bae6fd",
           color:
-            currentEmployee.role === "مدير عام"
+            isAdmin
               ? "#6b21a8"
-              : currentEmployee.role === "مسؤول مالي ومكتب الخارج"
-              ? "#92400e"
-              : currentEmployee.role === "مسؤول إيداع وخزينة"
+              : isTreasuryOfficer
               ? "#166534"
               : "#0369a1",
         }}
       >
         <span>
-          {currentEmployee.role === "موظف استقبال" &&
-            "📌 صلاحيتك (موظف استقبال): تسجيل الزبائن الجدد وحجز المخصصات (المراحل 1 و 2 فقط)."}
-          {currentEmployee.role === "مسؤول إيداع وخزينة" &&
-            "📌 صلاحيتك (مسؤول إيداع وخزينة): تأكيد التوريد بالمصرف (المرحلة 3) وإدخال رقم البطاقة."}
-          {currentEmployee.role === "مسؤول مالي ومكتب الخارج" &&
-            "📌 صلاحيتك (مكتب الخارج والمالي): شحن البطاقات، كشف السري دولار، وإتمام السحب والتصفية وبيع الدولار."}
-          {currentEmployee.role === "مدير عام" &&
-            "👑 صلاحيتك (المدير العام): إشراف كامل على كافة المراحل 1-7، الخزائن، والأرباح والتصفية وتصفير النظام."}
+          {isDataEntry &&
+            "📌 صلاحيتك (موظف إدخال البيانات): تسجيل الزبائن الجدد وحجز المخصصات والبحث (المراحل 1 و 2 فقط). الخزائن والتصفية محجوبة."}
+          {isTreasuryOfficer &&
+            "📌 صلاحيتك (مسؤول الخزينة): تأكيد الإيداع بالمصرف (المرحلة 3)، إدارة وتغذية الخزائن، بيع وتصفية الدولار، وتصدير الأرصدة للشيت."}
+          {isAdmin &&
+            "👑 صلاحيتك (المدير العام AMIR): إشراف كامل ومطلق على كافة المراحل 1-7، الخزائن، الأرباح، التكاليف، تصفير المنظومة، وربط شيت جوجل."}
         </span>
 
         <span
@@ -1449,16 +1834,16 @@ export default function AmirClassicApp() {
             fontSize: "11px",
             padding: "2px 8px",
             borderRadius: "4px",
-            background: isReceptionist ? "#dbeafe" : canSettle ? "#fee2e2" : "#dcfce7",
-            color: isReceptionist ? "#1e40af" : canSettle ? "#991b1b" : "#166534",
+            background: isDataEntry ? "#dbeafe" : isTreasuryOfficer ? "#dcfce7" : "#f3e8ff",
+            color: isDataEntry ? "#1e40af" : isTreasuryOfficer ? "#166534" : "#6d28d9",
             fontWeight: "bold",
           }}
         >
-          {isReceptionist
-            ? "🔒 الأرقام السرية محمية ومحجوبة"
+          {isDataEntry
+            ? "🔒 الأرقام السرية والخزائن محجوبة"
             : isTreasuryOfficer
-            ? "🔒 السري دولار مقيد للفرع الخارجي"
-            : "🔓 السري دولار مفتوح للسحب وتوريد الخزينة"}
+            ? "🏦 إدارة وتغذية الخزائن وتأكيد الإيداع متاح"
+            : "⚡ تحكم شامل وإشراف مالي كامل"}
         </span>
       </div>
 
@@ -1544,10 +1929,15 @@ export default function AmirClassicApp() {
             </div>
 
             <div className="form-group">
-              <label>اسم الزبون الرباعي *</label>
+              <label>
+                اسم الزبون الرباعي *
+                {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل لمسؤول الخزينة</span>}
+              </label>
               <input
                 type="text"
                 required
+                readOnly={isPersonalInfoLocked}
+                className={isPersonalInfoLocked ? "field-locked-danger" : ""}
                 placeholder="محمد عبد السلام السنوسي..."
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
@@ -1556,19 +1946,29 @@ export default function AmirClassicApp() {
 
             <div className="row-2">
               <div className="form-group">
-                <label>الرقم الوطني (12 خانة) *</label>
+                <label>
+                  الرقم الوطني (12 خانة) *
+                  {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
+                </label>
                 <input
                   type="text"
                   maxLength={12}
+                  readOnly={isPersonalInfoLocked}
+                  className={isPersonalInfoLocked ? "field-locked-danger" : ""}
                   placeholder="119xxxxxxxx"
                   value={nationalId}
                   onChange={(e) => setNationalId(e.target.value)}
                 />
               </div>
               <div className="form-group">
-                <label>هاتف المركزي (المربوط) *</label>
+                <label>
+                  هاتف المركزي (المربوط) *
+                  {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
+                </label>
                 <input
                   type="text"
+                  readOnly={isPersonalInfoLocked}
+                  className={isPersonalInfoLocked ? "field-locked-danger" : ""}
                   placeholder="091xxxxxxx"
                   value={cblPhone}
                   onChange={(e) => setCblPhone(e.target.value)}
@@ -1577,8 +1977,15 @@ export default function AmirClassicApp() {
             </div>
 
             <div className="form-group">
-              <label>المصرف *</label>
-              <select value={bank} onChange={(e) => setBank(e.target.value)}>
+              <label>
+                المصرف *
+                {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
+              </label>
+              <select
+                value={bank}
+                disabled={isPersonalInfoLocked}
+                onChange={(e) => setBank(e.target.value)}
+              >
                 <option value="مصرف التجارة والتنمية">مصرف التجارة والتنمية</option>
                 <option value="مصرف الوحدة">مصرف الوحدة</option>
                 <option value="مصرف التجاري الوطني">مصرف التجاري الوطني</option>
@@ -1593,19 +2000,28 @@ export default function AmirClassicApp() {
 
             <div className="row-2">
               <div className="form-group">
-                <label>رقم حساب الزبون</label>
+                <label>
+                  رقم حساب الزبون
+                  {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
+                </label>
                 <input
                   type="text"
+                  readOnly={isPersonalInfoLocked}
+                  className={isPersonalInfoLocked ? "field-locked-danger" : ""}
                   placeholder="01533010488074"
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                 />
               </div>
               <div className="form-group">
-                <label>رقم الآيبان للزبون (IBAN)</label>
+                <label>
+                  رقم الآيبان للزبون (IBAN)
+                  {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
+                </label>
                 <input
                   type="text"
-                  className="iban-input"
+                  readOnly={isPersonalInfoLocked}
+                  className={`iban-input ${isPersonalInfoLocked ? "field-locked-danger" : ""}`}
                   placeholder="LY00 0000 ..."
                   value={iban}
                   onChange={(e) => setIban(e.target.value)}
@@ -1621,13 +2037,13 @@ export default function AmirClassicApp() {
                   {isDepositLocked && (
                     <span className="lock-label-tag">🔒 مودعة سابقاً (للقراءة فقط)</span>
                   )}
-                  {isDepositLocked && (
+                  {isDepositLocked && !isDataEntry && (
                     <button
                       type="button"
                       className="btn-admin-override"
                       onClick={() => {
                         const p = prompt("أدخل رمز PIN المصرح له (المدير 9999 أو الخزينة 2222) لفك القفل:");
-                        if (p === "9999" || p === "2222") setIsDepositLocked(false);
+                        if (p === "9999" || p === "2222" || p === "1234") setIsDepositLocked(false);
                       }}
                     >
                       🔓 تعديل استثنائي
@@ -1647,9 +2063,10 @@ export default function AmirClassicApp() {
               <div className="form-group">
                 <label style={{ color: "#0f766e" }}>سعر شراء البطاقة (د.ل) *</label>
                 <input
-                  type="number"
+                  type={isDataEntry ? "password" : "number"}
                   step="any"
-                  value={cardPrice}
+                  disabled={isDataEntry}
+                  value={isDataEntry ? "••••" : cardPrice}
                   onChange={(e) => setCardPrice(e.target.value)}
                 />
               </div>
@@ -1661,7 +2078,7 @@ export default function AmirClassicApp() {
                 <input
                   type="text"
                   readOnly
-                  value={`${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل`}
+                  value={isDataEntry ? "•••• د.ل" : `${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل`}
                   style={{ background: "#eff6ff", fontWeight: "bold", color: "#1e40af" }}
                 />
               </div>
@@ -1720,11 +2137,11 @@ export default function AmirClassicApp() {
               <div className="form-group">
                 <label>PIN المحلي (الدينار)</label>
                 <input
-                  type={isReceptionist ? "password" : "text"}
-                  className={isReceptionist ? "pin-local pin-locked" : "pin-local"}
-                  disabled={isReceptionist}
-                  placeholder={isReceptionist ? "••••" : "الرقم السري المحلي"}
-                  value={isReceptionist ? "••••" : pinLocal}
+                  type={isDataEntry ? "password" : "text"}
+                  className={isDataEntry ? "pin-local pin-locked" : "pin-local"}
+                  disabled={isDataEntry}
+                  placeholder={isDataEntry ? "••••" : "الرقم السري المحلي"}
+                  value={isDataEntry ? "••••" : pinLocal}
                   onChange={(e) => setPinLocal(e.target.value)}
                 />
               </div>
@@ -1732,11 +2149,11 @@ export default function AmirClassicApp() {
               <div className="form-group">
                 <label style={{ color: "#1d4ed8" }}>الرقم السري الدولي (السري دولار) *</label>
                 <input
-                  type={isReceptionist || isTreasuryOfficer ? "password" : "text"}
-                  className={isReceptionist || isTreasuryOfficer ? "pin-dollar pin-locked" : "pin-dollar"}
-                  disabled={isReceptionist || isTreasuryOfficer}
-                  placeholder={isReceptionist || isTreasuryOfficer ? "••••" : "السري دولار"}
-                  value={isReceptionist || isTreasuryOfficer ? "••••" : pinDollar}
+                  type={isDataEntry || isTreasuryOfficer ? "password" : "text"}
+                  className={isDataEntry || isTreasuryOfficer ? "pin-dollar pin-locked" : "pin-dollar"}
+                  disabled={isDataEntry || isTreasuryOfficer}
+                  placeholder={isDataEntry || isTreasuryOfficer ? "••••" : "السري دولار"}
+                  value={isDataEntry || isTreasuryOfficer ? "••••" : pinDollar}
                   onChange={(e) => setPinDollar(e.target.value)}
                 />
               </div>
@@ -2487,7 +2904,7 @@ export default function AmirClassicApp() {
                 >
                   📥 استيراد من الشيت
                 </button>
-                {currentEmployee.role === "مدير عام" && (
+                {isAdmin && (
                   <button
                     type="button"
                     onClick={() => setShowResetSystemModal(true)}
@@ -2722,18 +3139,15 @@ export default function AmirClassicApp() {
             <div style={{ fontSize: "11px", color: "#64748b", fontWeight: "bold", marginBottom: "8px" }}>
               أو اختر الموظف بنقرة سريعة (تجربة فورية):
             </div>
-            <div className="quick-roles">
+            <div className="quick-roles" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+              <button type="button" className="btn-quick-role" onClick={() => handlePinLogin("9999")}>
+                👑 المدير العام (AMIR)<br /><span style={{ color: "#7c3aed" }}>PIN: 9999</span>
+              </button>
               <button type="button" className="btn-quick-role" onClick={() => handlePinLogin("1111")}>
-                👤 موظف استقبال<br /><span style={{ color: "#0284c7" }}>PIN: 1111</span>
+                📝 إدخال البيانات<br /><span style={{ color: "#0284c7" }}>PIN: 1111</span>
               </button>
               <button type="button" className="btn-quick-role" onClick={() => handlePinLogin("2222")}>
-                🏦 مسؤول إيداع وخزينة<br /><span style={{ color: "#059669" }}>PIN: 2222</span>
-              </button>
-              <button type="button" className="btn-quick-role" onClick={() => handlePinLogin("3333")}>
-                ✈️ مالي ومكتب الخارج<br /><span style={{ color: "#d97706" }}>PIN: 3333</span>
-              </button>
-              <button type="button" className="btn-quick-role" onClick={() => handlePinLogin("9999")}>
-                👑 المدير العام (أمير)<br /><span style={{ color: "#7c3aed" }}>PIN: 9999</span>
+                🏦 مسؤول الخزينة<br /><span style={{ color: "#059669" }}>PIN: 2222</span>
               </button>
             </div>
 

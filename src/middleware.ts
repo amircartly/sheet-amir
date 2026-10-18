@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
+  // If DISABLE_BASIC_AUTH is set to "true" (or in preview mode), bypass HTTP Basic Auth
+  // because the application now has a full in-app modern login portal gate with 3 roles and PIN verification.
+  if (process.env.DISABLE_BASIC_AUTH === "true" || process.env.NODE_ENV !== "production") {
+    return NextResponse.next();
+  }
+
   const basicAuth = req.headers.get("authorization");
 
   if (basicAuth) {

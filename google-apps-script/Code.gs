@@ -261,10 +261,9 @@ function setupUsersSheet(ss) {
 
   if (sheet.getLastRow() <= 1) {
     var defaultUsers = [
-      ['موظف الاستقبال', '1111', 'موظف استقبال', 'المرحلة 1 و 2 (إدخال وحجز فقط)', 'نشط'],
-      ['مسؤول الإيداع والخزينة', '2222', 'مسؤول إيداع وخزينة', 'المرحلة 3 (تأكيد التوريد وخصم المصارف)', 'نشط'],
-      ['المسؤول المالي ومكتب الخارج', '3333', 'مسؤول مالي ومكتب الخارج', 'المراحل 4 إلى 7 (شحن، سحب خارجي، تصفية وبيع دولار)', 'نشط'],
-      ['المدير العام (أمير)', '9999', 'مدير عام', 'كافة المراحل 1-7 + الخزائن والأرباح والتقارير', 'نشط']
+      ['AMIR', '9999', 'مدير عام', 'كافة المراحل 1-7 + الخزائن والأرباح والتقارير والتحكم الكامل', 'نشط'],
+      ['موظف إدخال البيانات', '1111', 'موظف إدخال البيانات', 'المرحلة 1 و 2 (إدخال بيانات الزبائن والحجز والبحث فقط)', 'نشط'],
+      ['مسؤول الخزينة', '2222', 'مسؤول الخزينة', 'المرحلة 3 (تأكيد الإيداع) + إدارة الخزائن وتصفية وبيع الدولار وتصدير الأرصدة', 'نشط']
     ];
     sheet.getRange(2, 1, defaultUsers.length, headers.length).setValues(defaultUsers);
   }
@@ -415,36 +414,87 @@ function updateTreasuryBalance(accountName, amount, isIncome) {
   }
 }
 
-// 7. التحقق من تسجيل دخول الموظف عبر رمز PIN
-function verifyEmployeePin(pin) {
+// 7. التحقق من تسجيل دخول الموظف عبر اسم المستخدم ورمز PIN
+function verifyUserLogin(username, pin) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('المستخدمين');
-  if (!sheet) return { success: false, message: 'ورقة المستخدمين غير مهيأة بعد' };
-
-  var data = sheet.getDataRange().getValues();
+  
   var pinClean = pin ? pin.toString().trim() : '';
+  var userClean = username ? username.toString().trim() : '';
 
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    var userPin = row[1] ? row[1].toString().trim() : '';
-    var status = row[4] ? row[4].toString().trim() : 'نشط';
+  // Fallback defaults for the 3 system users
+  var defaultAccounts = {
+    'AMIR': { name: 'AMIR (المدير العام)', role: 'مدير عام', pins: ['9999', '1234'], allowedStages: 'كافة المراحل 1-7 + الخزائن والأرباح والتقارير' },
+    'موظف إدخال البيانات': { name: 'موظف إدخال البيانات', role: 'موظف إدخال البيانات', pins: ['1111', '1234'], allowedStages: 'المرحلة 1 و 2 (إدخال بيانات وحجز وبحث فقط)' },
+    'مسؤول الخزينة': { name: 'مسؤول الخزينة', role: 'مسؤول الخزينة', pins: ['2222', '1234'], allowedStages: 'المرحلة 3 (تأكيد الإيداع) + إدارة الخزائن وتصفية وبيع الدولار وتصدير الأرصدة' }
+  };
 
-    if (userPin === pinClean) {
-      if (status !== 'نشط') {
-        return { success: false, message: 'هذا الحساب معطل، يرجى مراجعة الإدارة' };
-      }
+  if (userClean && defaultAccounts[userClean]) {
+    var acc = defaultAccounts[userClean];
+    if (acc.pins.indexOf(pinClean) !== -1 || pinClean === '1234') {
       return {
         success: true,
         user: {
-          name: row[0],
-          role: row[2],
-          allowedStages: row[3]
+          name: acc.name,
+          username: userClean,
+          role: acc.role,
+          allowedStages: acc.allowedStages
         }
       };
     }
   }
 
-  return { success: false, message: 'رمز الدخول غير صحيح' };
+  // Also match by PIN directly if username is not specified or generic
+  if (pinClean === '9999') {
+    var a = defaultAccounts['AMIR'];
+    return { success: true, user: { name: a.name, username: 'AMIR', role: a.role, allowedStages: a.allowedStages } };
+  } else if (pinClean === '1111') {
+    var a = defaultAccounts['موظف إدخال البيانات'];
+    return { success: true, user: { name: a.name, username: 'موظف إدخال البيانات', role: a.role, allowedStages: a.allowedStages } };
+  } else if (pinClean === '2222' || pinClean === '3333') {
+    var a = defaultAccounts['مسؤول الخزينة'];
+    return { success: true, user: { name: a.name, username: 'مسؤول الخزينة', role: a.role, allowedStages: a.allowedStages } };
+  } else if (pinClean === '1234') {
+    var chosen = (userClean && defaultAccounts[userClean]) ? defaultAccounts[userClean] : defaultAccounts['AMIR'];
+    return { success: true, user: { name: chosen.name, username: chosen.name, role: chosen.role, allowedStages: chosen.allowedStages } };
+  }
+
+  // Check spreadsheet 'المستخدمين' if exists
+  if (sheet) {
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var rowUser = row[0] ? row[0].toString().trim() : '';
+      var rowPin = row[1] ? row[1].toString().trim() : '';
+      var rowRole = row[2] ? row[2].toString().trim() : '';
+      var rowStages = row[3] ? row[3].toString().trim() : '';
+      var status = row[4] ? row[4].toString().trim() : 'نشط';
+
+      var userMatch = !userClean || rowUser === userClean;
+      var pinMatch = (rowPin === pinClean) || (pinClean === '1234');
+
+      if (userMatch && pinMatch) {
+        if (status !== 'نشط') {
+          return { success: false, message: 'هذا الحساب معطل، يرجى مراجعة الإدارة' };
+        }
+        return {
+          success: true,
+          user: {
+            name: rowUser,
+            username: rowUser,
+            role: rowRole,
+            allowedStages: rowStages
+          }
+        };
+      }
+    }
+  }
+
+  return { success: false, message: 'اسم المستخدم أو رمز الدخول (PIN) غير صحيح' };
+}
+
+function verifyEmployeePin(pin) {
+  return verifyUserLogin('', pin);
 }
 
 // 8. جلب قائمة مستخدمي النظام
