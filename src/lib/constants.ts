@@ -6,5 +6,3 @@
 export const DEFAULT_GOOGLE_SCRIPT_URL =
   process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL ||
   "https://script.google.com/macros/s/AKfycbxIOAfZttwY6NodMj9wPQ5zb7VRvCdVeN5vBftwKFNLALLyZM2LrsquQuCOaUABn7qAiw/exec";
-
-

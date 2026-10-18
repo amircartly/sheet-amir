@@ -204,21 +204,72 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "بيانات البطاقة مفقودة" });
       }
 
-      if (!targetUrl) {
-        return NextResponse.json({
-          success: false,
-          error: "رابط شيت جوجل غير مضبوط",
-          skipped: true,
-        });
+      // Always save to central MySQL database
+      try {
+        const pool = getDbPool();
+        if (pool) {
+          const query = `
+            INSERT INTO cards (
+              code, name, national_id, cbl_phone, bank, account_number, iban,
+              deposit_amt, card_price, total_cost, deposit_date, booking_date,
+              card_num, pin_local, pin_dollar, expiry, status, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              name = VALUES(name),
+              national_id = VALUES(national_id),
+              cbl_phone = VALUES(cbl_phone),
+              bank = VALUES(bank),
+              account_number = VALUES(account_number),
+              iban = VALUES(iban),
+              deposit_amt = VALUES(deposit_amt),
+              card_price = VALUES(card_price),
+              total_cost = VALUES(total_cost),
+              deposit_date = VALUES(deposit_date),
+              booking_date = VALUES(booking_date),
+              card_num = VALUES(card_num),
+              pin_local = VALUES(pin_local),
+              pin_dollar = VALUES(pin_dollar),
+              expiry = VALUES(expiry),
+              status = VALUES(status),
+              notes = VALUES(notes),
+              updated_at = CURRENT_TIMESTAMP
+          `;
+          await pool.execute(query, [
+            card.code || `CRD-${Date.now()}`,
+            card.name || "",
+            card.nationalId || "",
+            card.cblPhone || "",
+            card.bank || "مصرف التجارة والتنمية",
+            card.accountNumber || "",
+            card.iban || "",
+            parseFloat(card.depositAmt) || 0,
+            parseFloat(card.cardPrice) || 0,
+            parseFloat(card.totalCost) || 0,
+            card.depositDate || null,
+            card.bookingDate || null,
+            card.cardNum || "",
+            card.pinLocal || "",
+            card.pinDollar || "",
+            card.expiry || "09/29",
+            card.status || "1. إدخال البيانات",
+            card.notes || "",
+          ]);
+        }
+      } catch (dbErr) {
+        console.error("Local MySQL write error during sync_card:", dbErr);
       }
 
-      const syncResult = await sendToGoogleScript(targetUrl, {
-        action: "syncCard",
-        card,
-        employeeName,
-      });
+      // If Google Script URL is provided, sync to Google Sheet
+      if (targetUrl) {
+        const syncResult = await sendToGoogleScript(targetUrl, {
+          action: "syncCard",
+          card,
+          employeeName,
+        });
+        return NextResponse.json(syncResult);
+      }
 
-      return NextResponse.json(syncResult);
+      return NextResponse.json({ success: true, message: "تم الحفظ محلياً في قاعدة البيانات" });
     }
 
     // 3. Test Connection
@@ -226,16 +277,19 @@ export async function POST(req: Request) {
       if (!targetUrl) {
         return NextResponse.json({
           success: false,
-          error: "الرجاء إدخال رابط Google Apps Script Web App لفحصه.",
+          error: "الرجاء إدخال رابط Google Apps Script Web App الخاص بالشيت أولاً.",
         });
       }
 
-      let testResult = await fetchFromGoogleScript(targetUrl, "getTreasury");
+      let testResult = await fetchFromGoogleScript(targetUrl, "ping");
+      if (!testResult.success) {
+        testResult = await fetchFromGoogleScript(targetUrl, "getTreasury");
+      }
       if (!testResult.success) {
         testResult = await fetchFromGoogleScript(targetUrl, "getCards");
       }
       if (!testResult.success) {
-        testResult = await sendToGoogleScript(targetUrl, { action: "getTreasury" });
+        testResult = await sendToGoogleScript(targetUrl, { action: "ping" });
       }
 
       if (testResult.success) {
@@ -300,8 +354,6 @@ export async function POST(req: Request) {
           // ignore fallback error
         }
       }
-
-      // Detect if remote Apps Script is still running the old code without syncTreasury handler
       if (
         syncResult.success &&
         (syncResult as any).updated === undefined &&
