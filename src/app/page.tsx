@@ -1474,7 +1474,7 @@ export default function AmirClassicApp() {
         <div className="login-portal-header">
           <div className="login-portal-logo">💎</div>
           <h1 className="login-portal-title">نظام إدارة المعاملات المالية</h1>
-          <p className="login-portal-subtitle">منظومة بطاقات AMIR المصرفية المتكاملة</p>
+          <p className="login-portal-subtitle">منظومة أمير للتجارة الإلكترونية</p>
         </div>
 
         <div className="login-card-container">
@@ -1677,8 +1677,7 @@ export default function AmirClassicApp() {
       {/* 1. Top Bar */}
       <div className="top-bar">
         <div className="top-bar-title">
-          <h2>💎 منظومة بطاقات مصرفية (AMIR)</h2>
-          <span style={{ fontSize: "11px", opacity: 0.85 }}>مخصصات النقد الأجنبي للأفراد ($4,000)</span>
+          <h2>💎 أمير للتجارة الإلكترونية</h2>
         </div>
 
         <div className="top-bar-actions">
@@ -3167,7 +3166,7 @@ export default function AmirClassicApp() {
           <div className="report-content">
             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #0f766e", paddingBottom: "10px", flexWrap: "wrap", gap: "10px" }}>
               <div>
-                <h2 style={{ color: "#0f172a", fontSize: "18px" }}>💎 منظومة بطاقات مصرفية (AMIR)</h2>
+                <h2 style={{ color: "#0f172a", fontSize: "18px" }}>💎 أمير للتجارة الإلكترونية</h2>
                 <h4 style={{ color: "#0f766e", marginTop: "4px" }}>كشف معاملات المرحلة: {reportStage}</h4>
               </div>
               <div style={{ textAlign: "left", fontSize: "12px", color: "#64748b" }}>

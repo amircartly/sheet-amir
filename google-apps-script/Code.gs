@@ -1,6 +1,6 @@
 /**
  * =========================================================================
- * منظومة بطاقات مصرفية (AMIR أمير) - محرك Google Apps Script الكامل
+ * أمير للتجارة الإلكترونية - محرك Google Apps Script الكامل
  * =========================================================================
  * وظائف الكود:
  * 1. واجهة ويب كاملة تعمل على الكمبيوتر والهاتف وتطبيق ويب مستقل (Web App).
@@ -15,7 +15,7 @@
 // 1. إنشاء القائمة في شريط الأدوات عند فتح الشيت
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('💎 منظومة بطاقات AMIR')
+    .createMenu('💎 أمير للتجارة الإلكترونية')
     .addItem('✨ فتح واجهة الإدخال والبحث والتقارير', 'openFormDialog')
     .addSeparator()
     .addItem('🚀 تهيئة كافة أوراق المنظومة (البطاقات + المستخدمين + الخزائن)', 'setupAllSystemSheets')
@@ -28,8 +28,8 @@ function openFormDialog() {
   var html = HtmlService.createHtmlOutputFromFile('Index')
     .setWidth(1120)
     .setHeight(780)
-    .setTitle('منظومة بطاقات AMIR - إدارة البيانات والتقارير');
-  SpreadsheetApp.getUi().showModalDialog(html, 'واجهة إدارة البطاقات المصرفية والتقارير');
+    .setTitle('أمير للتجارة الإلكترونية - إدارة البيانات والتقارير');
+  SpreadsheetApp.getUi().showModalDialog(html, 'واجهة إدارة المعاملات والتقارير');
 }
 
 // 3. دعم تشغيل المنظومة كرابط ويب مباشر على الهواتف والأجهزة (Web App URL)
@@ -83,7 +83,7 @@ function doGet(e) {
 
   var template = HtmlService.createTemplateFromFile('Index');
   return template.evaluate()
-    .setTitle('منظومة بطاقات AMIR')
+    .setTitle('أمير للتجارة الإلكترونية')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

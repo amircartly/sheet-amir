@@ -3,8 +3,8 @@ import "./globals.css";
 import "./amir-classic.css";
 
 export const metadata: Metadata = {
-  title: "منظومة بطاقات مصرفية (AMIR) - إدارة الحجوزات والخزائن",
-  description: "نظام متكامل لإدارة بطاقات مخصصات النقد الأجنبي، دورة السحب، وخزائن الدينار والدولار",
+  title: "أمير للتجارة الإلكترونية - إدارة الحجوزات والخزائن",
+  description: "نظام متكامل لإدارة الحجوزات، دورة السحب، وخزائن الدينار والدولار",
 };
 
 export default function RootLayout({
