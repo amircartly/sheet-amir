@@ -1,17 +1,68 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { sendToGoogleScript } from "@/lib/googleSync";
+import { sendToGoogleScript, fetchFromGoogleScript } from "@/lib/googleSync";
+import { DEFAULT_GOOGLE_SCRIPT_URL } from "@/lib/constants";
+
+function resolveScriptUrl(scriptUrl?: string): string {
+  let url = (scriptUrl || "").trim();
+  if (!url || url.includes("AKfycbxIOAf")) {
+    url =
+      process.env.GOOGLE_SHEETS_WEBAPP_URL ||
+      process.env.GOOGLE_SHEET_URL ||
+      DEFAULT_GOOGLE_SCRIPT_URL;
+  }
+  return url;
+}
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const targetUrl = resolveScriptUrl(searchParams.get("scriptUrl") || undefined);
+
+    if (!targetUrl) {
+      return NextResponse.json({
+        success: false,
+        error: "رابط Google Apps Script Web App غير محدد",
+      });
+    }
+
+    // Try POST getCards first
+    let result = await sendToGoogleScript(targetUrl, { action: "getCards" });
+    if (!result.success || !Array.isArray(result.cards)) {
+      // Fallback to GET action=getCards
+      result = await fetchFromGoogleScript(targetUrl, "getCards");
+    }
+
+    return NextResponse.json(result);
+  } catch (err: any) {
+    console.error("GET /api/google-sync error:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { action, scriptUrl, card, cards, employeeName = "موقع المنظومة" } = body;
 
-    const targetUrl =
-      scriptUrl ||
-      process.env.GOOGLE_SHEETS_WEBAPP_URL ||
-      process.env.GOOGLE_SHEET_URL ||
-      "";
+    const targetUrl = resolveScriptUrl(scriptUrl);
+
+    // 0. Get Cards from Google Sheets
+    if (action === "get_cards") {
+      if (!targetUrl) {
+        return NextResponse.json({
+          success: false,
+          error: "الرجاء إدخال رابط Google Apps Script Web App الخاص بالشيت أولاً.",
+        });
+      }
+
+      let syncResult = await sendToGoogleScript(targetUrl, { action: "getCards" });
+      if (!syncResult.success || !Array.isArray(syncResult.cards)) {
+        syncResult = await fetchFromGoogleScript(targetUrl, "getCards");
+      }
+
+      return NextResponse.json(syncResult);
+    }
 
     // 1. Export All Cards to Google Sheets
     if (action === "export_all") {
@@ -82,7 +133,6 @@ export async function POST(req: Request) {
       }
 
       if (!targetUrl) {
-        // Silently succeed or note that Google Sync URL is not yet configured
         return NextResponse.json({
           success: false,
           error: "رابط شيت جوجل غير مضبوط",
@@ -108,9 +158,13 @@ export async function POST(req: Request) {
         });
       }
 
-      const testResult = await sendToGoogleScript(targetUrl, {
+      let testResult = await sendToGoogleScript(targetUrl, {
         action: "getCards",
       });
+
+      if (!testResult.success) {
+        testResult = await fetchFromGoogleScript(targetUrl, "getCards");
+      }
 
       return NextResponse.json(testResult);
     }

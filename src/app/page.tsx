@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { DEFAULT_GOOGLE_SCRIPT_URL } from "@/lib/constants";
 
 interface BankCard {
   id: string;
@@ -165,14 +166,67 @@ export default function AmirClassicApp() {
 
   // Google Sheets Live Sync State
   const [showGoogleSyncModal, setShowGoogleSyncModal] = useState(false);
-  const [googleScriptUrl, setGoogleScriptUrl] = useState(
-    "https://script.google.com/macros/s/AKfycbxIOAfZttwY6NodMj9wPQ5zb7VRvCdVeN5vBftwKFNLALLYzM2LrsquQuCOaUAbn7qAiw/exec"
-  );
+  const [googleScriptUrl, setGoogleScriptUrl] = useState<string>(DEFAULT_GOOGLE_SCRIPT_URL);
   const [isSyncingGoogle, setIsSyncingGoogle] = useState(false);
   const [googleSyncStatus, setGoogleSyncStatus] = useState<string | null>(null);
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
 
-  // Load from MySQL API on Mount (with localStorage fallback)
+  // Sync Cards directly from Google Sheets (Central Real-Time Master Database)
+  const syncCardsFromGoogleSheets = useCallback(
+    async (customUrl?: string, quiet = false) => {
+      const targetUrl = (customUrl || googleScriptUrl || DEFAULT_GOOGLE_SCRIPT_URL).trim();
+      if (!quiet) setStatusMsg("🔄 جاري مزامنة وتحديث البيانات من شيت جوجل...");
+
+      try {
+        const res = await fetch("/api/google-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get_cards",
+            scriptUrl: targetUrl,
+          }),
+        });
+
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.cards) && data.cards.length > 0) {
+          setCards(data.cards);
+          localStorage.setItem("amir_cards_v2", JSON.stringify(data.cards));
+          setGoogleConnected(true);
+          if (!quiet) {
+            setStatusMsg(`✓ تمت المزامنة بنجاح: ${data.cards.length} بطاقة مسجلة من شيت جوجل`);
+            setTimeout(() => setStatusMsg(""), 3500);
+          }
+          return true;
+        } else if (data && data.cards && Array.isArray(data.cards)) {
+          setCards(data.cards);
+          localStorage.setItem("amir_cards_v2", JSON.stringify(data.cards));
+          setGoogleConnected(true);
+          if (!quiet) {
+            setStatusMsg("✓ تم الاتصال بشيت جوجل (لا توجد بطاقات مسجلة حالياً)");
+            setTimeout(() => setStatusMsg(""), 3500);
+          }
+          return true;
+        } else {
+          if (!quiet) {
+            setStatusMsg(data?.error || "فشل جلب البيانات من شيت جوجل");
+            setTimeout(() => setStatusMsg(""), 4000);
+          }
+        }
+      } catch (err: any) {
+        if (!quiet) {
+          setStatusMsg("خطأ في الاتصال بشيت جوجل: " + (err.message || ""));
+          setTimeout(() => setStatusMsg(""), 4000);
+        }
+      }
+      return false;
+    },
+    [googleScriptUrl]
+  );
+
+  // Load from Google Sheets & MySQL on Mount (with localStorage fallback)
   useEffect(() => {
+    let activeGoogleUrl = DEFAULT_GOOGLE_SCRIPT_URL;
+
     try {
       const savedRole = localStorage.getItem("amir_active_role_v2");
       if (savedRole && ROLES_MAP[savedRole]) setCurrentEmployee(ROLES_MAP[savedRole]);
@@ -183,29 +237,60 @@ export default function AmirClassicApp() {
       if (savedVaults) setVaults(JSON.parse(savedVaults));
 
       const savedGoogleUrl = localStorage.getItem("amir_google_script_url");
-      if (savedGoogleUrl) setGoogleScriptUrl(savedGoogleUrl);
+      // If saved url is empty or contains old broken URL, override with valid URL
+      if (savedGoogleUrl && !savedGoogleUrl.includes("AKfycbxIOAf")) {
+        activeGoogleUrl = savedGoogleUrl;
+      }
+      setGoogleScriptUrl(activeGoogleUrl);
+      localStorage.setItem("amir_google_script_url", activeGoogleUrl);
     } catch {
       // fallback
     }
 
-    // Fetch initial data from MySQL database
-    fetch("/api/cards")
+    // 1. First priority: Real-time sync with Google Sheets (Central Cloud Database)
+    fetch("/api/google-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "get_cards",
+        scriptUrl: activeGoogleUrl,
+      }),
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && data.success) {
-          setDbConnected(true);
-          if (Array.isArray(data.cards) && data.cards.length > 0) {
-            setCards(data.cards);
-            localStorage.setItem("amir_cards_v2", JSON.stringify(data.cards));
-          }
+        if (data && data.success && Array.isArray(data.cards) && data.cards.length > 0) {
+          setCards(data.cards);
+          localStorage.setItem("amir_cards_v2", JSON.stringify(data.cards));
+          setGoogleConnected(true);
         } else {
-          setDbConnected(false);
+          // 2. Fallback to MySQL cards if Google Sheets had no records yet
+          fetch("/api/cards")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((cData) => {
+              if (cData && cData.success && Array.isArray(cData.cards) && cData.cards.length > 0) {
+                setCards(cData.cards);
+                localStorage.setItem("amir_cards_v2", JSON.stringify(cData.cards));
+                setDbConnected(true);
+              }
+            })
+            .catch(() => {});
         }
       })
       .catch(() => {
-        setDbConnected(false);
+        // Fallback to MySQL cards if Google Sheets call fails
+        fetch("/api/cards")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((cData) => {
+            if (cData && cData.success && Array.isArray(cData.cards) && cData.cards.length > 0) {
+              setCards(cData.cards);
+              localStorage.setItem("amir_cards_v2", JSON.stringify(cData.cards));
+              setDbConnected(true);
+            }
+          })
+          .catch(() => {});
       });
 
+    // Fetch initial vaults
     fetch("/api/vaults")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -504,7 +589,14 @@ export default function AmirClassicApp() {
           card: newCard,
           employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
         }),
-      }).catch((err) => console.log("Google Sheets background sync error:", err));
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.success) {
+            setGoogleConnected(true);
+          }
+        })
+        .catch((err) => console.log("Google Sheets background sync error:", err));
     }
 
     setCardCode(assignedCode);
@@ -599,7 +691,14 @@ export default function AmirClassicApp() {
           card: updatedCard,
           employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
         }),
-      }).catch((err) => console.log("Google sync error:", err));
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.success) {
+            setGoogleConnected(true);
+          }
+        })
+        .catch((err) => console.log("Google sync error:", err));
     }
 
     // Update Treasury Vaults locally and in MySQL
@@ -762,18 +861,31 @@ export default function AmirClassicApp() {
           <span
             className="badge-mode"
             style={{
-              background: dbConnected === true ? "#065f46" : dbConnected === false ? "#991b1b" : "#475569",
+              background:
+                googleConnected === true
+                  ? "#059669"
+                  : dbConnected === true
+                  ? "#065f46"
+                  : dbConnected === false
+                  ? "#991b1b"
+                  : "#2563eb",
               color: "#fff",
             }}
             title={
-              dbConnected === true
+              googleConnected === true
+                ? "متصل مباشرة بشيت جوجل السحابي المركزي (المزامنة اللحظية الشاملة)"
+                : dbConnected === true
                 ? "متصل بقاعدة بيانات MySQL المركزية"
-                : dbConnected === false
-                ? "جاري العمل بالتخزين المحلي (قاعدة البيانات غير مفعلة محلياً أو جارٍ الاتصال)"
-                : "جاري فحص الاتصال..."
+                : "جاري المزامنة مع الشيت السحابي..."
             }
           >
-            {dbConnected === true ? "🟢 قاعدة MySQL متصلة" : cardCode ? `تعديل المعاملة: ${cardCode}` : "تسجيل بطاقة جديدة"}
+            {googleConnected === true
+              ? "🟢 شيت جوجل متصل (حي)"
+              : dbConnected === true
+              ? "🟢 قاعدة MySQL متصلة"
+              : cardCode
+              ? `تعديل المعاملة: ${cardCode}`
+              : "تسجيل بطاقة جديدة"}
           </span>
         </div>
       </div>
@@ -872,23 +984,10 @@ export default function AmirClassicApp() {
             type="button"
             className="btn-search"
             style={{ background: "#059669", marginRight: "6px" }}
-            onClick={() => {
-              setStatusMsg("🔄 جاري مزامنة وتحديث البيانات من السيرفر...");
-              fetch("/api/cards")
-                .then((r) => r.json())
-                .then((d) => {
-                  if (d && d.success && Array.isArray(d.cards)) {
-                    setCards(d.cards);
-                    localStorage.setItem("amir_cards_v2", JSON.stringify(d.cards));
-                    setStatusMsg(`✓ تم تحديث ${d.cards.length} بطاقة من قاعدة البيانات`);
-                    setTimeout(() => setStatusMsg(""), 3000);
-                  }
-                })
-                .catch(() => setStatusMsg("خطأ في الاتصال بقاعدة البيانات"));
-            }}
-            title="تحديث البيانات فورياً من قاعدة بيانات السيرفر"
+            onClick={() => syncCardsFromGoogleSheets(googleScriptUrl, false)}
+            title="تحديث ومزامنة البيانات فورياً من شيت جوجل المركزي"
           >
-            🔄 تحديث
+            🔄 مزامنة الشيت
           </button>
         </div>
 
@@ -1897,6 +1996,38 @@ export default function AmirClassicApp() {
                 }}
               >
                 🔍 فحص الاتصال بالشيت
+              </button>
+
+              <button
+                type="button"
+                disabled={isSyncingGoogle}
+                onClick={async () => {
+                  if (!googleScriptUrl.trim()) {
+                    setGoogleSyncStatus("الرجاء إدخال رابط Web App أولاً");
+                    return;
+                  }
+                  setIsSyncingGoogle(true);
+                  setGoogleSyncStatus("جاري استيراد وجلب كافة البطاقات من شيت جوجل...");
+                  const ok = await syncCardsFromGoogleSheets(googleScriptUrl, true);
+                  setIsSyncingGoogle(false);
+                  if (ok) {
+                    setGoogleSyncStatus("✓ تم استيراد وتحديث كافة البطاقات من شيت جوجل بنجاح!");
+                  } else {
+                    setGoogleSyncStatus("لم يتم العثور على بطاقات جديدة أو حدث خطأ أثناء الجلب.");
+                  }
+                }}
+                style={{
+                  background: "#10b981",
+                  color: "white",
+                  border: "none",
+                  padding: "9px 16px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: isSyncingGoogle ? "wait" : "pointer",
+                }}
+              >
+                📥 جلب البطاقات من الشيت الآن
               </button>
 
               <button

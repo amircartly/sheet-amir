@@ -37,16 +37,22 @@ function doGet(e) {
   var action = e && e.parameter ? e.parameter.action : '';
 
   if (action === 'getCards') {
-    return ContentService.createTextOutput(JSON.stringify(getAllCards()))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      cards: getAllCards()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
   if (action === 'getUsers') {
-    return ContentService.createTextOutput(JSON.stringify(getSystemUsers()))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      users: getSystemUsers()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
   if (action === 'getTreasury') {
-    return ContentService.createTextOutput(JSON.stringify(getTreasuryBalances()))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      treasury: getTreasuryBalances()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   var template = HtmlService.createTemplateFromFile('Index');
@@ -65,6 +71,14 @@ function doPost(e) {
     }
 
     var action = data.action || '';
+
+    // جلب البطاقات عبر POST
+    if (action === 'getCards') {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        cards: getAllCards()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
 
     // أ. تحديث أو حفظ بطاقة واحدة حياً
     if (action === 'syncCard' && data.card) {
@@ -477,20 +491,24 @@ function getAllCards() {
 
     cards.push({
       id: row[0] ? row[0].toString() : '',
+      code: row[0] ? row[0].toString() : '',
+      name: row[1] ? row[1].toString() : '',
       clientName: row[1] ? row[1].toString() : '',
       nationalId: row[2] ? row[2].toString() : '',
       cblPhone: row[3] ? row[3].toString() : '',
       bank: row[4] ? row[4].toString() : '',
       accountNumber: row[5] ? row[5].toString() : '',
       iban: row[6] ? row[6].toString() : '',
-      depositAmount: hasCostCols ? (parseFloat(row[7]) || 0) : (parseFloat(row[7]) || 0),
+      depositAmt: hasCostCols ? (parseFloat(row[7]) || 0) : (parseFloat(row[7]) || 0),
       cardPrice: hasCostCols ? (parseFloat(row[8]) || 0) : 0,
       totalCost: hasCostCols ? (parseFloat(row[9]) || 0) : 0,
       depositDate: hasCostCols ? formatDateValue(row[10]) : formatDateValue(row[8]),
       bookingDate: hasCostCols ? formatDateValue(row[11]) : formatDateValue(row[9]),
+      cardNum: hasCostCols ? (row[12] ? row[12].toString() : '') : (row[10] ? row[10].toString() : ''),
       cardNumber: hasCostCols ? (row[12] ? row[12].toString() : '') : (row[10] ? row[10].toString() : ''),
       pinLocal: hasCostCols ? (row[13] ? row[13].toString() : '') : '',
       pinDollar: hasCostCols ? (row[14] ? row[14].toString() : '') : '',
+      expiry: hasCostCols ? formatExpiryValue(row[15]) : formatExpiryValue(row[13]),
       expiryDate: hasCostCols ? formatExpiryValue(row[15]) : formatExpiryValue(row[13]),
       status: hasCostCols ? (row[16] ? row[16].toString() : '1. إدخال البيانات') : '1. إدخال البيانات',
       notes: hasCostCols ? (row[17] ? row[17].toString() : '') : ''
