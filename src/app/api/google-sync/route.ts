@@ -285,6 +285,20 @@ export async function POST(req: Request) {
         employeeName,
       });
 
+      // Detect if remote Apps Script is still running the old code without syncTreasury handler
+      if (
+        syncResult.success &&
+        (syncResult as any).updated === undefined &&
+        ((syncResult as any).message || "").includes("نشط وجاهز")
+      ) {
+        return NextResponse.json({
+          success: false,
+          needsScriptUpdate: true,
+          error:
+            "⚠️ تنبيه: كود Google Apps Script المنشور في شيت جوجل قديم ولا يحتوي على كود مزامنة الخزائن. يرجى الضغط على زر (نسخ الكود كاملاً) وتحديث الكود في الشيت ثم عمل New version.",
+        });
+      }
+
       return NextResponse.json(syncResult);
     }
 

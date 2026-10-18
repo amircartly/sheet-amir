@@ -181,6 +181,24 @@ export default function AmirClassicApp() {
   const [isSyncingGoogle, setIsSyncingGoogle] = useState(false);
   const [googleSyncStatus, setGoogleSyncStatus] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [copyCodeStatus, setCopyCodeStatus] = useState<string | null>(null);
+  const [showScriptGuide, setShowScriptGuide] = useState(false);
+
+  const handleCopyScriptCode = async () => {
+    setCopyCodeStatus("⏳ جاري نسخ الكود...");
+    try {
+      const res = await fetch("/api/google-script-code");
+      if (!res.ok) throw new Error("تعذر جلب ملف الكود");
+      const code = await res.text();
+      await navigator.clipboard.writeText(code);
+      setCopyCodeStatus("✓ تم نسخ الكود كاملاً (937 سطر)! توجه الآن إلى Apps Script في شيت جوجل والصقه.");
+      setShowScriptGuide(true);
+      setTimeout(() => setCopyCodeStatus(null), 9000);
+    } catch (err: any) {
+      setCopyCodeStatus("خطأ في النسخ: " + err.message);
+      setTimeout(() => setCopyCodeStatus(null), 5000);
+    }
+  };
 
   // Sync Cards directly from Google Sheets (Central Real-Time Master Database)
   const syncCardsFromGoogleSheets = useCallback(
@@ -268,22 +286,23 @@ export default function AmirClassicApp() {
             setStatusMsg(`✓ ${data.message || "تمت مزامنة وتصدير أرصدة الخزائن إلى شيت جوجل بنجاح!"}`);
             setTimeout(() => setStatusMsg(""), 4000);
           }
-          return true;
+          return data;
         } else {
           if (!quiet) {
             setStatusMsg(data?.error || "فشل مزامنة أرصدة الخزائن مع شيت جوجل");
-            setTimeout(() => setStatusMsg(""), 4000);
+            setTimeout(() => setStatusMsg(""), 6000);
           }
+          return data || { success: false, error: "فشل مزامنة أرصدة الخزائن" };
         }
       } catch (err: any) {
         if (!quiet) {
           setStatusMsg("خطأ في مزامنة الخزائن: " + (err.message || ""));
           setTimeout(() => setStatusMsg(""), 4000);
         }
+        return { success: false, error: err.message };
       } finally {
         if (!quiet) setIsSyncingGoogle(false);
       }
-      return false;
     },
     [googleScriptUrl, vaults, currentEmployee]
   );
@@ -2401,7 +2420,13 @@ export default function AmirClassicApp() {
                 <button
                   type="button"
                   disabled={isSyncingGoogle}
-                  onClick={() => syncTreasuryToGoogleSheets(vaults, false)}
+                  onClick={async () => {
+                    const res = await syncTreasuryToGoogleSheets(vaults, false);
+                    if (res && !res.success && (res as any).needsScriptUpdate) {
+                      setShowGoogleSyncModal(true);
+                      setShowScriptGuide(true);
+                    }
+                  }}
                   style={{
                     background: "#0284c7",
                     color: "white",
@@ -2959,6 +2984,145 @@ export default function AmirClassicApp() {
               </span>
             </div>
 
+            {/* Apps Script Code Copy & Guide Box */}
+            <div
+              style={{
+                background: "#f0f9ff",
+                border: "1px solid #bae6fd",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                marginBottom: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: "13px", color: "#0369a1", display: "block" }}>
+                    📜 كود Google Apps Script المحدث (Code.gs)
+                  </strong>
+                  <span style={{ fontSize: "11px", color: "#0284c7" }}>
+                    يحتوي على دوال مزامنة وتصدير الخزائن، بيع الدولار، وسجل الحركات
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={handleCopyScriptCode}
+                    style={{
+                      background: "#0284c7",
+                      color: "white",
+                      border: "none",
+                      padding: "7px 14px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    📋 نسخ الكود كاملاً (Code.gs)
+                  </button>
+                  <a
+                    href="/api/google-script-code"
+                    download="Code.gs"
+                    style={{
+                      background: "#e0f2fe",
+                      color: "#0369a1",
+                      border: "1px solid #7dd3fc",
+                      padding: "7px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    📥 تحميل كملف
+                  </a>
+                </div>
+              </div>
+
+              {copyCodeStatus && (
+                <div
+                  style={{
+                    marginTop: "10px",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    background: copyCodeStatus.startsWith("✓") ? "#ecfdf5" : "#eff6ff",
+                    color: copyCodeStatus.startsWith("✓") ? "#065f46" : "#1e40af",
+                    border: copyCodeStatus.startsWith("✓") ? "1px solid #a7f3d0" : "1px solid #bfdbfe",
+                  }}
+                >
+                  {copyCodeStatus}
+                </div>
+              )}
+
+              <div style={{ marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowScriptGuide(!showScriptGuide)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#0369a1",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    padding: 0,
+                  }}
+                >
+                  {showScriptGuide ? "▲ إخفاء خطوات تحديث الشيت" : "▼ اضغط هنا لمشاهدة خطوات وضع الكود في شيت جوجل (4 خطوات بسيطة)"}
+                </button>
+
+                {showScriptGuide && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      background: "#ffffff",
+                      border: "1px dashed #0284c7",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      fontSize: "12px",
+                      lineHeight: "1.8",
+                      color: "#0f172a",
+                    }}
+                  >
+                    <ol style={{ paddingRight: "20px", margin: 0 }}>
+                      <li>
+                        اضغط على زر <strong>(📋 نسخ الكود كاملاً)</strong> في الأعلى.
+                      </li>
+                      <li>
+                        افتح شيت جوجل <strong>(بطاقات_مصرفية_ماستر)</strong>، ومن القائمة اضغط على <strong>ملحقات (Extensions)</strong> ⬅️ ثم <strong>Apps Script</strong>.
+                      </li>
+                      <li>
+                        في ملف <strong>Code.gs</strong> (أو &quot;الرمز&quot;): حدد كل الكود القديم واحذفه (اضغط <code>Ctrl + A</code> ثم <code>Delete</code>)، ثم الصق الكود الجديد (<code>Ctrl + V</code>)، واضغط حفظ 💾 (<code>Ctrl + S</code>).
+                      </li>
+                      <li>
+                        <strong>الخطوة الأهم:</strong> اضغط على زر <strong>نشر (Deploy)</strong> الأزرق في الأعلى ⬅️ <strong>إدارة عمليات النشر (Manage deployments)</strong> ⬅️ اضغط على أيقونة <strong>القلم ✏️</strong> ⬅️ في خانة الإصدار (Version) اختر <strong>إصدار جديد (New version)</strong> ⬅️ اضغط <strong>Deploy (نشر)</strong>.
+                      </li>
+                    </ol>
+                    <div style={{ marginTop: "8px", color: "#b45309", fontWeight: "bold" }}>
+                      💡 بعد هذه الخطوات ستصبح أي حركة أو تغذية أو بيع أو تصدير من الموقع تنعكس في خلايا الشيت وتطابقها لحظياً!
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {googleSyncStatus && (
               <div
                 style={{
@@ -3074,11 +3238,17 @@ export default function AmirClassicApp() {
                   setIsSyncingGoogle(true);
                   setGoogleSyncStatus("جاري تصدير وتحديث أرصدة الخزائن في ورقة أرصدة_الخزائن بشيت جوجل...");
                   try {
-                    const ok = await syncTreasuryToGoogleSheets(vaults, true);
-                    if (ok) {
-                      setGoogleSyncStatus("✓ تم تصدير وتحديث كافة أرصدة الخزائن في شيت جوجل بنجاح!");
+                    const res = await syncTreasuryToGoogleSheets(vaults, true);
+                    if (res && res.success) {
+                      setGoogleSyncStatus(`✓ ${res.message || "تم تصدير وتحديث كافة أرصدة الخزائن في شيت جوجل بنجاح!"}`);
                     } else {
-                      setGoogleSyncStatus("فشل تصدير أرصدة الخزائن. تأكد من إعدادات النشر في Apps Script.");
+                      setGoogleSyncStatus(
+                        res?.error ||
+                          "فشل تصدير أرصدة الخزائن. تأكد من تحديث كود Apps Script ونشر إصدار جديد (New version)."
+                      );
+                      if (res?.needsScriptUpdate) {
+                        setShowScriptGuide(true);
+                      }
                     }
                   } catch (err: any) {
                     setGoogleSyncStatus("خطأ في تصدير الخزائن: " + err.message);
