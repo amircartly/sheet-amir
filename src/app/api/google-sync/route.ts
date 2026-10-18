@@ -64,12 +64,21 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const targetUrl = resolveScriptUrl(searchParams.get("scriptUrl") || undefined);
+    const action = searchParams.get("action") || "getCards";
 
     if (!targetUrl) {
       return NextResponse.json({
         success: false,
         error: "رابط Google Apps Script Web App غير محدد",
       });
+    }
+
+    if (action === "getTreasury") {
+      let result = await fetchFromGoogleScript(targetUrl, "getTreasury");
+      if (!result.success || !Array.isArray((result as any).treasury)) {
+        result = await sendToGoogleScript(targetUrl, { action: "getTreasury" });
+      }
+      return NextResponse.json(result);
     }
 
     // Use GET fetch first (fastest and most reliable for Google Apps Script Web Apps)
@@ -177,6 +186,19 @@ export async function POST(req: Request) {
         employeeName,
       });
 
+      // Also sync treasury balances if provided
+      if (Array.isArray(body.vaults) && body.vaults.length > 0) {
+        try {
+          await sendToGoogleScript(targetUrl, {
+            action: "syncTreasury",
+            vaults: body.vaults,
+            employeeName,
+          });
+        } catch (tErr) {
+          console.error("Treasury sync within export_all failed:", tErr);
+        }
+      }
+
       return NextResponse.json(syncResult);
     }
 
@@ -239,6 +261,46 @@ export async function POST(req: Request) {
         sellData: body.sellData,
         employeeName,
       });
+
+      return NextResponse.json(syncResult);
+    }
+
+    // 5. Sync Treasury Balances (Export Vaults to Google Sheets)
+    if (action === "sync_treasury") {
+      const vaultsList = body.vaults || [];
+      if (!Array.isArray(vaultsList) || vaultsList.length === 0) {
+        return NextResponse.json({ success: false, error: "قائمة الخزائن مفقودة" });
+      }
+
+      if (!targetUrl) {
+        return NextResponse.json({
+          success: false,
+          error: "الرجاء إدخال رابط Google Apps Script Web App أولاً",
+        });
+      }
+
+      const syncResult = await sendToGoogleScript(targetUrl, {
+        action: "syncTreasury",
+        vaults: vaultsList,
+        employeeName,
+      });
+
+      return NextResponse.json(syncResult);
+    }
+
+    // 6. Get Treasury Balances from Google Sheets
+    if (action === "get_treasury") {
+      if (!targetUrl) {
+        return NextResponse.json({
+          success: false,
+          error: "الرجاء إدخال رابط Google Apps Script Web App أولاً",
+        });
+      }
+
+      let syncResult = await fetchFromGoogleScript(targetUrl, "getTreasury");
+      if (!syncResult.success || !Array.isArray((syncResult as any).treasury)) {
+        syncResult = await sendToGoogleScript(targetUrl, { action: "getTreasury" });
+      }
 
       return NextResponse.json(syncResult);
     }

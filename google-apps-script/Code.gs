@@ -130,6 +130,21 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // هـ. مزامنة وتصدير أرصدة الخزائن والمصارف
+    if (action === 'syncTreasury' && Array.isArray(data.vaults)) {
+      var tRes = syncTreasurySheet(data.vaults, data.employeeName || 'تحديث أرصدة الخزائن من الموقع');
+      return ContentService.createTextOutput(JSON.stringify(tRes))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // و. جلب أرصدة الخزائن عبر POST
+    if (action === 'getTreasury') {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        treasury: getTreasuryBalances()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: 'إجراء غير مدعوم في doPost'
@@ -792,6 +807,80 @@ function sellAccumulatedUsd(sellData, employeeName) {
     totalSaleLYD: totalSaleLYD,
     destinationVault: destinationVault,
     refNo: moveRes ? moveRes.refNo : refNo
+  };
+}
+
+// 15.2 مزامنة وتصدير أرصدة الخزائن والمصارف إلى ورقة أرصدة_الخزائن
+function syncTreasurySheet(vaultsList, employeeName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('أرصدة_الخزائن');
+  if (!sheet) {
+    setupTreasurySheet(ss);
+    sheet = ss.getSheetByName('أرصدة_الخزائن');
+  }
+  if (!sheet) return { success: false, error: 'تعذر العثور على ورقة أرصدة_الخزائن' };
+
+  var data = sheet.getDataRange().getValues();
+  var updatedCount = 0;
+
+  for (var v = 0; v < vaultsList.length; v++) {
+    var item = vaultsList[v];
+    if (!item) continue;
+    var rawName = (item.name || item.id || '').toString().trim();
+    var name = cleanText(rawName);
+    var balance = parseFloat(item.balance) || 0;
+    var currency = item.currency || (item.id === 'cash_usd' ? '$' : 'د.ل');
+
+    var matchedRow = -1;
+    for (var i = 1; i < data.length; i++) {
+      var rowName = cleanText(data[i][0]);
+      if (!rowName) continue;
+      if (rowName === name || rowName.indexOf(name) !== -1 || name.indexOf(rowName) !== -1) {
+        matchedRow = i + 1;
+        break;
+      }
+    }
+
+    if (matchedRow !== -1) {
+      // Row exists: update initial balance (Col 3 / C), reset Col 4 (D) and Col 5 (E) to 0, ensure formula in Col 6 (F)
+      sheet.getRange(matchedRow, 3).setValue(balance);
+      sheet.getRange(matchedRow, 4).setValue(0);
+      sheet.getRange(matchedRow, 5).setValue(0);
+      sheet.getRange(matchedRow, 6).setFormula('=C' + matchedRow + '+D' + matchedRow + '-E' + matchedRow);
+      updatedCount++;
+    } else {
+      // Add new account row
+      var newRowNum = sheet.getLastRow() + 1;
+      var newRow = [
+        rawName,
+        currency,
+        balance,
+        0,
+        0,
+        '=C' + newRowNum + '+D' + newRowNum + '-E' + newRowNum,
+        item.type || 'حساب من المنظومة'
+      ];
+      sheet.appendRow(newRow);
+      updatedCount++;
+    }
+  }
+
+  // Record audit movement in حركة_الخزائن
+  recordMovement(
+    '-',
+    'إدارة الخزائن',
+    'مزامنة وتحديث الأرصدة',
+    'أرصدة الخزائن والمصارف',
+    0,
+    'د.ل',
+    employeeName || 'موقع المنظومة',
+    'تمت مزامنة وتحديث أرصدة ' + updatedCount + ' حساب وخزينة من موقع المنظومة'
+  );
+
+  return {
+    success: true,
+    message: 'تمت مزامنة أرصدة ' + updatedCount + ' خزينة وحساب في ورقة أرصدة_الخزائن بنجاح',
+    updated: updatedCount
   };
 }
 

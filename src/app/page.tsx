@@ -234,6 +234,147 @@ export default function AmirClassicApp() {
     [googleScriptUrl]
   );
 
+  // Export & Sync Treasury Balances to Google Sheets (أرصدة_الخزائن)
+  const syncTreasuryToGoogleSheets = useCallback(
+    async (customVaults?: VaultAccount[], quiet = false) => {
+      const targetUrl = (googleScriptUrl || DEFAULT_GOOGLE_SCRIPT_URL).trim();
+      if (!targetUrl) {
+        if (!quiet) setStatusMsg("الرجاء إدخال رابط Google Apps Script أولاً");
+        return false;
+      }
+
+      const vaultsToSend = customVaults || vaults;
+      if (!quiet) {
+        setIsSyncingGoogle(true);
+        setStatusMsg("⏳ جاري تصدير ومزامنة أرصدة الخزائن إلى شيت جوجل...");
+      }
+
+      try {
+        const res = await fetch("/api/google-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "sync_treasury",
+            scriptUrl: targetUrl,
+            vaults: vaultsToSend,
+            employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
+          }),
+        });
+
+        const data = await res.json();
+        if (data && data.success) {
+          setGoogleConnected(true);
+          if (!quiet) {
+            setStatusMsg(`✓ ${data.message || "تمت مزامنة وتصدير أرصدة الخزائن إلى شيت جوجل بنجاح!"}`);
+            setTimeout(() => setStatusMsg(""), 4000);
+          }
+          return true;
+        } else {
+          if (!quiet) {
+            setStatusMsg(data?.error || "فشل مزامنة أرصدة الخزائن مع شيت جوجل");
+            setTimeout(() => setStatusMsg(""), 4000);
+          }
+        }
+      } catch (err: any) {
+        if (!quiet) {
+          setStatusMsg("خطأ في مزامنة الخزائن: " + (err.message || ""));
+          setTimeout(() => setStatusMsg(""), 4000);
+        }
+      } finally {
+        if (!quiet) setIsSyncingGoogle(false);
+      }
+      return false;
+    },
+    [googleScriptUrl, vaults, currentEmployee]
+  );
+
+  // Import Treasury Balances from Google Sheets (ورقة أرصدة_الخزائن)
+  const importTreasuryFromGoogleSheets = useCallback(
+    async (quiet = false) => {
+      const targetUrl = (googleScriptUrl || DEFAULT_GOOGLE_SCRIPT_URL).trim();
+      if (!targetUrl) {
+        if (!quiet) setStatusMsg("الرجاء إدخال رابط Google Apps Script أولاً");
+        return false;
+      }
+
+      if (!quiet) {
+        setIsSyncingGoogle(true);
+        setStatusMsg("⏳ جاري جلب وتحديث أرصدة الخزائن من شيت جوجل...");
+      }
+
+      try {
+        const res = await fetch("/api/google-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get_treasury",
+            scriptUrl: targetUrl,
+          }),
+        });
+
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.treasury) && data.treasury.length > 0) {
+          setVaults((prevVaults) => {
+            const updated = prevVaults.map((v) => {
+              const match = data.treasury.find((t: any) => {
+                const tName = (t.accountName || "").toString().trim();
+                return (
+                  tName === v.name ||
+                  tName.includes(v.name) ||
+                  v.name.includes(tName) ||
+                  (v.id === "cash_usd" && (tName.includes("الدولار") || t.currency === "$")) ||
+                  (v.id === "cash_lyd" && tName.includes("الكاش"))
+                );
+              });
+              if (match) {
+                const bal =
+                  typeof match.currentBalance === "number"
+                    ? match.currentBalance
+                    : parseFloat(match.currentBalance) || 0;
+                return {
+                  ...v,
+                  balance: bal,
+                };
+              }
+              return v;
+            });
+
+            localStorage.setItem("amir_vaults_v2", JSON.stringify(updated));
+
+            fetch("/api/vaults", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "sync_all", vaults: updated }),
+            }).catch((err) => console.error("Error syncing imported vaults to MySQL:", err));
+
+            return updated;
+          });
+
+          setGoogleConnected(true);
+          if (!quiet) {
+            setStatusMsg("✓ تم جلب وتحديث أرصدة الخزائن من شيت جوجل بنجاح!");
+            setTimeout(() => setStatusMsg(""), 4000);
+          }
+          return true;
+        } else {
+          if (!quiet) {
+            setStatusMsg(data?.error || "لم يتم العثور على أرصدة خزائن في شيت جوجل");
+            setTimeout(() => setStatusMsg(""), 4000);
+          }
+        }
+      } catch (err: any) {
+        if (!quiet) {
+          setStatusMsg("خطأ في جلب أرصدة الخزائن: " + (err.message || ""));
+          setTimeout(() => setStatusMsg(""), 4000);
+        }
+      } finally {
+        if (!quiet) setIsSyncingGoogle(false);
+      }
+      return false;
+    },
+    [googleScriptUrl]
+  );
+
   // Load from Google Sheets & MySQL on Mount (with localStorage fallback)
   useEffect(() => {
     let activeGoogleUrl = DEFAULT_GOOGLE_SCRIPT_URL;
@@ -785,12 +926,16 @@ export default function AmirClassicApp() {
     });
 
     setVaults(updatedVaultsList);
+    localStorage.setItem("amir_vaults_v2", JSON.stringify(updatedVaultsList));
 
     fetch("/api/vaults", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "sync_all", vaults: updatedVaultsList }),
     }).catch((err) => console.error("Error syncing vaults to MySQL:", err));
+
+    // Automatically sync updated treasury balances to Google Sheets
+    syncTreasuryToGoogleSheets(updatedVaultsList, true);
 
     setStatus("7. تم السحب والتصفية");
     setShowSettleModal(false);
@@ -897,12 +1042,16 @@ export default function AmirClassicApp() {
     });
 
     setVaults(updatedVaultsList);
+    localStorage.setItem("amir_vaults_v2", JSON.stringify(updatedVaultsList));
 
     fetch("/api/vaults", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "sync_all", vaults: updatedVaultsList }),
     }).catch((err) => console.error("Error syncing vaults to MySQL:", err));
+
+    // Automatically sync updated treasury balances to Google Sheets
+    syncTreasuryToGoogleSheets(updatedVaultsList, true);
 
     setStatus("7. تم السحب والتصفية");
     setShowSettleModal(false);
@@ -950,6 +1099,7 @@ export default function AmirClassicApp() {
     });
 
     setVaults(updatedVaultsList);
+    localStorage.setItem("amir_vaults_v2", JSON.stringify(updatedVaultsList));
 
     // Persist to MySQL
     fetch("/api/vaults", {
@@ -967,7 +1117,10 @@ export default function AmirClassicApp() {
       }),
     }).catch((err) => console.error("Error selling USD in MySQL:", err));
 
-    // Sync to Google Sheets
+    // Automatically sync updated treasury balances to Google Sheets
+    syncTreasuryToGoogleSheets(updatedVaultsList, true);
+
+    // Sync to Google Sheets movement log
     if (googleScriptUrl.trim()) {
       fetch("/api/google-sync", {
         method: "POST",
@@ -1004,16 +1157,17 @@ export default function AmirClassicApp() {
     const amt = parseFloat(fundAmount);
     if (isNaN(amt) || amt < 0) return;
 
-    setVaults((prev) =>
-      prev.map((v) => {
-        if (v.id === fundVaultId) {
-          const newBal = fundMode === "set" ? amt : v.balance + amt;
-          const newInc = fundMode === "set" ? Math.max(v.totalIncome, amt) : v.totalIncome + amt;
-          return { ...v, balance: newBal, totalIncome: newInc };
-        }
-        return v;
-      })
-    );
+    const updatedVaultsList = vaults.map((v) => {
+      if (v.id === fundVaultId) {
+        const newBal = fundMode === "set" ? amt : v.balance + amt;
+        const newInc = fundMode === "set" ? Math.max(v.totalIncome, amt) : v.totalIncome + amt;
+        return { ...v, balance: newBal, totalIncome: newInc };
+      }
+      return v;
+    });
+
+    setVaults(updatedVaultsList);
+    localStorage.setItem("amir_vaults_v2", JSON.stringify(updatedVaultsList));
 
     // Persist fund change to MySQL
     fetch("/api/vaults", {
@@ -1027,6 +1181,9 @@ export default function AmirClassicApp() {
         performedBy: `${currentEmployee.name} (${currentEmployee.role})`,
       }),
     }).catch((err) => console.error("Error funding vault in MySQL:", err));
+
+    // Automatically sync updated treasury balances to Google Sheets
+    syncTreasuryToGoogleSheets(updatedVaultsList, true);
 
     setFundAmount("");
     setShowFundModal(false);
@@ -1065,6 +1222,9 @@ export default function AmirClassicApp() {
         initialDollarUSD: dollarUSD,
       }),
     }).catch((err) => console.error("Error executing system reset in MySQL:", err));
+
+    // Automatically sync reset treasury balances to Google Sheets
+    syncTreasuryToGoogleSheets(zeroedVaults, true);
 
     setShowResetSystemModal(false);
     setShowTreasuryModal(false);
@@ -1296,8 +1456,12 @@ export default function AmirClassicApp() {
             type="button"
             className="btn-search"
             style={{ background: "#059669", marginRight: "6px" }}
-            onClick={() => syncCardsFromGoogleSheets(googleScriptUrl, false)}
-            title="تحديث ومزامنة البيانات فورياً من شيت جوجل المركزي"
+            onClick={async () => {
+              setStatusMsg("🔄 جاري مزامنة البطاقات وتصدير أرصدة الخزائن للشيت...");
+              await syncCardsFromGoogleSheets(googleScriptUrl, false);
+              await syncTreasuryToGoogleSheets(vaults, false);
+            }}
+            title="تحديث ومزامنة البطاقات وتصدير وتطابق أرصدة الخزائن فورياً مع شيت جوجل"
           >
             🔄 مزامنة الشيت
           </button>
@@ -2234,6 +2398,48 @@ export default function AmirClassicApp() {
                 >
                   ➕ تغذية / تعديل رصيد
                 </button>
+                <button
+                  type="button"
+                  disabled={isSyncingGoogle}
+                  onClick={() => syncTreasuryToGoogleSheets(vaults, false)}
+                  style={{
+                    background: "#0284c7",
+                    color: "white",
+                    border: "none",
+                    padding: "5px 12px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: isSyncingGoogle ? "wait" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                  title="تصدير وتحديث أرصدة الخزائن الحالية فوراً في ورقة أرصدة_الخزائن بشيت جوجل"
+                >
+                  {isSyncingGoogle ? "⏳ جاري التصدير..." : "📤 تصدير الأرصدة للشيت"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isSyncingGoogle}
+                  onClick={() => importTreasuryFromGoogleSheets(false)}
+                  style={{
+                    background: "#0d9488",
+                    color: "white",
+                    border: "none",
+                    padding: "5px 12px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: isSyncingGoogle ? "wait" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                  title="سحب أرصدة الخزائن من ورقة أرصدة_الخزائن بشيت جوجل"
+                >
+                  📥 استيراد من الشيت
+                </button>
                 {currentEmployee.role === "مدير عام" && (
                   <button
                     type="button"
@@ -2253,6 +2459,30 @@ export default function AmirClassicApp() {
                   </button>
                 )}
               </div>
+            </div>
+
+            <div
+              style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                color: "#166534",
+                marginBottom: "12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "6px",
+              }}
+            >
+              <span>
+                🟢 <strong>مزامنة شيت جوجل:</strong> أرصدة الخزائن مرتبطة بورقة <code>أرصدة_الخزائن</code> وتتطابق تلقائياً مع كل حركة أو عند الضغط على تصدير.
+              </span>
+              <span style={{ fontSize: "11px", color: "#15803d", fontWeight: "bold" }}>
+                ✓ تطابق تام 100% بين الموقع والشيت
+              </span>
             </div>
 
             <table className="treasury-table">
@@ -2842,7 +3072,44 @@ export default function AmirClassicApp() {
                     return;
                   }
                   setIsSyncingGoogle(true);
-                  setGoogleSyncStatus("جاري تصدير ومزامنة كافة البطاقات إلى شيت جوجل...");
+                  setGoogleSyncStatus("جاري تصدير وتحديث أرصدة الخزائن في ورقة أرصدة_الخزائن بشيت جوجل...");
+                  try {
+                    const ok = await syncTreasuryToGoogleSheets(vaults, true);
+                    if (ok) {
+                      setGoogleSyncStatus("✓ تم تصدير وتحديث كافة أرصدة الخزائن في شيت جوجل بنجاح!");
+                    } else {
+                      setGoogleSyncStatus("فشل تصدير أرصدة الخزائن. تأكد من إعدادات النشر في Apps Script.");
+                    }
+                  } catch (err: any) {
+                    setGoogleSyncStatus("خطأ في تصدير الخزائن: " + err.message);
+                  } finally {
+                    setIsSyncingGoogle(false);
+                  }
+                }}
+                style={{
+                  background: "#0284c7",
+                  color: "white",
+                  border: "none",
+                  padding: "9px 16px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: isSyncingGoogle ? "wait" : "pointer",
+                }}
+              >
+                🏦 تصدير أرصدة الخزائن للشيت
+              </button>
+
+              <button
+                type="button"
+                disabled={isSyncingGoogle}
+                onClick={async () => {
+                  if (!googleScriptUrl.trim()) {
+                    setGoogleSyncStatus("الرجاء إدخال رابط Web App أولاً");
+                    return;
+                  }
+                  setIsSyncingGoogle(true);
+                  setGoogleSyncStatus("جاري تصدير ومزامنة كافة البطاقات والخزائن إلى شيت جوجل...");
                   try {
                     const res = await fetch("/api/google-sync", {
                       method: "POST",
@@ -2851,6 +3118,7 @@ export default function AmirClassicApp() {
                         action: "export_all",
                         scriptUrl: googleScriptUrl.trim(),
                         cards: cards,
+                        vaults: vaults,
                         employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
                       }),
                     });

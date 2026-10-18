@@ -10,6 +10,7 @@ export interface GoogleSyncResult {
   inserted?: number;
   total?: number;
   cards?: any[];
+  treasury?: any[];
 }
 
 /**
