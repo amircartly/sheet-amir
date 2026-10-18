@@ -432,7 +432,6 @@ export default function AmirClassicApp() {
       const savedGoogleUrl = localStorage.getItem("amir_google_script_url");
       let activeGoogleUrl = "";
       const deadUrls = [
-        "AKfycbxIOAfZttwY6NodMj9wPQ5zb7VRvCdVeN5vBftwKFNLALLYzM2LrsquQuCOaUAbn7qAiw",
         "AKfycbzCOTTsRoERt18CajK5V8Ifwnh32jb14q53AMpKGX8sE8I2HCptCvTodJDTCKeSkoJ0Lg",
         "AKfycbyNBxrs_hHrlhW7v4jRQmo6jXv9Et3d7ILybQoRmPN",
       ];

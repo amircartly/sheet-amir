@@ -230,9 +230,12 @@ export async function POST(req: Request) {
         });
       }
 
-      let testResult = await fetchFromGoogleScript(targetUrl, "getCards");
+      let testResult = await fetchFromGoogleScript(targetUrl, "getTreasury");
       if (!testResult.success) {
-        testResult = await sendToGoogleScript(targetUrl, { action: "getCards" });
+        testResult = await fetchFromGoogleScript(targetUrl, "getCards");
+      }
+      if (!testResult.success) {
+        testResult = await sendToGoogleScript(targetUrl, { action: "getTreasury" });
       }
 
       if (testResult.success) {
@@ -240,6 +243,7 @@ export async function POST(req: Request) {
           success: true,
           message: "الاتصال بشيت جوجل ناجح وجاهز",
           cardCount: Array.isArray(testResult.cards) ? testResult.cards.length : 0,
+          treasuryCount: Array.isArray(testResult.treasury) ? testResult.treasury.length : 0,
         });
       }
 
@@ -275,11 +279,27 @@ export async function POST(req: Request) {
         });
       }
 
-      const syncResult = await sendToGoogleScript(targetUrl, {
+      let syncResult = await sendToGoogleScript(targetUrl, {
         action: "syncTreasury",
         vaults: vaultsList,
         employeeName,
       });
+
+      // If POST hit Google Drive redirection/auth wall, fallback to GET action=syncTreasury
+      if (!syncResult.success) {
+        const getUrl = `${targetUrl}${targetUrl.includes("?") ? "&" : "?"}action=syncTreasury&vaults=${encodeURIComponent(JSON.stringify(vaultsList))}&employeeName=${encodeURIComponent(employeeName)}`;
+        try {
+          const getRes = await fetch(getUrl, { method: "GET", redirect: "follow" });
+          if (getRes.ok) {
+            const getJson = await getRes.json();
+            if (getJson && getJson.success) {
+              syncResult = getJson;
+            }
+          }
+        } catch {
+          // ignore fallback error
+        }
+      }
 
       // Detect if remote Apps Script is still running the old code without syncTreasury handler
       if (

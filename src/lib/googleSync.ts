@@ -27,10 +27,12 @@ export async function sendToGoogleScript(
   }
 
   try {
+    // Note: Google Apps Script Web App redirects 302 to script.googleusercontent.com
+    // Using standard JSON payload; if needed, plain text avoids preflight
     const res = await fetch(cleanUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "text/plain;charset=utf-8",
       },
       body: JSON.stringify(payload),
       redirect: "follow",
@@ -63,7 +65,7 @@ export async function sendToGoogleScript(
       return json;
     } catch {
       // If HTML was returned, check for known errors
-      if (text.includes("accounts.google.com") || text.includes("Page Not Found")) {
+      if (text.includes("accounts.google.com") || text.includes("Page Not Found") || text.includes("unable to open the file")) {
         return {
           success: false,
           error:
@@ -139,7 +141,7 @@ export async function fetchFromGoogleScript(
       }
       return json;
     } catch {
-      if (text.includes("accounts.google.com") || text.includes("Page Not Found")) {
+      if (text.includes("accounts.google.com") || text.includes("Page Not Found") || text.includes("unable to open the file")) {
         return {
           success: false,
           error: "تنبيه: يتطلب نشر تطبيق Google Apps Script إتاحة الوصول للجميع (Anyone).",

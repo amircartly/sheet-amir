@@ -36,22 +36,48 @@ function openFormDialog() {
 function doGet(e) {
   var action = e && e.parameter ? e.parameter.action : '';
 
+  // 1. جلب البطاقات
   if (action === 'getCards') {
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       cards: getAllCards()
     })).setMimeType(ContentService.MimeType.JSON);
   }
+
+  // 2. جلب المستخدمين
   if (action === 'getUsers') {
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       users: getSystemUsers()
     })).setMimeType(ContentService.MimeType.JSON);
   }
+
+  // 3. جلب أرصدة الخزائن
   if (action === 'getTreasury') {
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       treasury: getTreasuryBalances()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 4. مزامنة وتحديث أرصدة الخزائن عبر GET كبديل مرن للغاية في حال قيود POST
+  if (action === 'syncTreasury') {
+    var rawVaults = e && e.parameter ? e.parameter.vaults : '';
+    var employee = (e && e.parameter ? e.parameter.employeeName : '') || 'موقع المنظومة';
+    var vaultsList = [];
+    try {
+      vaultsList = rawVaults ? JSON.parse(rawVaults) : [];
+    } catch (err) {
+      vaultsList = [];
+    }
+    if (Array.isArray(vaultsList) && vaultsList.length > 0) {
+      var tRes = syncTreasurySheet(vaultsList, employee);
+      return ContentService.createTextOutput(JSON.stringify(tRes))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'بيانات الخزائن مفقودة أو غير صالحة'
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
