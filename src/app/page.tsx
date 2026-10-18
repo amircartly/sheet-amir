@@ -163,6 +163,14 @@ export default function AmirClassicApp() {
   const [resetCashLYD, setResetCashLYD] = useState("0");
   const [resetDollarUSD, setResetDollarUSD] = useState("0");
 
+  // Google Sheets Live Sync State
+  const [showGoogleSyncModal, setShowGoogleSyncModal] = useState(false);
+  const [googleScriptUrl, setGoogleScriptUrl] = useState(
+    "https://script.google.com/macros/s/AKfycbxIOAfZttwY6NodMj9wPQ5zb7VRvCdVeN5vBftwKFNLALLYzM2LrsquQuCOaUAbn7qAiw/exec"
+  );
+  const [isSyncingGoogle, setIsSyncingGoogle] = useState(false);
+  const [googleSyncStatus, setGoogleSyncStatus] = useState<string | null>(null);
+
   // Load from MySQL API on Mount (with localStorage fallback)
   useEffect(() => {
     try {
@@ -173,6 +181,9 @@ export default function AmirClassicApp() {
       const savedVaults = localStorage.getItem("amir_vaults_v2");
       if (savedCards) setCards(JSON.parse(savedCards));
       if (savedVaults) setVaults(JSON.parse(savedVaults));
+
+      const savedGoogleUrl = localStorage.getItem("amir_google_script_url");
+      if (savedGoogleUrl) setGoogleScriptUrl(savedGoogleUrl);
     } catch {
       // fallback
     }
@@ -214,6 +225,12 @@ export default function AmirClassicApp() {
   useEffect(() => {
     localStorage.setItem("amir_vaults_v2", JSON.stringify(vaults));
   }, [vaults]);
+
+  useEffect(() => {
+    if (googleScriptUrl) {
+      localStorage.setItem("amir_google_script_url", googleScriptUrl);
+    }
+  }, [googleScriptUrl]);
 
   // Derived Total Cost
   const totalCost = (parseFloat(depositAmt) || 0) + (parseFloat(cardPrice) || 0);
@@ -476,6 +493,20 @@ export default function AmirClassicApp() {
       body: JSON.stringify(newCard),
     }).catch((err) => console.error("Error saving card to MySQL:", err));
 
+    // Live Sync to Google Sheets in background if configured
+    if (googleScriptUrl.trim()) {
+      fetch("/api/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sync_card",
+          scriptUrl: googleScriptUrl.trim(),
+          card: newCard,
+          employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
+        }),
+      }).catch((err) => console.log("Google Sheets background sync error:", err));
+    }
+
     setCardCode(assignedCode);
     evaluateProtection(newCard);
 
@@ -556,6 +587,20 @@ export default function AmirClassicApp() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedCard),
     }).catch((err) => console.error("Error saving settled card to MySQL:", err));
+
+    // Live Sync to Google Sheets
+    if (googleScriptUrl.trim()) {
+      fetch("/api/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sync_card",
+          scriptUrl: googleScriptUrl.trim(),
+          card: updatedCard,
+          employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
+        }),
+      }).catch((err) => console.log("Google sync error:", err));
+    }
 
     // Update Treasury Vaults locally and in MySQL
     const updatedVaultsList = vaults.map((v) => {
@@ -690,6 +735,19 @@ export default function AmirClassicApp() {
           {/* Treasury Balances Button */}
           <button type="button" className="btn-view-treasury" onClick={() => setShowTreasuryModal(true)}>
             🏦 أرصدة الخزائن والمصارف
+          </button>
+
+          {/* Google Sheets Live Sync Button */}
+          <button
+            type="button"
+            className="btn-google-sync"
+            onClick={() => {
+              setGoogleSyncStatus(null);
+              setShowGoogleSyncModal(true);
+            }}
+            title="تصدير وتحديث شيت جوجل مباشرة (Google Sheets Sync)"
+          >
+            📊 ربط وتصدير شيت جوجل
           </button>
 
           {/* Active User Role Badge */}
@@ -1724,6 +1782,169 @@ export default function AmirClassicApp() {
                 onClick={() => setShowResetSystemModal(false)}
               >
                 إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Google Sheets Live Sync Modal */}
+      {showGoogleSyncModal && (
+        <div id="googleSyncModal" style={{ display: "flex" }}>
+          <div className="modal-card modal-card-large">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px", marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "20px" }}>📊</span>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>ربط وتصدير قاعدة البيانات إلى شيت جوجل (Google Sheets)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGoogleSyncModal(false)}
+                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#64748b" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: "13px", color: "#475569", lineHeight: 1.6, marginBottom: "14px" }}>
+              يتيح هذا القسم إرسال وتصدير كافة البطاقات المسجلة في قاعدة بيانات الموقع مباشرة إلى شيت جوجل الخاص بك في Google Drive ليتحدث حياً وبشكل تلقائي.
+            </p>
+
+            <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "14px", marginBottom: "14px" }}>
+              <div className="form-group" style={{ marginBottom: "8px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 800, color: "#1e293b" }}>رابط Google Apps Script Web App (المربوط بالشيت):</label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  value={googleScriptUrl}
+                  onChange={(e) => setGoogleScriptUrl(e.target.value)}
+                  style={{ fontSize: "13px", padding: "8px 10px" }}
+                />
+              </div>
+              <span style={{ fontSize: "11px", color: "#64748b" }}>
+                💡 الرابط الافتراضي مجهز بناءً على معرف الشيت الخاص بك. يمكنك تعديله إذا قمت بنشر إصدار جديد من الشيت.
+              </span>
+            </div>
+
+            {googleSyncStatus && (
+              <div
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  marginBottom: "14px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  background: googleSyncStatus.startsWith("✓") ? "#ecfdf5" : "#fef2f2",
+                  color: googleSyncStatus.startsWith("✓") ? "#065f46" : "#991b1b",
+                  border: googleSyncStatus.startsWith("✓") ? "1px solid #a7f3d0" : "1px solid #fecaca",
+                }}
+              >
+                {googleSyncStatus}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end", marginTop: "16px" }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                style={{ width: "auto" }}
+                onClick={() => setShowGoogleSyncModal(false)}
+              >
+                إغلاق
+              </button>
+
+              <button
+                type="button"
+                disabled={isSyncingGoogle}
+                onClick={async () => {
+                  if (!googleScriptUrl.trim()) {
+                    setGoogleSyncStatus("الرجاء إدخال رابط Web App أولاً");
+                    return;
+                  }
+                  setIsSyncingGoogle(true);
+                  setGoogleSyncStatus("جاري فحص الاتصال بشيت جوجل...");
+                  try {
+                    const res = await fetch("/api/google-sync", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "test_connection",
+                        scriptUrl: googleScriptUrl.trim(),
+                      }),
+                    });
+                    const d = await res.json();
+                    if (d && d.success) {
+                      setGoogleSyncStatus("✓ الاتصال بشيت جوجل ناجح وجاهز للتصدير والتحديث الحي!");
+                    } else {
+                      setGoogleSyncStatus(d?.error || "فشل الاتصال بالشيت. يرجى التأكد من صلاحية الرابط (Anyone).");
+                    }
+                  } catch (err: any) {
+                    setGoogleSyncStatus("خطأ في الاتصال: " + err.message);
+                  } finally {
+                    setIsSyncingGoogle(false);
+                  }
+                }}
+                style={{
+                  background: "#0284c7",
+                  color: "white",
+                  border: "none",
+                  padding: "9px 16px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: isSyncingGoogle ? "wait" : "pointer",
+                }}
+              >
+                🔍 فحص الاتصال بالشيت
+              </button>
+
+              <button
+                type="button"
+                disabled={isSyncingGoogle}
+                onClick={async () => {
+                  if (!googleScriptUrl.trim()) {
+                    setGoogleSyncStatus("الرجاء إدخال رابط Web App أولاً");
+                    return;
+                  }
+                  setIsSyncingGoogle(true);
+                  setGoogleSyncStatus("جاري تصدير ومزامنة كافة البطاقات إلى شيت جوجل...");
+                  try {
+                    const res = await fetch("/api/google-sync", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "export_all",
+                        scriptUrl: googleScriptUrl.trim(),
+                        cards: cards,
+                        employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
+                      }),
+                    });
+                    const d = await res.json();
+                    if (d && d.success) {
+                      setGoogleSyncStatus(`✓ ${d.message || "تم تصدير وتحديث البيانات في شيت جوجل بنجاح!"}`);
+                    } else {
+                      setGoogleSyncStatus(d?.error || "فشل التصدير إلى شيت جوجل. تأكد من إعدادات النشر في Apps Script.");
+                    }
+                  } catch (err: any) {
+                    setGoogleSyncStatus("خطأ في التصدير: " + err.message);
+                  } finally {
+                    setIsSyncingGoogle(false);
+                  }
+                }}
+                style={{
+                  background: "#059669",
+                  color: "white",
+                  border: "none",
+                  padding: "9px 20px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 800,
+                  cursor: isSyncingGoogle ? "wait" : "pointer",
+                  boxShadow: "0 2px 4px rgba(5, 150, 105, 0.25)",
+                }}
+              >
+                {isSyncingGoogle ? "⏳ جاري التصدير..." : "📤 تصدير وتحديث شيت جوجل الآن"}
               </button>
             </div>
           </div>

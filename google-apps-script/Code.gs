@@ -56,6 +56,72 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// 3.1 استقبال طلبات التحديث الحي والتصدير من موقع المنظومة الخارجي (doPost)
+function doPost(e) {
+  try {
+    var data = {};
+    if (e && e.postData && e.postData.contents) {
+      data = JSON.parse(e.postData.contents);
+    }
+
+    var action = data.action || '';
+
+    // أ. تحديث أو حفظ بطاقة واحدة حياً
+    if (action === 'syncCard' && data.card) {
+      var saveRes = saveCardData(data.card, data.employeeName || 'تحديث حي من موقع المنظومة');
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: 'تم تحديث الشيت حياً بنجاح',
+        code: saveRes.code,
+        row: saveRes.row
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ب. تصدير ومزامنة حزمة كاملة من البطاقات (Batch Sync)
+    if (action === 'batchSync' && Array.isArray(data.cards)) {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheet = ss.getSheetByName('بيانات_ماستر') || ss.getSheets()[0];
+      var emp = data.employeeName || 'تصدير شامل من الموقع';
+      var updatedCount = 0;
+      var insertedCount = 0;
+
+      for (var i = 0; i < data.cards.length; i++) {
+        var c = data.cards[i];
+        if (!c || (!c.name && !c.code)) continue;
+        var r = saveCardData(c, emp);
+        if (r && r.success) {
+          updatedCount++;
+        }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: 'تمت مزامنة ' + updatedCount + ' بطاقة في شيت بيانات_ماستر بنجاح',
+        total: data.cards.length,
+        updated: updatedCount
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ج. مزامنة تسوية وتصفية الدولار
+    if (action === 'settleCard' && data.settleData) {
+      var settleRes = settleAndSellCard(data.settleData, data.employeeName || 'تصفية من الموقع');
+      return ContentService.createTextOutput(JSON.stringify(settleRes))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'إجراء غير مدعوم في doPost'
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 // 4. تهيئة كافة أوراق المنظومة الأربعة (قاعدة البيانات الموحدة)
 function setupAllSystemSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
