@@ -237,9 +237,15 @@ export default function AmirClassicApp() {
       if (savedVaults) setVaults(JSON.parse(savedVaults));
 
       const savedGoogleUrl = localStorage.getItem("amir_google_script_url");
-      // If saved url is empty or contains old broken URL, override with valid URL
-      if (savedGoogleUrl && !savedGoogleUrl.includes("AKfycbxIOAf")) {
+      // If saved url is empty or contains old broken URL, override with valid active URL
+      if (
+        savedGoogleUrl &&
+        !savedGoogleUrl.includes("AKfycbxIOAf") &&
+        !savedGoogleUrl.includes("AKfycbyNBxrs")
+      ) {
         activeGoogleUrl = savedGoogleUrl;
+      } else {
+        activeGoogleUrl = DEFAULT_GOOGLE_SCRIPT_URL;
       }
       setGoogleScriptUrl(activeGoogleUrl);
       localStorage.setItem("amir_google_script_url", activeGoogleUrl);

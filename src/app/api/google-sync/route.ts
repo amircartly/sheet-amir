@@ -5,13 +5,59 @@ import { DEFAULT_GOOGLE_SCRIPT_URL } from "@/lib/constants";
 
 function resolveScriptUrl(scriptUrl?: string): string {
   let url = (scriptUrl || "").trim();
-  if (!url || url.includes("AKfycbxIOAf")) {
+  if (
+    !url ||
+    url.includes("AKfycbxIOAf") ||
+    url.includes("AKfycbyNBxrs") ||
+    url.includes("Page Not Found")
+  ) {
     url =
       process.env.GOOGLE_SHEETS_WEBAPP_URL ||
       process.env.GOOGLE_SHEET_URL ||
       DEFAULT_GOOGLE_SCRIPT_URL;
   }
   return url;
+}
+
+// Normalizes a card coming from Google Sheets into standard BankCard shape
+function normalizeCard(c: any): any {
+  const code = (c.code || c.id || "").toString().trim();
+  const name = (c.name || c.clientName || "").toString().trim();
+  const depositAmt = parseFloat(c.depositAmt) || 0;
+  const cardPrice = parseFloat(c.cardPrice) || 0;
+  let totalCost = depositAmt + cardPrice;
+  if (typeof c.totalCost === "number" && !isNaN(c.totalCost) && c.totalCost > 0) {
+    totalCost = c.totalCost;
+  }
+
+  return {
+    id: code,
+    code: code,
+    name: name,
+    nationalId: (c.nationalId || "").toString().trim(),
+    cblPhone: (c.cblPhone || "").toString().trim(),
+    bank: c.bank || "مصرف التجارة والتنمية",
+    accountNumber: (c.accountNumber || "").toString().trim(),
+    iban: (c.iban || "").toString().trim(),
+    depositAmt,
+    cardPrice,
+    totalCost,
+    depositDate: (c.depositDate || "").toString().trim(),
+    bookingDate: (c.bookingDate || "").toString().trim(),
+    cardNum: (c.cardNum || c.cardNumber || "").toString().trim(),
+    pinLocal: (c.pinLocal || "").toString().trim(),
+    pinDollar: (c.pinDollar || "").toString().trim(),
+    expiry: (c.expiry || c.expiryDate || "09/29").toString().trim(),
+    status: (c.status || "1. إدخال البيانات").toString().trim(),
+    notes: (c.notes || "").toString().trim(),
+    refSlipNo: (c.refSlipNo || "").toString().trim(),
+    withdrawLocation: (c.withdrawLocation || "").toString().trim(),
+    usdAmount: parseFloat(c.usdAmount) || 0,
+    rate: parseFloat(c.rate) || 0,
+    netProfitLYD: parseFloat(c.netProfitLYD) || 0,
+    destinationVault: (c.destinationVault || "").toString().trim(),
+    createdAt: c.createdAt || new Date().toISOString(),
+  };
 }
 
 export async function GET(req: Request) {
@@ -26,11 +72,14 @@ export async function GET(req: Request) {
       });
     }
 
-    // Try POST getCards first
-    let result = await sendToGoogleScript(targetUrl, { action: "getCards" });
+    // Use GET fetch first (fastest and most reliable for Google Apps Script Web Apps)
+    let result = await fetchFromGoogleScript(targetUrl, "getCards");
     if (!result.success || !Array.isArray(result.cards)) {
-      // Fallback to GET action=getCards
-      result = await fetchFromGoogleScript(targetUrl, "getCards");
+      result = await sendToGoogleScript(targetUrl, { action: "getCards" });
+    }
+
+    if (result.success && Array.isArray(result.cards)) {
+      result.cards = result.cards.map(normalizeCard);
     }
 
     return NextResponse.json(result);
@@ -56,9 +105,14 @@ export async function POST(req: Request) {
         });
       }
 
-      let syncResult = await sendToGoogleScript(targetUrl, { action: "getCards" });
+      // Try GET request first
+      let syncResult = await fetchFromGoogleScript(targetUrl, "getCards");
       if (!syncResult.success || !Array.isArray(syncResult.cards)) {
-        syncResult = await fetchFromGoogleScript(targetUrl, "getCards");
+        syncResult = await sendToGoogleScript(targetUrl, { action: "getCards" });
+      }
+
+      if (syncResult.success && Array.isArray(syncResult.cards)) {
+        syncResult.cards = syncResult.cards.map(normalizeCard);
       }
 
       return NextResponse.json(syncResult);
@@ -158,12 +212,17 @@ export async function POST(req: Request) {
         });
       }
 
-      let testResult = await sendToGoogleScript(targetUrl, {
-        action: "getCards",
-      });
-
+      let testResult = await fetchFromGoogleScript(targetUrl, "getCards");
       if (!testResult.success) {
-        testResult = await fetchFromGoogleScript(targetUrl, "getCards");
+        testResult = await sendToGoogleScript(targetUrl, { action: "getCards" });
+      }
+
+      if (testResult.success) {
+        return NextResponse.json({
+          success: true,
+          message: "الاتصال بشيت جوجل ناجح وجاهز",
+          cardCount: Array.isArray(testResult.cards) ? testResult.cards.length : 0,
+        });
       }
 
       return NextResponse.json(testResult);
