@@ -430,39 +430,63 @@ export default function AmirClassicApp() {
       }
 
       const savedGoogleUrl = localStorage.getItem("amir_google_script_url");
-      // If saved url is empty or contains old broken URL, override with valid active URL
+      let activeGoogleUrl = "";
+      const deadUrls = [
+        "AKfycbxIOAfZttwY6NodMj9wPQ5zb7VRvCdVeN5vBftwKFNLALLYzM2LrsquQuCOaUAbn7qAiw",
+        "AKfycbzCOTTsRoERt18CajK5V8Ifwnh32jb14q53AMpKGX8sE8I2HCptCvTodJDTCKeSkoJ0Lg",
+        "AKfycbyNBxrs_hHrlhW7v4jRQmo6jXv9Et3d7ILybQoRmPN",
+      ];
       if (
         savedGoogleUrl &&
-        !savedGoogleUrl.includes("AKfycbxIOAf") &&
-        !savedGoogleUrl.includes("AKfycbyNBxrs")
+        savedGoogleUrl.trim() &&
+        !deadUrls.some((d) => savedGoogleUrl.includes(d))
       ) {
-        activeGoogleUrl = savedGoogleUrl;
-      } else {
+        activeGoogleUrl = savedGoogleUrl.trim();
+      } else if (DEFAULT_GOOGLE_SCRIPT_URL) {
         activeGoogleUrl = DEFAULT_GOOGLE_SCRIPT_URL;
       }
       setGoogleScriptUrl(activeGoogleUrl);
-      localStorage.setItem("amir_google_script_url", activeGoogleUrl);
+      if (activeGoogleUrl) {
+        localStorage.setItem("amir_google_script_url", activeGoogleUrl);
+      } else {
+        localStorage.removeItem("amir_google_script_url");
+      }
     } catch {
       // fallback
     }
 
     // 1. First priority: Real-time sync with Google Sheets (Central Cloud Database)
-    fetch("/api/google-sync", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "get_cards",
-        scriptUrl: activeGoogleUrl,
-      }),
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && data.success && Array.isArray(data.cards) && data.cards.length > 0) {
-          setCards(data.cards);
-          localStorage.setItem("amir_cards_v2", JSON.stringify(data.cards));
-          setGoogleConnected(true);
-        } else {
-          // 2. Fallback to MySQL cards if Google Sheets had no records yet
+    if (activeGoogleUrl) {
+      fetch("/api/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "get_cards",
+          scriptUrl: activeGoogleUrl,
+        }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.success && Array.isArray(data.cards) && data.cards.length > 0) {
+            setCards(data.cards);
+            localStorage.setItem("amir_cards_v2", JSON.stringify(data.cards));
+            setGoogleConnected(true);
+          } else {
+            // 2. Fallback to MySQL cards if Google Sheets had no records yet
+            fetch("/api/cards")
+              .then((res) => (res.ok ? res.json() : null))
+              .then((cData) => {
+                if (cData && cData.success && Array.isArray(cData.cards) && cData.cards.length > 0) {
+                  setCards(cData.cards);
+                  localStorage.setItem("amir_cards_v2", JSON.stringify(cData.cards));
+                  setDbConnected(true);
+                }
+              })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {
+          // Fallback to MySQL cards if Google Sheets call fails
           fetch("/api/cards")
             .then((res) => (res.ok ? res.json() : null))
             .then((cData) => {
@@ -473,21 +497,20 @@ export default function AmirClassicApp() {
               }
             })
             .catch(() => {});
-        }
-      })
-      .catch(() => {
-        // Fallback to MySQL cards if Google Sheets call fails
-        fetch("/api/cards")
-          .then((res) => (res.ok ? res.json() : null))
-          .then((cData) => {
-            if (cData && cData.success && Array.isArray(cData.cards) && cData.cards.length > 0) {
-              setCards(cData.cards);
-              localStorage.setItem("amir_cards_v2", JSON.stringify(cData.cards));
-              setDbConnected(true);
-            }
-          })
-          .catch(() => {});
-      });
+        });
+    } else {
+      // No Google Sheets URL configured yet, load cards from database
+      fetch("/api/cards")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((cData) => {
+          if (cData && cData.success && Array.isArray(cData.cards) && cData.cards.length > 0) {
+            setCards(cData.cards);
+            localStorage.setItem("amir_cards_v2", JSON.stringify(cData.cards));
+            setDbConnected(true);
+          }
+        })
+        .catch(() => {});
+    }
 
     // Fetch initial vaults
     fetch("/api/vaults")
@@ -2969,18 +2992,90 @@ export default function AmirClassicApp() {
 
             <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "14px", marginBottom: "14px" }}>
               <div className="form-group" style={{ marginBottom: "8px" }}>
-                <label style={{ fontSize: "12px", fontWeight: 800, color: "#1e293b" }}>رابط Google Apps Script Web App (المربوط بالشيت):</label>
-                <input
-                  type="text"
-                  dir="ltr"
-                  placeholder="https://script.google.com/macros/s/.../exec"
-                  value={googleScriptUrl}
-                  onChange={(e) => setGoogleScriptUrl(e.target.value)}
-                  style={{ fontSize: "13px", padding: "8px 10px" }}
-                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 800, color: "#1e293b" }}>رابط Google Apps Script Web App (المربوط بالشيت):</label>
+                  {googleScriptUrl.trim() && (
+                    <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 700 }}>
+                      ✓ تم حفظ الرابط
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    value={googleScriptUrl}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      setGoogleScriptUrl(val);
+                      if (val) {
+                        localStorage.setItem("amir_google_script_url", val);
+                      } else {
+                        localStorage.removeItem("amir_google_script_url");
+                      }
+                    }}
+                    style={{ fontSize: "13px", padding: "8px 10px", flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const clipText = await navigator.clipboard.readText();
+                        if (clipText && clipText.includes("script.google.com")) {
+                          const val = clipText.trim();
+                          setGoogleScriptUrl(val);
+                          localStorage.setItem("amir_google_script_url", val);
+                          setGoogleSyncStatus("✓ تم لصق وحفظ الرابط بنجاح! اضغط الآن على (🔍 فحص الاتصال بالشيت).");
+                        } else {
+                          alert("الرجاء نسخ رابط Web App أولاً من شيت جوجل، أو استخدم اللصق المباشر (Ctrl+V) في الخانة.");
+                        }
+                      } catch {
+                        alert("يرجى استخدام اختصار اللصق (Ctrl + V) داخل خانة الرابط.");
+                      }
+                    }}
+                    style={{
+                      background: "#0284c7",
+                      color: "white",
+                      border: "none",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    📋 لصق
+                  </button>
+                  {googleScriptUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGoogleScriptUrl("");
+                        localStorage.removeItem("amir_google_script_url");
+                        setGoogleSyncStatus("تم مسح الرابط القديم. يمكنك الآن لصق الرابط النشط الجديد.");
+                      }}
+                      style={{
+                        background: "#fee2e2",
+                        color: "#991b1b",
+                        border: "1px solid #fecaca",
+                        padding: "8px 10px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                      title="مسح الرابط القديم"
+                    >
+                      ✕ مسح
+                    </button>
+                  )}
+                </div>
               </div>
               <span style={{ fontSize: "11px", color: "#64748b" }}>
-                💡 الرابط الافتراضي مجهز بناءً على معرف الشيت الخاص بك. يمكنك تعديله إذا قمت بنشر إصدار جديد من الشيت.
+                💡 الصق هنا الرابط المنسوخ من نافذة &quot;إدارة عمليات النشر&quot; في شيت جوجل (الرابط الذي ينتهي بـ /exec).
               </span>
             </div>
 
@@ -3112,7 +3207,10 @@ export default function AmirClassicApp() {
                         في ملف <strong>Code.gs</strong> (أو &quot;الرمز&quot;): حدد كل الكود القديم واحذفه (اضغط <code>Ctrl + A</code> ثم <code>Delete</code>)، ثم الصق الكود الجديد (<code>Ctrl + V</code>)، واضغط حفظ 💾 (<code>Ctrl + S</code>).
                       </li>
                       <li>
-                        <strong>الخطوة الأهم:</strong> اضغط على زر <strong>نشر (Deploy)</strong> الأزرق في الأعلى ⬅️ <strong>إدارة عمليات النشر (Manage deployments)</strong> ⬅️ اضغط على أيقونة <strong>القلم ✏️</strong> ⬅️ في خانة الإصدار (Version) اختر <strong>إصدار جديد (New version)</strong> ⬅️ اضغط <strong>Deploy (نشر)</strong>.
+                        اضغط على زر <strong>نشر (Deploy)</strong> الأزرق في الأعلى ⬅️ <strong>إدارة عمليات النشر (Manage deployments)</strong> ⬅️ اضغط على أيقونة <strong>القلم ✏️</strong> ⬅️ في خانة الإصدار (Version) اختر <strong>إصدار جديد (New version)</strong> ⬅️ اضغط <strong>Deploy (نشر)</strong>.
+                      </li>
+                      <li>
+                        <strong>الخطوة الحاسمة (نسخ الرابط ولصقه هنا):</strong> في نفس النافذة، انظر تحت <strong>تطبيق الويب (Web App)</strong> واضغط على زر <strong>نسخ</strong> الأزرق بجانب <strong>عنوان URL</strong>، ثم الصقه في خانة الرابط هنا واضغط <strong>🔍 فحص الاتصال بالشيت</strong>.
                       </li>
                     </ol>
                     <div style={{ marginTop: "8px", color: "#b45309", fontWeight: "bold" }}>
@@ -3171,9 +3269,13 @@ export default function AmirClassicApp() {
                     });
                     const d = await res.json();
                     if (d && d.success) {
+                      setGoogleConnected(true);
                       setGoogleSyncStatus("✓ الاتصال بشيت جوجل ناجح وجاهز للتصدير والتحديث الحي!");
                     } else {
                       setGoogleSyncStatus(d?.error || "فشل الاتصال بالشيت. يرجى التأكد من صلاحية الرابط (Anyone).");
+                      if (d?.needsScriptUpdate) {
+                        setShowScriptGuide(true);
+                      }
                     }
                   } catch (err: any) {
                     setGoogleSyncStatus("خطأ في الاتصال: " + err.message);

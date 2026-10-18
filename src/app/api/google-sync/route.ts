@@ -5,16 +5,12 @@ import { DEFAULT_GOOGLE_SCRIPT_URL } from "@/lib/constants";
 
 function resolveScriptUrl(scriptUrl?: string): string {
   let url = (scriptUrl || "").trim();
-  if (
-    !url ||
-    url.includes("AKfycbxIOAf") ||
-    url.includes("AKfycbyNBxrs") ||
-    url.includes("Page Not Found")
-  ) {
+  if (!url) {
     url =
-      process.env.GOOGLE_SHEETS_WEBAPP_URL ||
-      process.env.GOOGLE_SHEET_URL ||
-      DEFAULT_GOOGLE_SCRIPT_URL;
+      (process.env.GOOGLE_SHEETS_WEBAPP_URL || "").trim() ||
+      (process.env.GOOGLE_SHEET_URL || "").trim() ||
+      DEFAULT_GOOGLE_SCRIPT_URL ||
+      "";
   }
   return url;
 }
