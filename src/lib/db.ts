@@ -127,7 +127,7 @@ export async function initDatabaseTables() {
       ["bank_7", "حساب المصرف الإسلامي الليبي", "حساب مصرفي", "د.ل", 0, 0],
       ["bank_8", "حساب مصرف شمال أفريقيا", "حساب مصرفي", "د.ل", 0, 0],
       ["bank_9", "حساب مصرف اليقين", "حساب مصرفي", "د.ل", 0, 0],
-      ["cash_usd", "خزينة الدولار ($ Cash)", "خزينة عملة صعبة", "$", 0, 0],
+      ["cash_usd", "خزينة الدولار النقدي (الخارج)", "خزينة عملة صعبة (الخارج)", "$", 0, 0],
     ];
 
     for (const v of defaultVaults) {
@@ -135,6 +135,15 @@ export async function initDatabaseTables() {
         `INSERT INTO vaults (id, name, type, currency, balance, total_income) VALUES (?, ?, ?, ?, ?, ?)`,
         v
       );
+    }
+  } else {
+    // Unify name with Google Sheets if legacy name exists
+    try {
+      await p.query(
+        `UPDATE vaults SET name = 'خزينة الدولار النقدي (الخارج)', type = 'خزينة عملة صعبة (الخارج)', currency = '$' WHERE id = 'cash_usd'`
+      );
+    } catch {
+      // ignore
     }
   }
 

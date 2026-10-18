@@ -116,7 +116,7 @@ export function TreasuryHeader({ treasury, onUpdateTreasury, totalProfitLYD }: P
           {/* 3. Dollar Vault USD */}
           <div className="bg-slate-800/80 border border-amber-500/30 rounded-xl p-3 sm:p-4 bg-gradient-to-b from-amber-500/10 to-transparent">
             <div className="flex items-center justify-between text-amber-300 mb-1">
-              <span className="text-xs font-medium">خزينة الدولار (Cash $)</span>
+              <span className="text-xs font-medium">خزينة الدولار النقدي (الخارج)</span>
               <DollarSign className="w-4 h-4 text-amber-400" />
             </div>
             <div className="text-lg sm:text-2xl font-bold text-amber-400 font-mono">
@@ -205,7 +205,7 @@ export function TreasuryHeader({ treasury, onUpdateTreasury, totalProfitLYD }: P
                   className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="cash">خزينة الكاش (دينار ليبي)</option>
-                  <option value="dollar">خزينة الدولار ($ Cash)</option>
+                  <option value="dollar">خزينة الدولار النقدي (الخارج)</option>
                   {treasury.bankAccounts.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name} (دينار)

@@ -55,13 +55,43 @@ export async function POST(req: Request) {
         );
       }
 
+      const curr = vaultId === "cash_usd" ? "$" : "د.ل";
       await pool.query(
         `INSERT INTO movements (action_type, details, amount, performed_by) VALUES (?, ?, ?, ?)`,
         [
           "تغذية / ضبط رصيد",
-          `تعديل رصيد الخزينة (${vaultId}) بمقدار: ${amt} د.ل (${mode})`,
+          `تعديل رصيد الخزينة (${vaultId}) بمقدار: ${amt} ${curr} (${mode})`,
           amt,
           performedBy || "المنظومة",
+        ]
+      );
+    } else if (action === "sell_usd") {
+      const usd = parseFloat(body.usdAmount) || 0;
+      const rate = parseFloat(body.rate) || 0;
+      const totalSaleLYD = parseFloat(body.totalSaleLYD) || usd * rate;
+      const destinationVault = body.destinationVault || "خزينة الكاش بالدينار";
+      const refNo = body.refNo || "";
+
+      // Deduct from cash_usd
+      await pool.query(
+        `UPDATE vaults SET balance = GREATEST(0, balance - ?) WHERE id = 'cash_usd'`,
+        [usd]
+      );
+
+      // Add to destination LYD vault
+      await pool.query(
+        `UPDATE vaults SET balance = balance + ?, total_income = total_income + ? WHERE name = ? OR id = ?`,
+        [totalSaleLYD, totalSaleLYD, destinationVault, destinationVault]
+      );
+
+      // Record movement in movements table
+      await pool.query(
+        `INSERT INTO movements (action_type, details, amount, performed_by) VALUES (?, ?, ?, ?)`,
+        [
+          "بيع دولار كاش",
+          `بيع $${usd.toLocaleString("en-US")} بسعر ${rate} د.ل بإجمالي ${totalSaleLYD.toLocaleString("en-US")} د.ل وتوريد إلى (${destinationVault}) | إشاري: ${refNo}`,
+          totalSaleLYD,
+          performedBy || "المسؤول المالي ومكتب الخارج",
         ]
       );
     } else if (action === "sync_all" && Array.isArray(body.vaults)) {

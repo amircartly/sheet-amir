@@ -123,6 +123,13 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // د. بيع دولار كاش مجمع من الخزينة وتوريده بالدينار
+    if (action === 'sellUsd' && data.sellData) {
+      var sellRes = sellAccumulatedUsd(data.sellData, data.employeeName || 'بيع دولار كاش من الموقع');
+      return ContentService.createTextOutput(JSON.stringify(sellRes))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: 'إجراء غير مدعوم في doPost'
@@ -741,6 +748,50 @@ function settleAndSellCard(settleData, employeeName) {
     refSlipNo: refSlipNo,
     withdrawLocation: withdrawLocation,
     refNo: moveRes ? moveRes.refNo : ''
+  };
+}
+
+// 15.1 بيع دولارات كاش مجمعة من خزينة الدولار النقدي (الخارج) وتوريد الدينار
+function sellAccumulatedUsd(sellData, employeeName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var usdAmount = parseFloat(sellData.usdAmount) || 0;
+  var rate = parseFloat(sellData.rate) || 0;
+  var totalSaleLYD = usdAmount * rate;
+  var destinationVault = sellData.destinationVault || 'خزينة الكاش بالدينار';
+  var refNo = sellData.refNo ? sellData.refNo.toString().trim() : ('TX-USD-' + Math.floor(1000 + Math.random() * 9000));
+  var notes = sellData.notes ? sellData.notes.toString().trim() : '';
+
+  if (usdAmount <= 0 || rate <= 0) {
+    return { success: false, error: 'الرجاء إدخال كمية دولار وسعر بيع صحيحين' };
+  }
+
+  // أ. خصم الدولار من خزينة الدولار النقدي (الخارج)
+  updateTreasuryBalance('خزينة الدولار النقدي (الخارج)', usdAmount, false);
+
+  // ب. توريد قيمة الدينار إلى الخزينة / الحساب المصرفي المختار
+  updateTreasuryBalance(destinationVault, totalSaleLYD, true);
+
+  // ج. تسجيل قيد محاسبي في ورقة حركة_الخزائن
+  var moveNote = 'بيع $' + usdAmount.toLocaleString('en-US') + ' كاش بسعر ' + rate + ' د.ل بإجمالي ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل وتوريد إلى (' + destinationVault + ')' + (refNo ? (' | إشاري: ' + refNo) : '') + (notes ? (' | ' + notes) : '');
+  var moveRes = recordMovement(
+    '-',
+    'صرف وبيع عملة',
+    'بيع دولار كاش',
+    destinationVault,
+    totalSaleLYD,
+    'د.ل',
+    employeeName || 'المسؤول المالي ومكتب الخارج',
+    moveNote
+  );
+
+  return {
+    success: true,
+    message: 'تم بيع $' + usdAmount.toLocaleString('en-US') + ' وتوريد ' + totalSaleLYD.toLocaleString('en-US') + ' د.ل إلى (' + destinationVault + ') بنجاح',
+    usdAmount: usdAmount,
+    rate: rate,
+    totalSaleLYD: totalSaleLYD,
+    destinationVault: destinationVault,
+    refNo: moveRes ? moveRes.refNo : refNo
   };
 }
 

@@ -58,7 +58,7 @@ const DEFAULT_VAULTS: VaultAccount[] = [
   { id: "bank_7", name: "حساب المصرف الإسلامي الليبي", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
   { id: "bank_8", name: "حساب مصرف شمال أفريقيا", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
   { id: "bank_9", name: "حساب مصرف اليقين", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
-  { id: "cash_usd", name: "خزينة الدولار ($ Cash)", type: "خزينة عملة صعبة", currency: "$", balance: 0, totalIncome: 0 },
+  { id: "cash_usd", name: "خزينة الدولار النقدي (الخارج)", type: "خزينة عملة صعبة (الخارج)", currency: "$", balance: 0, totalIncome: 0 },
 ];
 
 const ALL_STAGES = [
@@ -144,13 +144,24 @@ export default function AmirClassicApp() {
   const [fundAmount, setFundAmount] = useState("");
   const [fundMode, setFundMode] = useState<"add" | "set">("add");
 
+  // Step 1: Settle Modal (Receive USD vs Direct Sale)
   const [showSettleModal, setShowSettleModal] = useState(false);
+  const [settleWorkflowMode, setSettleWorkflowMode] = useState<"step1_receive_usd" | "direct_sale_lyd">("step1_receive_usd");
   const [settleUsdAmount, setSettleUsdAmount] = useState("4000");
   const [settleRate, setSettleRate] = useState("10.00");
   const [settleRefSlipNo, setSettleRefSlipNo] = useState("");
   const [settleWithdrawLocation, setSettleWithdrawLocation] = useState("تركيا - إسطنبول");
   const [settleVault, setSettleVault] = useState("خزينة الكاش بالدينار");
   const [settleError, setSettleError] = useState("");
+
+  // Step 2: Sell Accumulated USD Modal
+  const [showSellUsdModal, setShowSellUsdModal] = useState(false);
+  const [sellUsdAmount, setSellUsdAmount] = useState("4000");
+  const [sellUsdRate, setSellUsdRate] = useState("10.00");
+  const [sellUsdDestVault, setSellUsdDestVault] = useState("خزينة الكاش بالدينار");
+  const [sellUsdRefNo, setSellUsdRefNo] = useState("");
+  const [sellUsdNotes, setSellUsdNotes] = useState("");
+  const [sellUsdError, setSellUsdError] = useState("");
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -234,7 +245,29 @@ export default function AmirClassicApp() {
       const savedCards = localStorage.getItem("amir_cards_v2");
       const savedVaults = localStorage.getItem("amir_vaults_v2");
       if (savedCards) setCards(JSON.parse(savedCards));
-      if (savedVaults) setVaults(JSON.parse(savedVaults));
+      if (savedVaults) {
+        try {
+          const parsed = JSON.parse(savedVaults);
+          if (Array.isArray(parsed)) {
+            const normalized = parsed.map((v: any) => {
+              if (v.id === "cash_usd" || v.currency === "$" || (v.name && v.name.includes("خزينة الدولار"))) {
+                return {
+                  ...v,
+                  id: "cash_usd",
+                  name: "خزينة الدولار النقدي (الخارج)",
+                  type: "خزينة عملة صعبة (الخارج)",
+                  currency: "$",
+                };
+              }
+              return v;
+            });
+            setVaults(normalized);
+            localStorage.setItem("amir_vaults_v2", JSON.stringify(normalized));
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       const savedGoogleUrl = localStorage.getItem("amir_google_script_url");
       // If saved url is empty or contains old broken URL, override with valid active URL
@@ -301,8 +334,20 @@ export default function AmirClassicApp() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.success && Array.isArray(data.vaults) && data.vaults.length > 0) {
-          setVaults(data.vaults);
-          localStorage.setItem("amir_vaults_v2", JSON.stringify(data.vaults));
+          const normalized = data.vaults.map((v: any) => {
+            if (v.id === "cash_usd" || v.currency === "$" || (v.name && v.name.includes("خزينة الدولار"))) {
+              return {
+                ...v,
+                id: "cash_usd",
+                name: "خزينة الدولار النقدي (الخارج)",
+                type: "خزينة عملة صعبة (الخارج)",
+                currency: "$",
+              };
+            }
+            return v;
+          });
+          setVaults(normalized);
+          localStorage.setItem("amir_vaults_v2", JSON.stringify(normalized));
         }
       })
       .catch(() => {});
@@ -326,14 +371,35 @@ export default function AmirClassicApp() {
   // Derived Total Cost
   const totalCost = (parseFloat(depositAmt) || 0) + (parseFloat(cardPrice) || 0);
 
-  // Settle calculations
+  // Derived USD Vault Helpers
+  const usdVault = vaults.find((v) => v.id === "cash_usd" || v.currency === "$");
+  const availableUsd = usdVault ? usdVault.balance : 0;
+
+  // Step 1: Settle & Receive Calculations
   const settleTotalSale = (parseFloat(settleUsdAmount) || 0) * (parseFloat(settleRate) || 0);
   const settleNetProfit = settleTotalSale - totalCost;
-  const isSettleValid =
+  const isDirectSaleValid =
     (parseFloat(settleUsdAmount) || 0) > 0 &&
     (parseFloat(settleRate) || 0) > 0 &&
     settleRefSlipNo.trim().length > 0 &&
+    settleWithdrawLocation.trim().length > 0 &&
+    settleVault.trim().length > 0;
+
+  const isReceiveUsdValid =
+    (parseFloat(settleUsdAmount) || 0) > 0 &&
+    settleRefSlipNo.trim().length > 0 &&
     settleWithdrawLocation.trim().length > 0;
+
+  // Step 2: Sell Accumulated USD Calculations
+  const sellUsdNum = parseFloat(sellUsdAmount) || 0;
+  const sellRateNum = parseFloat(sellUsdRate) || 0;
+  const sellTotalSaleLYD = sellUsdNum * sellRateNum;
+  const remainingUsd = Math.max(0, availableUsd - sellUsdNum);
+  const isSellUsdValid =
+    sellUsdNum > 0 &&
+    sellUsdNum <= availableUsd &&
+    sellRateNum > 0 &&
+    sellUsdDestVault.trim().length > 0;
 
   // Custom Alert Helper
   const triggerAlert = (title: string, message: string, type: "warning" | "danger" | "info" | "search" = "warning") => {
@@ -623,13 +689,124 @@ export default function AmirClassicApp() {
       return;
     }
     setSettleError("");
+    setSettleWorkflowMode("step1_receive_usd");
     setSettleRefSlipNo(`REF-${Math.floor(1000 + Math.random() * 9000)}`);
     setShowSettleModal(true);
   };
 
-  // Confirm Settle and Sell
+  // Step 1: Confirm USD Receipt into "خزينة الدولار النقدي (الخارج)"
+  const handleConfirmReceiveUsd = () => {
+    if (!isReceiveUsdValid) return;
+
+    const usd = parseFloat(settleUsdAmount) || 0;
+    const targetCode = cardCode || `CRD-${cards.length + 101}`;
+    const updatedCard: BankCard = {
+      id: targetCode,
+      code: targetCode,
+      name: customerName.trim(),
+      nationalId: nationalId.trim(),
+      cblPhone: cblPhone.trim(),
+      bank,
+      accountNumber: accountNumber.trim(),
+      iban: iban.trim(),
+      depositAmt: parseFloat(depositAmt) || 0,
+      cardPrice: parseFloat(cardPrice) || 0,
+      totalCost,
+      depositDate,
+      bookingDate,
+      cardNum: cardNumber.trim(),
+      pinLocal: pinLocal.trim(),
+      pinDollar: pinDollar.trim(),
+      expiry: expiry.trim(),
+      status: "7. تم السحب والتصفية",
+      notes: `${notes ? notes + " | " : ""}استلام دولار كاش: تم سحب $${usd.toLocaleString("en-US")} وتوريدها إلى (خزينة الدولار النقدي - الخارج) | إشاري: ${settleRefSlipNo} | مكان: ${settleWithdrawLocation}`,
+      refSlipNo: settleRefSlipNo,
+      withdrawLocation: settleWithdrawLocation,
+      usdAmount: usd,
+      rate: 0,
+      netProfitLYD: 0,
+      destinationVault: "خزينة الدولار النقدي (الخارج)",
+      createdAt: new Date().toISOString(),
+    };
+
+    const exIndex = cards.findIndex((c) => c.code === targetCode);
+    let updatedCardsList: BankCard[];
+    if (exIndex >= 0) {
+      const list = [...cards];
+      list[exIndex] = updatedCard;
+      updatedCardsList = list;
+      setCards(list);
+    } else {
+      updatedCardsList = [updatedCard, ...cards];
+      setCards(updatedCardsList);
+    }
+
+    // Persist settled card to MySQL
+    fetch("/api/cards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedCard),
+    }).catch((err) => console.error("Error saving settled card to MySQL:", err));
+
+    // Live Sync to Google Sheets
+    if (googleScriptUrl.trim()) {
+      fetch("/api/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sync_card",
+          scriptUrl: googleScriptUrl.trim(),
+          card: updatedCard,
+          employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
+        }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.success) {
+            setGoogleConnected(true);
+          }
+        })
+        .catch((err) => console.log("Google sync error:", err));
+    }
+
+    // Update Treasury Vaults: add USD to "خزينة الدولار النقدي (الخارج)"
+    const updatedVaultsList = vaults.map((v) => {
+      if (v.id === "cash_usd" || v.name === "خزينة الدولار النقدي (الخارج)" || v.currency === "$") {
+        return {
+          ...v,
+          id: "cash_usd",
+          name: "خزينة الدولار النقدي (الخارج)",
+          currency: "$",
+          balance: v.balance + usd,
+          totalIncome: v.totalIncome + usd,
+        };
+      }
+      return v;
+    });
+
+    setVaults(updatedVaultsList);
+
+    fetch("/api/vaults", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sync_all", vaults: updatedVaultsList }),
+    }).catch((err) => console.error("Error syncing vaults to MySQL:", err));
+
+    setStatus("7. تم السحب والتصفية");
+    setShowSettleModal(false);
+
+    const newUsdTotal = availableUsd + usd;
+    setSuccessInfo({
+      title: "تم استلام الدولار وتوريده للخزينة بنجاح",
+      details: `تم توريد $${usd.toLocaleString("en-US")} إلى (خزينة الدولار النقدي - الخارج) | إشاري: ${settleRefSlipNo} | مكان: ${settleWithdrawLocation}. الرصيد التراكمي في خزينة الدولار أصبح الآن: $${newUsdTotal.toLocaleString("en-US")}. يمكنك بيع الدولارات المجمعة لاحقاً من قسم الخزائن.`,
+      code: targetCode,
+    });
+    setShowSuccessModal(true);
+  };
+
+  // Direct Settle & Sell to LYD
   const handleConfirmSettle = () => {
-    if (!isSettleValid) return;
+    if (!isDirectSaleValid) return;
 
     const usd = parseFloat(settleUsdAmount) || 0;
     const rate = parseFloat(settleRate) || 0;
@@ -738,6 +915,89 @@ export default function AmirClassicApp() {
     setShowSuccessModal(true);
   };
 
+  // Step 2: Confirm Selling Accumulated USD from "خزينة الدولار النقدي (الخارج)"
+  const handleConfirmSellUsd = () => {
+    if (!isSellUsdValid) {
+      if (sellUsdNum > availableUsd) {
+        setSellUsdError(`المبلغ المطلوب بيعه ($${sellUsdNum.toLocaleString()}) أكبر من الرصيد المتوفر في خزينة الدولار ($${availableUsd.toLocaleString()})`);
+      } else {
+        setSellUsdError("الرجاء إدخال كمية دولار وسعر بيع صحيحين وتحديد الخزينة المستلمة.");
+      }
+      return;
+    }
+
+    const refCode = sellUsdRefNo.trim() || `SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Update Vaults: deduct USD from cash_usd, add LYD to destVault
+    const updatedVaultsList = vaults.map((v) => {
+      if (v.id === "cash_usd" || v.name === "خزينة الدولار النقدي (الخارج)" || v.currency === "$") {
+        return {
+          ...v,
+          id: "cash_usd",
+          name: "خزينة الدولار النقدي (الخارج)",
+          currency: "$",
+          balance: Math.max(0, v.balance - sellUsdNum),
+        };
+      }
+      if (v.name === sellUsdDestVault || (sellUsdDestVault.includes("الكاش") && v.id === "cash_lyd")) {
+        return {
+          ...v,
+          balance: v.balance + sellTotalSaleLYD,
+          totalIncome: v.totalIncome + sellTotalSaleLYD,
+        };
+      }
+      return v;
+    });
+
+    setVaults(updatedVaultsList);
+
+    // Persist to MySQL
+    fetch("/api/vaults", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "sell_usd",
+        usdAmount: sellUsdNum,
+        rate: sellRateNum,
+        totalSaleLYD: sellTotalSaleLYD,
+        destinationVault: sellUsdDestVault,
+        refNo: refCode,
+        performedBy: `${currentEmployee.name} (${currentEmployee.role})`,
+        vaults: updatedVaultsList,
+      }),
+    }).catch((err) => console.error("Error selling USD in MySQL:", err));
+
+    // Sync to Google Sheets
+    if (googleScriptUrl.trim()) {
+      fetch("/api/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sell_usd",
+          scriptUrl: googleScriptUrl.trim(),
+          sellData: {
+            usdAmount: sellUsdNum,
+            rate: sellRateNum,
+            totalSaleLYD: sellTotalSaleLYD,
+            destinationVault: sellUsdDestVault,
+            refNo: refCode,
+            notes: sellUsdNotes.trim(),
+          },
+          employeeName: `${currentEmployee.name} (${currentEmployee.role})`,
+        }),
+      }).catch((err) => console.log("Google sync sell_usd error:", err));
+    }
+
+    setShowSellUsdModal(false);
+
+    setSuccessInfo({
+      title: "تم بيع دولارات كاش وتوريد الدينار بنجاح",
+      details: `تم خصم $${sellUsdNum.toLocaleString("en-US")} من (خزينة الدولار النقدي - الخارج) وبيعها بسعر ${sellRateNum} د.ل بإجمالي ${sellTotalSaleLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل وتوريدها إلى (${sellUsdDestVault}) | إشاري: ${refCode}. الرصيد المتبقي في خزينة الدولار: $${remainingUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      code: refCode,
+    });
+    setShowSuccessModal(true);
+  };
+
   // Treasury Fund / Adjust
   const handleFundSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -841,6 +1101,52 @@ export default function AmirClassicApp() {
           <button type="button" className="btn-view-treasury" onClick={() => setShowTreasuryModal(true)}>
             🏦 أرصدة الخزائن والمصارف
           </button>
+
+          {/* USD Cash Vault Quick Badge & Sell Action */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "#fef3c7",
+              border: "1px solid #fde68a",
+              padding: "4px 10px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: "bold",
+              color: "#92400e",
+            }}
+          >
+            <span>💵 خزينة الدولار النقدي:</span>
+            <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#b45309", fontWeight: 800 }}>
+              ${availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </span>
+            {canSettle && availableUsd > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSellUsdAmount(availableUsd >= 4000 ? "4000" : availableUsd.toString());
+                  setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
+                  setSellUsdError("");
+                  setShowSellUsdModal(true);
+                }}
+                style={{
+                  background: "#b45309",
+                  color: "#fff",
+                  border: "none",
+                  padding: "3px 8px",
+                  borderRadius: "5px",
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  marginRight: "4px",
+                }}
+                title="الخطوة 2: بيع دولارات كاش مجمعة من الخزينة وتوريد الدينار"
+              >
+                💱 بيع
+              </button>
+            )}
+          </div>
 
           {/* Google Sheets Live Sync Button */}
           <button
@@ -1304,22 +1610,79 @@ export default function AmirClassicApp() {
           <div className="modal-card modal-card-large">
             <div className="settle-icon-wrap">💵</div>
             <div className="modal-title" style={{ textAlign: "center" }}>
-              تصفية البطاقة وبيع الدولار وتوريد الأرباح للخزينة
+              {settleWorkflowMode === "step1_receive_usd"
+                ? "الخطوة 1: استلام الدولار وتوريده لخزينة الدولار النقدي (الخارج)"
+                : "تصفية البطاقة وبيع الدولار وتوريد الأرباح بالدينار"}
             </div>
             <div className="modal-subtitle" style={{ textAlign: "center" }}>
-              إدخال سعر بيع الدولار المسحوب في السوق الموازي وتوريد القيمة الناتجة مباشرة لخزينة الدينار واحتساب صافي الأرباح تلقائياً
+              {settleWorkflowMode === "step1_receive_usd"
+                ? "تأكيد سحب رصيد البطاقة وتوريدها مباشرة كـ كاش إلى (خزينة الدولار النقدي - الخارج) لتتجمع الأرصدة معاً لحين بيعها لاحقاً."
+                : "إدخال سعر بيع الدولار المسحوب في السوق الموازي وتوريد القيمة الناتجة مباشرة لخزينة الدينار واحتساب صافي الأرباح تلقائياً."}
             </div>
 
+            {/* Workflow Mode Tabs */}
             <div
               style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "8px",
+                marginBottom: "14px",
                 background: "#f1f5f9",
+                padding: "4px",
+                borderRadius: "10px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setSettleWorkflowMode("step1_receive_usd")}
+                style={{
+                  padding: "9px 12px",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  background: settleWorkflowMode === "step1_receive_usd" ? "#059669" : "transparent",
+                  color: settleWorkflowMode === "step1_receive_usd" ? "#ffffff" : "#475569",
+                  boxShadow: settleWorkflowMode === "step1_receive_usd" ? "0 2px 4px rgba(0,0,0,0.12)" : "none",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                📥 الخطوة 1: استلام الدولار في الخزينة ($)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettleWorkflowMode("direct_sale_lyd")}
+                style={{
+                  padding: "9px 12px",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  background: settleWorkflowMode === "direct_sale_lyd" ? "#2563eb" : "transparent",
+                  color: settleWorkflowMode === "direct_sale_lyd" ? "#ffffff" : "#475569",
+                  boxShadow: settleWorkflowMode === "direct_sale_lyd" ? "0 2px 4px rgba(0,0,0,0.12)" : "none",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                💱 بيع فوري ومباشر بالدينار (سوق موازي)
+              </button>
+            </div>
+
+            {/* Card Summary Bar */}
+            <div
+              style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
                 padding: "10px 14px",
                 borderRadius: "10px",
                 fontSize: "12px",
-                marginBottom: "12px",
+                marginBottom: "14px",
                 display: "flex",
                 justifyContent: "space-between",
                 flexWrap: "wrap",
+                gap: "8px",
               }}
             >
               <div>الزبون: <strong style={{ color: "#0f172a" }}>{customerName}</strong></div>
@@ -1327,92 +1690,227 @@ export default function AmirClassicApp() {
               <div>التكلفة المحسوبة: <strong style={{ color: "#b91c1c" }}>{totalCost.toLocaleString("en-US")} د.ل</strong></div>
             </div>
 
-            <div className="row-2">
-              <div className="form-group">
-                <label>المبلغ المسحوب بالدولار ($) *</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={settleUsdAmount}
-                  onChange={(e) => setSettleUsdAmount(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label style={{ color: "#b45309" }}>سعر بيع الدولار بالسوق الموازي (د.ل) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={settleRate}
-                  onChange={(e) => setSettleRate(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="row-2">
-              <div className="form-group">
-                <label style={{ color: "#0f172a", fontWeight: "bold" }}>الرقم الإشاري (Slip / Ref No) *</label>
-                <input
-                  type="text"
-                  placeholder="مثال: REF-9942 / إشعار رقم 204"
-                  value={settleRefSlipNo}
-                  onChange={(e) => setSettleRefSlipNo(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label style={{ color: "#0f172a", fontWeight: "bold" }}>مكان ودولة السحب *</label>
-                <input
-                  type="text"
-                  placeholder="مثال: تركيا - إسطنبول، دبي..."
-                  value={settleWithdrawLocation}
-                  onChange={(e) => setSettleWithdrawLocation(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Real-time Calculation Boxes */}
-            <div className="calc-card-grid">
-              <div className="calc-box" style={{ background: "#eff6ff", borderColor: "#bfdbfe" }}>
-                <div className="calc-box-title" style={{ color: "#1d4ed8" }}>إجمالي البيع بالدينار (د.ل)</div>
-                <div className="calc-box-value" style={{ color: "#1d4ed8" }}>
-                  {settleTotalSale.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+            {/* TAB 1: Step 1 Receive USD into "خزينة الدولار النقدي (الخارج)" */}
+            {settleWorkflowMode === "step1_receive_usd" && (
+              <>
+                <div className="row-2">
+                  <div className="form-group">
+                    <label style={{ color: "#065f46", fontWeight: "bold" }}>المبلغ المستلم بالدولار ($) *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={settleUsdAmount}
+                      onChange={(e) => setSettleUsdAmount(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ color: "#0f172a", fontWeight: "bold" }}>الخزينة المستلمة (تلقائي) *</label>
+                    <div
+                      style={{
+                        background: "#fefce8",
+                        border: "1px solid #fef08a",
+                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <strong style={{ color: "#854d0e", fontSize: "12px" }}>خزينة الدولار النقدي (الخارج)</strong>
+                      <span style={{ fontSize: "11px", background: "#fef08a", color: "#713f12", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
+                        عملة صعبة: $
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="calc-box" style={{ background: "#f0fdf4", borderColor: "#bbf7d0" }}>
-                <div className="calc-box-title" style={{ color: "#15803d" }}>صافي الربح المحقق (د.ل)</div>
-                <div className="calc-box-value" style={{ color: "#15803d" }}>
-                  {settleNetProfit.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+
+                <div className="row-2">
+                  <div className="form-group">
+                    <label style={{ color: "#0f172a", fontWeight: "bold" }}>الرقم الإشاري (Slip / Ref No) *</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: REF-9942 / إشعار رقم 204"
+                      value={settleRefSlipNo}
+                      onChange={(e) => setSettleRefSlipNo(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ color: "#0f172a", fontWeight: "bold" }}>مكان ودولة السحب *</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: تركيا - إسطنبول، دبي..."
+                      value={settleWithdrawLocation}
+                      onChange={(e) => setSettleWithdrawLocation(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="form-group">
-              <label style={{ color: "#065f46", fontWeight: "bold" }}>الخزينة المستلمة لتوريد المبلغ بالدينار *</label>
-              <select value={settleVault} onChange={(e) => setSettleVault(e.target.value)}>
-                {vaults
-                  .filter((v) => v.currency === "د.ل")
-                  .map((v) => (
-                    <option key={v.id} value={v.name}>
-                      {v.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+                {/* Real-time USD Vault Calculation Boxes */}
+                <div className="calc-card-grid">
+                  <div className="calc-box" style={{ background: "#ecfdf5", borderColor: "#a7f3d0" }}>
+                    <div className="calc-box-title" style={{ color: "#065f46" }}>المبلغ المستلم للبطاقة ($)</div>
+                    <div className="calc-box-value" style={{ color: "#047857" }}>
+                      +${(parseFloat(settleUsdAmount) || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="calc-box" style={{ background: "#fefce8", borderColor: "#fde047" }}>
+                    <div className="calc-box-title" style={{ color: "#854d0e" }}>رصيد خزينة الدولار الحالي</div>
+                    <div className="calc-box-value" style={{ color: "#a16207" }}>
+                      ${availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="calc-box" style={{ background: "#eff6ff", borderColor: "#bfdbfe" }}>
+                    <div className="calc-box-title" style={{ color: "#1d4ed8" }}>الرصيد التراكمي المتوقع بعد التوريد</div>
+                    <div className="calc-box-value" style={{ color: "#1e40af" }}>
+                      ${(availableUsd + (parseFloat(settleUsdAmount) || 0)).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
 
-            {!isSettleValid && (
-              <div
-                style={{
-                  background: "#fef3c7",
-                  border: "1px solid #fde68a",
-                  color: "#92400e",
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  fontSize: "11px",
-                  marginBottom: "10px",
-                  textAlign: "center",
-                }}
-              >
-                🔒 زر التأكيد مقفل: يرجى كتابة الرقم الإشاري ومكان السحب وقيمة وسعر البيع لتفعيل التصفية
-              </div>
+                <div
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    fontSize: "11px",
+                    color: "#166534",
+                    marginBottom: "12px",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  💡 <strong>ملاحظة هامة (الدورة المرحلية):</strong> عند التأكيد، سيتم توريد الـ ${(parseFloat(settleUsdAmount) || 0).toLocaleString()} مباشرة في خزينة الدولار النقدي (الخارج). يمكنك في أي وقت بيع دفعات مجمعة من الرصيد المتراكم بسعر السوق الموازي من قسم <strong>"🏦 أرصدة الخزائن"</strong>.
+                </div>
+
+                {!isReceiveUsdValid && (
+                  <div
+                    style={{
+                      background: "#fef3c7",
+                      border: "1px solid #fde68a",
+                      color: "#92400e",
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      fontSize: "11px",
+                      marginBottom: "10px",
+                      textAlign: "center",
+                    }}
+                  >
+                    🔒 زر التأكيد مقفل: يرجى كتابة الرقم الإشاري ومكان السحب وقيمة المبلغ بالدولار لتأكيد الاستلام
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className="btn-confirm-settle"
+                  style={{ background: "#059669" }}
+                  disabled={!isReceiveUsdValid}
+                  onClick={handleConfirmReceiveUsd}
+                >
+                  📥 تأكيد استلام ${(parseFloat(settleUsdAmount) || 0).toLocaleString()} وتوريدها لخزينة الدولار النقدي (الخارج)
+                </button>
+              </>
+            )}
+
+            {/* TAB 2: Direct Sale to LYD */}
+            {settleWorkflowMode === "direct_sale_lyd" && (
+              <>
+                <div className="row-2">
+                  <div className="form-group">
+                    <label>المبلغ المسحوب بالدولار ($) *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={settleUsdAmount}
+                      onChange={(e) => setSettleUsdAmount(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ color: "#b45309" }}>سعر بيع الدولار بالسوق الموازي (د.ل) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={settleRate}
+                      onChange={(e) => setSettleRate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="row-2">
+                  <div className="form-group">
+                    <label style={{ color: "#0f172a", fontWeight: "bold" }}>الرقم الإشاري (Slip / Ref No) *</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: REF-9942 / إشعار رقم 204"
+                      value={settleRefSlipNo}
+                      onChange={(e) => setSettleRefSlipNo(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ color: "#0f172a", fontWeight: "bold" }}>مكان ودولة السحب *</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: تركيا - إسطنبول، دبي..."
+                      value={settleWithdrawLocation}
+                      onChange={(e) => setSettleWithdrawLocation(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Real-time Calculation Boxes */}
+                <div className="calc-card-grid">
+                  <div className="calc-box" style={{ background: "#eff6ff", borderColor: "#bfdbfe" }}>
+                    <div className="calc-box-title" style={{ color: "#1d4ed8" }}>إجمالي البيع بالدينار (د.ل)</div>
+                    <div className="calc-box-value" style={{ color: "#1d4ed8" }}>
+                      {settleTotalSale.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                    </div>
+                  </div>
+                  <div className="calc-box" style={{ background: "#f0fdf4", borderColor: "#bbf7d0" }}>
+                    <div className="calc-box-title" style={{ color: "#15803d" }}>صافي الربح المحقق (د.ل)</div>
+                    <div className="calc-box-value" style={{ color: "#15803d" }}>
+                      {settleNetProfit.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label style={{ color: "#065f46", fontWeight: "bold" }}>الخزينة المستلمة لتوريد المبلغ بالدينار *</label>
+                  <select value={settleVault} onChange={(e) => setSettleVault(e.target.value)}>
+                    {vaults
+                      .filter((v) => v.currency === "د.ل")
+                      .map((v) => (
+                        <option key={v.id} value={v.name}>
+                          {v.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {!isDirectSaleValid && (
+                  <div
+                    style={{
+                      background: "#fef3c7",
+                      border: "1px solid #fde68a",
+                      color: "#92400e",
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      fontSize: "11px",
+                      marginBottom: "10px",
+                      textAlign: "center",
+                    }}
+                  >
+                    🔒 زر التأكيد مقفل: يرجى كتابة الرقم الإشاري ومكان السحب وقيمة وسعر البيع لتفعيل التصفية
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className="btn-confirm-settle"
+                  disabled={!isDirectSaleValid}
+                  onClick={handleConfirmSettle}
+                >
+                  🚀 تأكيد التصفية وتوريد المبلغ فوراً للخزينة بالدينار
+                </button>
+              </>
             )}
 
             {settleError && (
@@ -1421,16 +1919,252 @@ export default function AmirClassicApp() {
               </div>
             )}
 
+            <button type="button" className="btn-secondary-action" onClick={() => setShowSettleModal(false)}>
+              إلغاء التصفية
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Modal for Selling Accumulated USD Cash */}
+      {showSellUsdModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10002, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px", overflowY: "auto" }}>
+          <div className="modal-card modal-card-large" style={{ maxWidth: "600px", textAlign: "right" }}>
+            <div className="settle-icon-wrap" style={{ background: "#fef3c7", color: "#b45309" }}>💱</div>
+            <div className="modal-title" style={{ textAlign: "center" }}>
+              الخطوة 2: بيع دولارات كاش من خزينة الدولار النقدي (الخارج)
+            </div>
+            <div className="modal-subtitle" style={{ textAlign: "center", marginBottom: "14px" }}>
+              سحب مبالغ بالدولار من الرصيد التراكمي المجمع في الخزينة وبيعه بالسوق الموازي وتوريد القيمة الناتجة بالدينار الليبي
+            </div>
+
+            {/* Current USD Balance Card & Quick Pickers */}
+            <div
+              style={{
+                background: "#fefce8",
+                border: "1px solid #fde047",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                marginBottom: "14px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#854d0e", fontWeight: "bold" }}>
+                    🏦 رصيد خزينة الدولار النقدي (الخارج) المتاح للبيع:
+                  </div>
+                  <div style={{ fontSize: "22px", fontWeight: 800, color: "#a16207", fontFamily: "monospace", marginTop: "2px" }}>
+                    ${availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSellUsdAmount(availableUsd.toString());
+                      setSellUsdError("");
+                    }}
+                    style={{
+                      background: "#eab308",
+                      color: "#713f12",
+                      border: "none",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    كامل الرصيد (${availableUsd.toLocaleString()})
+                  </button>
+                  {availableUsd >= 4000 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSellUsdAmount("4000");
+                        setSellUsdError("");
+                      }}
+                      style={{
+                        background: "#fff",
+                        color: "#854d0e",
+                        border: "1px solid #fde047",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      $4,000 (بطاقة)
+                    </button>
+                  )}
+                  {availableUsd >= 8000 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSellUsdAmount("8000");
+                        setSellUsdError("");
+                      }}
+                      style={{
+                        background: "#fff",
+                        color: "#854d0e",
+                        border: "1px solid #fde047",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      $8,000
+                    </button>
+                  )}
+                  {availableUsd >= 20000 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSellUsdAmount("20000");
+                        setSellUsdError("");
+                      }}
+                      style={{
+                        background: "#fff",
+                        color: "#854d0e",
+                        border: "1px solid #fde047",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      $20,000
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="row-2">
+              <div className="form-group">
+                <label style={{ color: "#b45309", fontWeight: "bold" }}>المبلغ المراد بيعه بالدولار ($) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  min="1"
+                  max={availableUsd}
+                  value={sellUsdAmount}
+                  onChange={(e) => {
+                    setSellUsdAmount(e.target.value);
+                    setSellUsdError("");
+                  }}
+                />
+              </div>
+              <div className="form-group">
+                <label style={{ color: "#065f46", fontWeight: "bold" }}>سعر بيع الدولار بالسوق الموازي (د.ل) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={sellUsdRate}
+                  onChange={(e) => {
+                    setSellUsdRate(e.target.value);
+                    setSellUsdError("");
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="row-2">
+              <div className="form-group">
+                <label style={{ color: "#065f46", fontWeight: "bold" }}>الخزينة المستلمة لتوريد المبلغ بالدينار *</label>
+                <select value={sellUsdDestVault} onChange={(e) => setSellUsdDestVault(e.target.value)}>
+                  {vaults
+                    .filter((v) => v.currency === "د.ل")
+                    .map((v) => (
+                      <option key={v.id} value={v.name}>
+                        {v.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label style={{ color: "#0f172a", fontWeight: "bold" }}>الرقم الإشاري / رقم العملية *</label>
+                <input
+                  type="text"
+                  placeholder="مثال: SALE-USD-4921 / إشعار بيع"
+                  value={sellUsdRefNo}
+                  onChange={(e) => setSellUsdRefNo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>ملاحظات وبيان المعاملة</label>
+              <input
+                type="text"
+                placeholder="مثال: بيع دفعة دولارات كاش مجمعة بسعر السوق وتوريد لخزينة الكاش..."
+                value={sellUsdNotes}
+                onChange={(e) => setSellUsdNotes(e.target.value)}
+              />
+            </div>
+
+            {/* Live Calculation Boxes */}
+            <div className="calc-card-grid">
+              <div className="calc-box" style={{ background: "#fefce8", borderColor: "#fde047" }}>
+                <div className="calc-box-title" style={{ color: "#854d0e" }}>المبلغ المباع بالدولار</div>
+                <div className="calc-box-value" style={{ color: "#a16207" }}>
+                  ${sellUsdNum.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="calc-box" style={{ background: "#eff6ff", borderColor: "#bfdbfe" }}>
+                <div className="calc-box-title" style={{ color: "#1d4ed8" }}>إجمالي التوريد بالدينار (د.ل)</div>
+                <div className="calc-box-value" style={{ color: "#1d4ed8" }}>
+                  {sellTotalSaleLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                </div>
+              </div>
+              <div className="calc-box" style={{ background: "#ecfdf5", borderColor: "#a7f3d0" }}>
+                <div className="calc-box-title" style={{ color: "#065f46" }}>المتبقي في خزينة الدولار</div>
+                <div className="calc-box-value" style={{ color: "#047857" }}>
+                  ${remainingUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            </div>
+
+            {sellUsdNum > availableUsd && (
+              <div
+                style={{
+                  background: "#fee2e2",
+                  border: "1px solid #fecaca",
+                  color: "#991b1b",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginBottom: "10px",
+                  textAlign: "center",
+                }}
+              >
+                ⚠️ تنبيه: المبلغ المطلوب بيعه (${sellUsdNum.toLocaleString()}) أكبر من الرصيد المتوفر في خزينة الدولار (${availableUsd.toLocaleString()})
+              </div>
+            )}
+
+            {sellUsdError && (
+              <div style={{ color: "#dc2626", fontSize: "12px", fontWeight: "bold", marginBottom: "8px", textAlign: "center" }}>
+                {sellUsdError}
+              </div>
+            )}
+
             <button
               type="button"
               className="btn-confirm-settle"
-              disabled={!isSettleValid}
-              onClick={handleConfirmSettle}
+              style={{ background: "#b45309" }}
+              disabled={!isSellUsdValid}
+              onClick={handleConfirmSellUsd}
             >
-              🚀 تأكيد التصفية وتوريد المبلغ فوراً للخزينة
+              🚀 تأكيد بيع الدولار وتوريد {sellTotalSaleLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل إلى ({sellUsdDestVault})
             </button>
-            <button type="button" className="btn-secondary-action" onClick={() => setShowSettleModal(false)}>
-              إلغاء التصفية
+            <button type="button" className="btn-secondary-action" onClick={() => setShowSellUsdModal(false)}>
+              إلغاء العملية
             </button>
           </div>
         </div>
@@ -1456,7 +2190,34 @@ export default function AmirClassicApp() {
                 <h3 style={{ color: "#064e3b", fontSize: "16px" }}>🏦 أرصدة الخزائن والمصارف اللحظية</h3>
                 <span style={{ fontSize: "11px", color: "#64748b" }}>متابعة السيولة وحركات النقدية والأرباح المحققة</span>
               </div>
-              <div style={{ display: "flex", gap: "6px" }}>
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                {canSettle && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSellUsdAmount(availableUsd > 0 ? (availableUsd >= 4000 ? "4000" : availableUsd.toString()) : "0");
+                      setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
+                      setSellUsdError("");
+                      setShowSellUsdModal(true);
+                    }}
+                    style={{
+                      background: "#b45309",
+                      color: "white",
+                      border: "none",
+                      padding: "5px 12px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                    title="الخطوة 2: بيع دولارات كاش مجمعة وتوريد المقابل بالدينار"
+                  >
+                    💱 بيع دولارات كاش من الخزينة
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowFundModal(true)}
@@ -1505,10 +2266,17 @@ export default function AmirClassicApp() {
               </thead>
               <tbody>
                 {vaults.map((v) => (
-                  <tr key={v.id}>
-                    <td><strong>{v.name}</strong></td>
+                  <tr key={v.id} style={{ background: v.id === "cash_usd" ? "#fefce8" : "inherit" }}>
+                    <td>
+                      <strong>{v.name}</strong>
+                      {v.id === "cash_usd" && (
+                        <span style={{ fontSize: "10px", background: "#fef08a", color: "#854d0e", padding: "1px 6px", borderRadius: "4px", marginRight: "6px", fontWeight: "bold" }}>
+                          عملة صعبة ($)
+                        </span>
+                      )}
+                    </td>
                     <td style={{ color: "#64748b", fontSize: "11px" }}>{v.type}</td>
-                    <td>{v.currency}</td>
+                    <td><strong>{v.currency}</strong></td>
                     <td
                       style={{
                         fontWeight: "bold",
@@ -1516,7 +2284,36 @@ export default function AmirClassicApp() {
                         color: v.currency === "$" ? "#b45309" : v.balance > 0 ? "#15803d" : "#0f172a",
                       }}
                     >
-                      {v.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} {v.currency}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>
+                          {v.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} {v.currency}
+                        </span>
+                        {v.id === "cash_usd" && canSettle && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSellUsdAmount(v.balance > 0 ? (v.balance >= 4000 ? "4000" : v.balance.toString()) : "0");
+                              setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
+                              setSellUsdError("");
+                              setShowSellUsdModal(true);
+                            }}
+                            style={{
+                              background: "#d97706",
+                              color: "#fff",
+                              border: "none",
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              fontSize: "10px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                              marginRight: "8px",
+                            }}
+                            title="بيع دولارات كاش مجمعة وتوريد الدينار"
+                          >
+                            💱 بيع دولار
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

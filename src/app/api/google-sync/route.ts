@@ -228,6 +228,21 @@ export async function POST(req: Request) {
       return NextResponse.json(testResult);
     }
 
+    // 4. Sell Accumulated USD
+    if (action === "sell_usd") {
+      if (!targetUrl) {
+        return NextResponse.json({ success: true, message: "تم تحديث الخزائن محلياً" });
+      }
+
+      const syncResult = await sendToGoogleScript(targetUrl, {
+        action: "sellUsd",
+        sellData: body.sellData,
+        employeeName,
+      });
+
+      return NextResponse.json(syncResult);
+    }
+
     return NextResponse.json({ success: false, error: "إجراء غير معروف" }, { status: 400 });
   } catch (err: any) {
     console.error("POST /api/google-sync error:", err);
