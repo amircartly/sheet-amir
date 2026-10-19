@@ -72,6 +72,18 @@ const DEFAULT_VAULTS: VaultAccount[] = [
   { id: "cash_usd", name: "خزينة الدولار النقدي (الخارج)", type: "خزينة عملة صعبة (الخارج)", currency: "$", balance: 0, totalIncome: 0 },
 ];
 
+const BANK_ICONS: Record<string, string> = {
+  bank_1: "🏦",
+  bank_2: "🏛️",
+  bank_3: "🏢",
+  bank_4: "🛡️",
+  bank_5: "🌊",
+  bank_6: "⭐",
+  bank_7: "🌙",
+  bank_8: "🧭",
+  bank_9: "💎",
+};
+
 const ALL_STAGES = [
   "1. إدخال البيانات",
   "2. محجوزة",
@@ -200,6 +212,7 @@ export default function AmirClassicApp() {
   const [pinError, setPinError] = useState("");
 
   const [showTreasuryModal, setShowTreasuryModal] = useState(false);
+  const [showTreasuryReportModal, setShowTreasuryReportModal] = useState(false);
   const [showFundModal, setShowFundModal] = useState(false);
   const [fundVaultId, setFundVaultId] = useState("cash_lyd");
   const [fundAmount, setFundAmount] = useState("");
@@ -632,6 +645,13 @@ export default function AmirClassicApp() {
   // Derived USD Vault Helpers
   const usdVault = vaults.find((v) => v.id === "cash_usd" || v.currency === "$");
   const availableUsd = usdVault ? usdVault.balance : 0;
+
+  // Derived Treasury Hub Balances & Aggregations
+  const cashLydVault = vaults.find((v) => v.id === "cash_lyd") || { id: "cash_lyd", name: "خزينة الكاش بالدينار", type: "خزينة نقدية (درج المكتب)", currency: "د.ل", balance: 0, totalIncome: 0 };
+  const bankVaults = vaults.filter((v) => v.id.startsWith("bank_"));
+  const totalBanksLyd = bankVaults.reduce((sum, v) => sum + (v.balance || 0), 0);
+  const totalAllLyd = (cashLydVault.balance || 0) + totalBanksLyd;
+  const activeBanksCount = bankVaults.filter((v) => (v.balance || 0) > 0).length;
 
   // Step 1: Settle & Receive Calculations
   const settleTotalSale = (parseFloat(settleUsdAmount) || 0) * (parseFloat(settleRate) || 0);
@@ -2956,70 +2976,83 @@ export default function AmirClassicApp() {
         </div>
       )}
 
-      {/* Treasury Modal */}
+      {/* Treasury Modal (Modern Treasury Hub) */}
       {showTreasuryModal && (
         <div id="treasuryModal" style={{ display: "flex" }}>
-          <div className="modal-card modal-card-large">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderBottom: "2px solid #064e3b",
-                paddingBottom: "8px",
-                marginBottom: "12px",
-                flexWrap: "wrap",
-                gap: "8px",
-              }}
-            >
-              <div>
-                <h3 style={{ color: "#064e3b", fontSize: "16px" }}>🏦 أرصدة الخزائن والمصارف اللحظية</h3>
-                <span style={{ fontSize: "11px", color: "#64748b" }}>متابعة السيولة وحركات النقدية والأرباح المحققة</span>
+          <div className="modal-card-treasury">
+            {/* Treasury Hub Header */}
+            <div className="treasury-hub-header">
+              <div className="treasury-hub-title">
+                <div>
+                  <h3 style={{ color: "#064e3b", fontSize: "17px", fontWeight: 800 }}>
+                    🏦 مركز إدارة الخزائن والمصارف اللحظية
+                  </h3>
+                  <span style={{ fontSize: "11px", color: "#64748b" }}>
+                    💎 أمير للتجارة الإلكترونية - متابعة السيولة اللحظية وحركات النقدية والأرباح
+                  </span>
+                </div>
               </div>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+
+              <div className="treasury-hub-actions">
                 {canSettle && (
                   <button
                     type="button"
+                    className="btn-usd-pulse"
                     onClick={() => {
                       setSellUsdAmount(availableUsd > 0 ? (availableUsd >= 4000 ? "4000" : availableUsd.toString()) : "0");
                       setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
                       setSellUsdError("");
                       setShowSellUsdModal(true);
                     }}
-                    style={{
-                      background: "#b45309",
-                      color: "white",
-                      border: "none",
-                      padding: "5px 12px",
-                      borderRadius: "6px",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
                     title="الخطوة 2: بيع دولارات كاش مجمعة وتوريد المقابل بالدينار"
                   >
-                    💱 بيع دولارات كاش من الخزينة
+                    💱 بيع وتصفية الدولار
                   </button>
                 )}
+
                 <button
                   type="button"
-                  onClick={() => setShowFundModal(true)}
+                  onClick={() => {
+                    setFundVaultId("cash_lyd");
+                    setFundAmount("");
+                    setShowFundModal(true);
+                  }}
                   style={{
                     background: "#059669",
                     color: "white",
                     border: "none",
-                    padding: "5px 10px",
+                    padding: "5px 11px",
                     borderRadius: "6px",
                     fontSize: "11px",
                     fontWeight: "bold",
                     cursor: "pointer",
                   }}
+                  title="تغذية أو تعديل رصيد أي خزينة أو حساب"
                 >
                   ➕ تغذية / تعديل رصيد
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowTreasuryReportModal(true)}
+                  style={{
+                    background: "#0f766e",
+                    color: "white",
+                    border: "none",
+                    padding: "5px 12px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                  title="معاينة وطباعة كشف الموقف المالي الرسمي وحفظه بصيغة PDF"
+                >
+                  🖨️ طباعة الموقف المالي (PDF)
+                </button>
+
                 <button
                   type="button"
                   disabled={isSyncingGoogle}
@@ -3034,7 +3067,7 @@ export default function AmirClassicApp() {
                     background: "#0284c7",
                     color: "white",
                     border: "none",
-                    padding: "5px 12px",
+                    padding: "5px 11px",
                     borderRadius: "6px",
                     fontSize: "11px",
                     fontWeight: "bold",
@@ -3045,8 +3078,9 @@ export default function AmirClassicApp() {
                   }}
                   title="تصدير وتحديث أرصدة الخزائن الحالية فوراً في ورقة أرصدة_الخزائن بشيت جوجل"
                 >
-                  {isSyncingGoogle ? "⏳ جاري التصدير..." : "📤 تصدير الأرصدة للشيت"}
+                  {isSyncingGoogle ? "⏳ جاري التصدير..." : "📤 تصدير للشيت"}
                 </button>
+
                 <button
                   type="button"
                   disabled={isSyncingGoogle}
@@ -3055,7 +3089,7 @@ export default function AmirClassicApp() {
                     background: "#0d9488",
                     color: "white",
                     border: "none",
-                    padding: "5px 12px",
+                    padding: "5px 11px",
                     borderRadius: "6px",
                     fontSize: "11px",
                     fontWeight: "bold",
@@ -3066,38 +3100,38 @@ export default function AmirClassicApp() {
                   }}
                   title="سحب أرصدة الخزائن من ورقة أرصدة_الخزائن بشيت جوجل"
                 >
-                  📥 استيراد من الشيت
+                  📥 استيراد
                 </button>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => setShowResetSystemModal(true)}
-                    style={{
-                      background: "#ef4444",
-                      color: "white",
-                      border: "none",
-                      padding: "5px 10px",
-                      borderRadius: "6px",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                    }}
-                  >
-                    🗑️ تصفير المنظومة
-                  </button>
-                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowTreasuryModal(false)}
+                  style={{
+                    background: "#f1f5f9",
+                    color: "#475569",
+                    border: "1px solid #cbd5e1",
+                    padding: "5px 10px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕ إغلاق
+                </button>
               </div>
             </div>
 
+            {/* Google Sync Status Banner */}
             <div
               style={{
                 background: "#f0fdf4",
                 border: "1px solid #bbf7d0",
-                padding: "8px 12px",
-                borderRadius: "6px",
-                fontSize: "12px",
+                padding: "7px 12px",
+                borderRadius: "8px",
+                fontSize: "11px",
                 color: "#166534",
-                marginBottom: "12px",
+                marginBottom: "14px",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -3106,86 +3140,483 @@ export default function AmirClassicApp() {
               }}
             >
               <span>
-                🟢 <strong>مزامنة شيت جوجل:</strong> أرصدة الخزائن مرتبطة بورقة <code>أرصدة_الخزائن</code> وتتطابق تلقائياً مع كل حركة أو عند الضغط على تصدير.
+                🟢 <strong>مزامنة شيت جوجل:</strong> أرصدة الخزائن متطابقة لحظياً مع ورقة <code>أرصدة_الخزائن</code> وتُحدّث تلقائياً مع كل حركة.
               </span>
               <span style={{ fontSize: "11px", color: "#15803d", fontWeight: "bold" }}>
                 ✓ تطابق تام 100% بين الموقع والشيت
               </span>
             </div>
 
-            <table className="treasury-table">
-              <thead>
-                <tr>
-                  <th>الحساب / الخزينة</th>
-                  <th>النوع</th>
-                  <th>العملة</th>
-                  <th>الرصيد الفعلي المتوفر</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vaults.map((v) => (
-                  <tr key={v.id} style={{ background: v.id === "cash_usd" ? "#fefce8" : "inherit" }}>
-                    <td>
-                      <strong>{v.name}</strong>
-                      {v.id === "cash_usd" && (
-                        <span style={{ fontSize: "10px", background: "#fef08a", color: "#854d0e", padding: "1px 6px", borderRadius: "4px", marginRight: "6px", fontWeight: "bold" }}>
-                          عملة صعبة ($)
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ color: "#64748b", fontSize: "11px" }}>{v.type}</td>
-                    <td><strong>{v.currency}</strong></td>
-                    <td
-                      style={{
-                        fontWeight: "bold",
-                        fontFamily: "monospace",
-                        color: v.currency === "$" ? "#b45309" : v.balance > 0 ? "#15803d" : "#0f172a",
+            {/* 3 Top Summary KPIs */}
+            <div className="treasury-kpi-grid">
+              {/* KPI 1: Cash LYD */}
+              <div className="treasury-kpi-card treasury-kpi-cash">
+                <div>
+                  <div className="treasury-kpi-head">
+                    <span className="treasury-kpi-label">💵 كاش الدرج بالدينار (الرصيد الفعلي)</span>
+                    <span className="treasury-kpi-icon">💰</span>
+                  </div>
+                  <div className="treasury-kpi-val">
+                    {cashLydVault.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                  </div>
+                </div>
+                <div className="treasury-kpi-sub">
+                  <span>سيولة المقر الفورية (المكتب)</span>
+                  <button
+                    type="button"
+                    className="btn-bank-fund"
+                    onClick={() => {
+                      setFundVaultId("cash_lyd");
+                      setFundAmount("");
+                      setShowFundModal(true);
+                    }}
+                  >
+                    ➕ تغذية / ضبط
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI 2: Banks Total LYD */}
+              <div className="treasury-kpi-card treasury-kpi-banks">
+                <div>
+                  <div className="treasury-kpi-head">
+                    <span className="treasury-kpi-label">🏦 إجمالي أرصدة المصارف بالدينار</span>
+                    <span className="treasury-kpi-icon">🏛️</span>
+                  </div>
+                  <div className="treasury-kpi-val">
+                    {totalBanksLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                  </div>
+                </div>
+                <div className="treasury-kpi-sub">
+                  <span>9 حسابات ({activeBanksCount} بها رصيد)</span>
+                  <span style={{ color: "#1e40af", fontWeight: 700 }}>
+                    الإجمالي: {totalAllLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                  </span>
+                </div>
+              </div>
+
+              {/* KPI 3: Cash USD */}
+              <div className="treasury-kpi-card treasury-kpi-usd">
+                <div>
+                  <div className="treasury-kpi-head">
+                    <span className="treasury-kpi-label">💎 كاش الدولار بالخارج ($ USD)</span>
+                    <span className="treasury-kpi-icon">💵</span>
+                  </div>
+                  <div className="treasury-kpi-val">
+                    {availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })} $
+                  </div>
+                </div>
+                <div className="treasury-kpi-sub">
+                  <span>عملة صعبة جاهزة للبيع</span>
+                  {canSettle && (
+                    <button
+                      type="button"
+                      className="btn-usd-pulse"
+                      onClick={() => {
+                        setSellUsdAmount(availableUsd > 0 ? (availableUsd >= 4000 ? "4000" : availableUsd.toString()) : "0");
+                        setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
+                        setSellUsdError("");
+                        setShowSellUsdModal(true);
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span>
-                          {v.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} {v.currency}
-                        </span>
-                        {v.id === "cash_usd" && canSettle && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSellUsdAmount(v.balance > 0 ? (v.balance >= 4000 ? "4000" : v.balance.toString()) : "0");
-                              setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
-                              setSellUsdError("");
-                              setShowSellUsdModal(true);
-                            }}
-                            style={{
-                              background: "#d97706",
-                              color: "#fff",
-                              border: "none",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              fontWeight: 800,
-                              cursor: "pointer",
-                              marginRight: "8px",
-                            }}
-                            title="بيع دولارات كاش مجمعة وتوريد الدينار"
-                          >
-                            💱 بيع دولار
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      💱 بيع وتصفية الدولار
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
-            <div style={{ marginTop: "14px", textAlign: "left" }}>
+            {/* Section 1: Main Cash Vaults */}
+            <div className="treasury-section-heading">
+              <h4>💵 الخزائن النقدية الرئيسية (الكاش والدولار)</h4>
+              <span className="treasury-section-badge">خزائن السيولة المباشرة</span>
+            </div>
+
+            <div className="treasury-cash-grid">
+              {/* Cash LYD Box */}
+              <div className="treasury-vault-box">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: "14px", color: "#0f172a" }}>
+                      💵 {cashLydVault.name}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                      {cashLydVault.type}
+                    </div>
+                  </div>
+                  <span className={`bank-card-badge ${cashLydVault.balance > 0 ? "badge-active" : "badge-zero"}`}>
+                    {cashLydVault.balance > 0 ? "🟢 نشط: به رصيد" : "⚪ صفرية"}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+                  <div>
+                    <div style={{ fontSize: "10px", color: "#64748b" }}>الرصيد الفعلي المتوفر:</div>
+                    <div style={{ fontSize: "18px", fontWeight: 900, fontFamily: "monospace", color: cashLydVault.balance > 0 ? "#15803d" : "#0f172a" }}>
+                      {cashLydVault.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-bank-fund"
+                    onClick={() => {
+                      setFundVaultId("cash_lyd");
+                      setFundAmount("");
+                      setShowFundModal(true);
+                    }}
+                  >
+                    ➕ تغذية / ضبط
+                  </button>
+                </div>
+              </div>
+
+              {/* Cash USD Box */}
+              <div className="treasury-vault-box usd-box">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: "14px", color: "#92400e" }}>
+                      💎 {usdVault ? usdVault.name : "خزينة الدولار النقدي (الخارج)"}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                      {usdVault ? usdVault.type : "خزينة عملة صعبة (الخارج)"}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: "10px", background: "#fef08a", color: "#854d0e", padding: "2px 7px", borderRadius: "9999px", fontWeight: "bold" }}>
+                    عملة صعبة ($)
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+                  <div>
+                    <div style={{ fontSize: "10px", color: "#64748b" }}>رصيد الدولار بالخارج:</div>
+                    <div style={{ fontSize: "18px", fontWeight: 900, fontFamily: "monospace", color: "#b45309" }}>
+                      {availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })} $
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    {canSettle && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSellUsdAmount(availableUsd > 0 ? (availableUsd >= 4000 ? "4000" : availableUsd.toString()) : "0");
+                          setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
+                          setSellUsdError("");
+                          setShowSellUsdModal(true);
+                        }}
+                        style={{
+                          background: "#d97706",
+                          color: "white",
+                          border: "none",
+                          padding: "4px 9px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                        }}
+                      >
+                        💱 بيع دولار
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-bank-fund"
+                      onClick={() => {
+                        setFundVaultId("cash_usd");
+                        setFundAmount("");
+                        setShowFundModal(true);
+                      }}
+                    >
+                      ➕ ضبط
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: 9 Approved Banks Grid */}
+            <div className="treasury-section-heading">
+              <h4>🏦 الحسابات المصرفية المعتمدة (9 مصارف)</h4>
+              <span className="treasury-section-badge">
+                {activeBanksCount} من 9 نشطة بها رصيد
+              </span>
+            </div>
+
+            <div className="treasury-banks-grid">
+              {bankVaults.map((b) => {
+                const hasBalance = b.balance > 0;
+                const icon = BANK_ICONS[b.id] || "🏦";
+                return (
+                  <div key={b.id} className={`bank-card ${hasBalance ? "has-balance" : ""}`}>
+                    <div className="bank-card-head">
+                      <div className="bank-card-name" title={b.name}>
+                        <span>{icon}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {b.name.replace("حساب ", "")}
+                        </span>
+                      </div>
+                      <span className={`bank-card-badge ${hasBalance ? "badge-active" : "badge-zero"}`}>
+                        {hasBalance ? "🟢 به رصيد" : "⚪ صفرية"}
+                      </span>
+                    </div>
+
+                    <div className="bank-card-body">
+                      <div>
+                        <div style={{ fontSize: "10px", color: "#64748b" }}>الرصيد الفعلي:</div>
+                        <div className={`bank-card-bal ${hasBalance ? "active" : "zero"}`}>
+                          {b.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn-bank-fund"
+                        onClick={() => {
+                          setFundVaultId(b.id);
+                          setFundAmount("");
+                          setShowFundModal(true);
+                        }}
+                        title={`تغذية أو تعديل رصيد ${b.name}`}
+                      >
+                        ➕ تغذية
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Section 3: Safety Zone for Admin Reset */}
+            {isAdmin && (
+              <div className="treasury-safety-zone">
+                <div className="treasury-safety-info">
+                  <span className="treasury-safety-icon">🛡️</span>
+                  <div className="treasury-safety-text">
+                    <h5>منطقة الأمان والصلاحيات العليا (صلاحية المدير العام فقط)</h5>
+                    <p>تصفير وإعادة تعيين أرصدة المنظومة بالكامل مع التحقق من كود الأمان المشفر.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-safety-reset"
+                  onClick={() => setShowResetSystemModal(true)}
+                >
+                  🗑️ تصفير المنظومة (إعادة ضبط الأرصدة)
+                </button>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setShowTreasuryReportModal(true)}
+                style={{
+                  background: "#f8fafc",
+                  color: "#0f766e",
+                  border: "1px solid #cbd5e1",
+                  padding: "6px 14px",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                }}
+              >
+                🖨️ طباعة كشف الخزينة والمصارف (الموقف المالي)
+              </button>
+
               <button
                 type="button"
                 className="btn-secondary-action"
-                style={{ width: "auto", padding: "6px 18px" }}
+                style={{ width: "auto", padding: "6px 20px" }}
                 onClick={() => setShowTreasuryModal(false)}
               >
                 إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Printable Treasury Balance Sheet Modal */}
+      {showTreasuryReportModal && (
+        <div id="treasuryReportModal" style={{ display: "block" }}>
+          <div className="treasury-report-sheet">
+            {/* Official Header */}
+            <div className="treasury-report-header">
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "24px" }}>💎</span>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 900, color: "#0f172a" }}>
+                      أمير للتجارة الإلكترونية
+                    </h2>
+                    <h4 style={{ margin: "3px 0 0 0", fontSize: "14px", fontWeight: 700, color: "#0f766e" }}>
+                      كشف الموقف المالي وأرصدة الخزائن والمصارف اللحظية
+                    </h4>
+                  </div>
+                </div>
+              </div>
+
+              <div className="treasury-report-meta">
+                <div>التاريخ: <strong style={{ color: "#0f172a" }}>{new Date().toLocaleDateString("ar-LY")}</strong></div>
+                <div>الوقت: <strong style={{ color: "#0f172a" }}>{new Date().toLocaleTimeString("ar-LY")}</strong></div>
+                <div>المسؤول: <strong style={{ color: "#0f172a" }}>{currentEmployee.name} ({currentEmployee.role})</strong></div>
+                <div>المرجع: <strong style={{ color: "#0f766e", fontFamily: "monospace" }}>REP-TREASURY-{new Date().toISOString().slice(0, 10).replace(/-/g, "")}</strong></div>
+              </div>
+            </div>
+
+            {/* Summary KPI Cards */}
+            <div className="treasury-report-kpis">
+              <div className="treasury-report-kpi">
+                <div className="treasury-report-kpi-title">💵 كاش الدرج (دينار)</div>
+                <div className="treasury-report-kpi-val" style={{ color: "#15803d" }}>
+                  {cashLydVault.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                </div>
+              </div>
+
+              <div className="treasury-report-kpi">
+                <div className="treasury-report-kpi-title">🏦 أرصدة المصارف الـ 9</div>
+                <div className="treasury-report-kpi-val" style={{ color: "#1d4ed8" }}>
+                  {totalBanksLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                </div>
+              </div>
+
+              <div className="treasury-report-kpi">
+                <div className="treasury-report-kpi-title">💰 إجمالي السيولة بالدينار</div>
+                <div className="treasury-report-kpi-val" style={{ color: "#0f172a" }}>
+                  {totalAllLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                </div>
+              </div>
+
+              <div className="treasury-report-kpi">
+                <div className="treasury-report-kpi-title">💎 كاش الدولار بالخارج</div>
+                <div className="treasury-report-kpi-val" style={{ color: "#b45309" }}>
+                  {availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })} $
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Printable Table */}
+            <table className="treasury-print-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "35px", textAlign: "center" }}>م</th>
+                  <th>اسم الحساب / الخزينة</th>
+                  <th>النوع والتصنيف</th>
+                  <th style={{ width: "60px", textAlign: "center" }}>العملة</th>
+                  <th style={{ textAlign: "left" }}>الرصيد الفعلي المتوفر</th>
+                  <th style={{ width: "90px", textAlign: "center" }}>الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Row 1: Cash LYD */}
+                <tr>
+                  <td style={{ textAlign: "center", fontWeight: "bold" }}>1</td>
+                  <td><strong>💵 {cashLydVault.name}</strong></td>
+                  <td style={{ color: "#64748b" }}>{cashLydVault.type}</td>
+                  <td style={{ textAlign: "center", fontWeight: "bold" }}>{cashLydVault.currency}</td>
+                  <td style={{ textAlign: "left", fontWeight: "bold", fontFamily: "monospace", color: "#15803d" }}>
+                    {cashLydVault.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <span className={`bank-card-badge ${cashLydVault.balance > 0 ? "badge-active" : "badge-zero"}`}>
+                      {cashLydVault.balance > 0 ? "نشط" : "صفري"}
+                    </span>
+                  </td>
+                </tr>
+
+                {/* Rows 2 to 10: 9 Banks */}
+                {bankVaults.map((b, idx) => {
+                  const hasBal = b.balance > 0;
+                  return (
+                    <tr key={b.id}>
+                      <td style={{ textAlign: "center", fontWeight: "bold" }}>{idx + 2}</td>
+                      <td>{BANK_ICONS[b.id] || "🏦"} <strong>{b.name}</strong></td>
+                      <td style={{ color: "#64748b" }}>{b.type}</td>
+                      <td style={{ textAlign: "center", fontWeight: "bold" }}>{b.currency}</td>
+                      <td style={{ textAlign: "left", fontWeight: "bold", fontFamily: "monospace", color: hasBal ? "#1d4ed8" : "#64748b" }}>
+                        {b.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <span className={`bank-card-badge ${hasBal ? "badge-active" : "badge-zero"}`}>
+                          {hasBal ? "نشط" : "صفري"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {/* Row 11: Cash USD */}
+                <tr style={{ background: "#fffdf5" }}>
+                  <td style={{ textAlign: "center", fontWeight: "bold" }}>11</td>
+                  <td><strong>💎 {usdVault ? usdVault.name : "خزينة الدولار النقدي (الخارج)"}</strong></td>
+                  <td style={{ color: "#64748b" }}>{usdVault ? usdVault.type : "خزينة عملة صعبة (الخارج)"}</td>
+                  <td style={{ textAlign: "center", fontWeight: "bold" }}>{usdVault ? usdVault.currency : "$"}</td>
+                  <td style={{ textAlign: "left", fontWeight: "bold", fontFamily: "monospace", color: "#b45309" }}>
+                    {availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })} $
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <span style={{ fontSize: "10px", background: "#fef08a", color: "#854d0e", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
+                      عملة صعبة
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "right", fontWeight: "bold" }}>
+                    المجموع الكلي للسيولة بالدينار الليبي (كاش المكتب + المصارف الـ 9):
+                  </td>
+                  <td style={{ textAlign: "left", fontWeight: 900, fontFamily: "monospace", color: "#15803d", fontSize: "14px" }}>
+                    {totalAllLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                  </td>
+                  <td style={{ textAlign: "center" }}>مطابق للشيت</td>
+                </tr>
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "right", fontWeight: "bold" }}>
+                    إجمالي رصيد العملة الصعبة بالدولار (الخارج):
+                  </td>
+                  <td style={{ textAlign: "left", fontWeight: 900, fontFamily: "monospace", color: "#b45309", fontSize: "14px" }}>
+                    {availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })} $
+                  </td>
+                  <td style={{ textAlign: "center" }}>قبل البيع</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            {/* Official Signatures */}
+            <div className="treasury-report-signatures">
+              <div className="treasury-sig-box">
+                <strong>إعداد: مسؤول الخزينة / أمين الصندوق</strong>
+                <div className="treasury-sig-line"></div>
+                <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>التوقيع والتاريخ</div>
+              </div>
+
+              <div className="treasury-sig-box">
+                <strong>اعتماد: المدير العام (AMIR)</strong>
+                <div className="treasury-sig-line"></div>
+                <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>الختم والاعتماد الرسمي</div>
+              </div>
+            </div>
+
+            {/* Modal Actions (Hidden in Print) */}
+            <div className="no-print" style={{ marginTop: "24px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setShowTreasuryReportModal(false)}
+                style={{ padding: "8px 16px", border: "1px solid #cbd5e1", background: "#f1f5f9", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }}
+              >
+                ✕ إغلاق المعاينة
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                style={{ padding: "8px 22px", background: "#059669", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
+              >
+                🖨️ طباعة الكشف (A4 / حفظ كـ PDF)
               </button>
             </div>
           </div>

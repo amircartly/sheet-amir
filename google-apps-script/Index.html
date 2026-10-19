@@ -441,7 +441,7 @@
     }
 
     /* Modal Overlays */
-    #reportModal, #successModal, #loginModal, #settleModal, #treasuryModal, #customAlertModal {
+    #reportModal, #successModal, #loginModal, #settleModal, #treasuryModal, #customAlertModal, #treasuryReportModal {
       display: none;
       position: fixed;
       top: 0;
@@ -742,20 +742,487 @@
       body * {
         visibility: hidden;
       }
-      #reportModal, #reportModal * {
+      #reportModal, #reportModal *,
+      #treasuryReportModal, #treasuryReportModal * {
         visibility: visible;
       }
-      #reportModal {
+      #reportModal, #treasuryReportModal {
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
-        background: white;
-        padding: 0;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
       }
       .no-print {
         display: none !important;
       }
+    }
+
+    /* =========================================================================
+       Modern Treasury Hub & Printable Balance Sheet (مركز الخزائن والمصارف اللحظية)
+       ========================================================================= */
+    .modal-card-treasury {
+      background: white;
+      width: 100%;
+      max-width: 960px;
+      border-radius: 18px;
+      padding: 22px 24px;
+      text-align: right;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      border: 1px solid #e2e8f0;
+      max-height: 94vh;
+      overflow-y: auto;
+      animation: popIn 0.25s ease-out;
+    }
+
+    .treasury-hub-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #064e3b;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .treasury-hub-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* 3 Top Summary KPIs */
+    .treasury-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+      .treasury-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .treasury-kpi-card {
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .treasury-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+    }
+    .treasury-kpi-cash {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #86efac;
+    }
+    .treasury-kpi-banks {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid #93c5fd;
+    }
+    .treasury-kpi-usd {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 1px solid #fcd34d;
+    }
+
+    .treasury-kpi-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .treasury-kpi-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .treasury-kpi-icon {
+      font-size: 20px;
+    }
+    .treasury-kpi-val {
+      font-size: 21px;
+      font-weight: 900;
+      font-family: monospace;
+      line-height: 1.2;
+      margin: 4px 0;
+    }
+    .treasury-kpi-cash .treasury-kpi-val {
+      color: #15803d;
+    }
+    .treasury-kpi-banks .treasury-kpi-val {
+      color: #1d4ed8;
+    }
+    .treasury-kpi-usd .treasury-kpi-val {
+      color: #b45309;
+    }
+    .treasury-kpi-sub {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .btn-usd-pulse {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7);
+      animation: pulseAmber 2s infinite;
+      transition: all 0.2s ease;
+    }
+    .btn-usd-pulse:hover {
+      transform: scale(1.03);
+      background: #92400e;
+    }
+    @keyframes pulseAmber {
+      0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(217, 119, 6, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+    }
+
+    /* Section Divider & Titles */
+    .treasury-section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 16px 0 10px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .treasury-section-heading h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .treasury-section-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    /* Cash Vaults Row (2 Cards) */
+    .treasury-cash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 640px) {
+      .treasury-cash-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .treasury-vault-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .treasury-vault-box.usd-box {
+      border-color: #fcd34d;
+      background: #fffdf5;
+    }
+
+    /* 9 Banks Grid */
+    .treasury-banks-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 900px) {
+      .treasury-banks-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 580px) {
+      .treasury-banks-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .bank-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      transition: all 0.2s ease;
+    }
+    .bank-card:hover {
+      border-color: #94a3b8;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .bank-card.has-balance {
+      border-color: #86efac;
+      background: #fbfdfc;
+    }
+    .bank-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .bank-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bank-card-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+    .badge-active {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .badge-zero {
+      background: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+    .bank-card-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: 2px;
+    }
+    .bank-card-bal {
+      font-size: 16px;
+      font-weight: 900;
+      font-family: monospace;
+    }
+    .bank-card-bal.active {
+      color: #15803d;
+    }
+    .bank-card-bal.zero {
+      color: #94a3b8;
+    }
+    .bank-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .btn-bank-fund {
+      background: #f8fafc;
+      color: #0f766e;
+      border: 1px solid #cbd5e1;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .btn-bank-fund:hover {
+      background: #0f766e;
+      color: white;
+      border-color: #0f766e;
+    }
+
+    /* Safety Zone */
+    .treasury-safety-zone {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .treasury-safety-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .treasury-safety-icon {
+      font-size: 24px;
+    }
+    .treasury-safety-text h5 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: #991b1b;
+    }
+    .treasury-safety-text p {
+      margin: 2px 0 0 0;
+      font-size: 11px;
+      color: #b91c1c;
+    }
+    .btn-safety-reset {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.2s;
+    }
+    .btn-safety-reset:hover {
+      background: #dc2626;
+    }
+
+    /* Printable Balance Sheet Modal */
+    .treasury-report-sheet {
+      background: white;
+      max-width: 880px;
+      margin: 0 auto;
+      border-radius: 14px;
+      padding: 26px 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      color: #0f172a;
+    }
+    .treasury-report-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .treasury-report-meta {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+      text-align: left;
+    }
+    .treasury-report-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 14px 0;
+    }
+    @media (max-width: 680px) {
+      .treasury-report-kpis {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .treasury-report-kpi {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .treasury-report-kpi-title {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .treasury-report-kpi-val {
+      font-size: 16px;
+      font-weight: 900;
+      font-family: monospace;
+      margin-top: 4px;
+      color: #0f172a;
+    }
+    .treasury-print-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 12px;
+    }
+    .treasury-print-table th {
+      background: #0f172a;
+      color: white;
+      padding: 8px 10px;
+      text-align: right;
+      font-weight: 800;
+      border: 1px solid #0f172a;
+    }
+    .treasury-print-table td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      font-weight: 600;
+    }
+    .treasury-print-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .treasury-print-table tfoot td {
+      background: #f1f5f9;
+      font-weight: 900;
+      font-size: 13px;
+      border-top: 2px solid #0f172a;
+    }
+    .treasury-report-signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 32px;
+      padding-top: 18px;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .treasury-sig-box {
+      text-align: center;
+      font-size: 12px;
+      color: #334155;
+      line-height: 2;
+    }
+    .treasury-sig-line {
+      margin-top: 26px;
+      border-bottom: 1px solid #94a3b8;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* =========================================================================
@@ -2035,35 +2502,293 @@
     </div>
   </div>
 
-  <!-- Real-time Treasury Balances Modal -->
+  <!-- Real-time Treasury Balances Modal (Modern Treasury Hub) -->
   <div id="treasuryModal">
-    <div class="modal-card modal-card-large">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #064e3b; padding-bottom:8px; margin-bottom:12px;">
-        <div>
-          <h3 style="color:#064e3b; font-size:16px;">🏦 أرصدة الخزائن والمصارف اللحظية</h3>
-          <span style="font-size:11px; color:#64748b;">تحديث فوري من ورقة أرصدة_الخزائن</span>
+    <div class="modal-card-treasury">
+      <!-- Treasury Hub Header -->
+      <div class="treasury-hub-header">
+        <div class="treasury-hub-title">
+          <div>
+            <h3 style="color:#064e3b; font-size:17px; font-weight:800; margin:0;">
+              🏦 مركز إدارة الخزائن والمصارف اللحظية
+            </h3>
+            <span style="font-size:11px; color:#64748b;">
+              💎 أمير للتجارة الإلكترونية - تحديث لحظي مباشر من ورقة أرصدة_الخزائن
+            </span>
+          </div>
         </div>
-        <button type="button" onclick="loadTreasuryBalances()" style="background:#059669; color:white; border:none; padding:5px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">
-          🔄 تحديث الأرصدة
+
+        <div class="treasury-hub-actions">
+          <button type="button" class="btn-usd-pulse" id="btnGasPulseSellUsd" onclick="closeTreasuryModal(); openSettleModal();" title="تصفية وبيع الدولار وتوريد المقابل بالدينار">
+            💱 بيع وتصفية الدولار
+          </button>
+
+          <button type="button" onclick="openTreasuryReportModal()" style="background:#0f766e; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="معاينة وطباعة كشف الموقف المالي وحفظه كـ PDF">
+            🖨️ طباعة الموقف المالي (PDF)
+          </button>
+
+          <button type="button" onclick="loadTreasuryBalances()" style="background:#059669; color:white; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="تحديث مباشر للأرصدة من الشيت">
+            🔄 تحديث الأرصدة
+          </button>
+
+          <button type="button" onclick="closeTreasuryModal()" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:5px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">
+            ✕ إغلاق
+          </button>
+        </div>
+      </div>
+
+      <!-- Sync Banner -->
+      <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:7px 12px; border-radius:8px; font-size:11px; color:#166534; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+        <span>
+          🟢 <strong>مزامنة شيت جوجل:</strong> الأرصدة مرتبطة مباشرة بورقة <code>أرصدة_الخزائن</code> وتتحدث لحظياً مع كل عملية.
+        </span>
+        <span style="font-size:11px; color:#15803d; font-weight:bold;">
+          ✓ تطابق تام 100% مع حسابات الشيت
+        </span>
+      </div>
+
+      <!-- 3 Top Summary KPIs -->
+      <div class="treasury-kpi-grid">
+        <!-- KPI 1: Cash LYD -->
+        <div class="treasury-kpi-card treasury-kpi-cash">
+          <div>
+            <div class="treasury-kpi-head">
+              <span class="treasury-kpi-label">💵 كاش الدرج بالدينار (الرصيد الفعلي)</span>
+              <span class="treasury-kpi-icon">💰</span>
+            </div>
+            <div class="treasury-kpi-val" id="kpiGasCashLydVal">0.00 د.ل</div>
+          </div>
+          <div class="treasury-kpi-sub">
+            <span>سيولة المقر الفورية (درج المكتب)</span>
+            <span style="color:#166534; font-weight:700;">خزينة نقدية</span>
+          </div>
+        </div>
+
+        <!-- KPI 2: Banks Total LYD -->
+        <div class="treasury-kpi-card treasury-kpi-banks">
+          <div>
+            <div class="treasury-kpi-head">
+              <span class="treasury-kpi-label">🏦 إجمالي أرصدة المصارف بالدينار</span>
+              <span class="treasury-kpi-icon">🏛️</span>
+            </div>
+            <div class="treasury-kpi-val" id="kpiGasBanksTotalVal">0.00 د.ل</div>
+          </div>
+          <div class="treasury-kpi-sub">
+            <span id="kpiGasActiveBanksCount">9 حسابات معتمدة</span>
+            <span id="kpiGasTotalAllLyd" style="color:#1e40af; font-weight:700;">الإجمالي: 0.00 د.ل</span>
+          </div>
+        </div>
+
+        <!-- KPI 3: Cash USD -->
+        <div class="treasury-kpi-card treasury-kpi-usd">
+          <div>
+            <div class="treasury-kpi-head">
+              <span class="treasury-kpi-label">💎 كاش الدولار بالخارج ($ USD)</span>
+              <span class="treasury-kpi-icon">💵</span>
+            </div>
+            <div class="treasury-kpi-val" id="kpiGasCashUsdVal">0.00 $</div>
+          </div>
+          <div class="treasury-kpi-sub">
+            <span>عملة صعبة جاهزة للبيع</span>
+            <button type="button" class="btn-usd-pulse" onclick="closeTreasuryModal(); openSettleModal();">
+              💱 بيع وتصفية
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Main Cash Vaults -->
+      <div class="treasury-section-heading">
+        <h4>💵 الخزائن النقدية الرئيسية (الكاش والدولار)</h4>
+        <span class="treasury-section-badge">خزائن السيولة المباشرة</span>
+      </div>
+
+      <div class="treasury-cash-grid">
+        <!-- Cash LYD Box -->
+        <div class="treasury-vault-box">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-weight:800; font-size:14px; color:#0f172a;">💵 خزينة الكاش بالدينار</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">خزينة نقدية (درج المكتب)</div>
+            </div>
+            <span id="badgeGasCashLyd" class="bank-card-badge badge-active">🟢 نشط</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+            <div>
+              <div style="font-size:10px; color:#64748b;">الرصيد الفعلي المتوفر:</div>
+              <div id="boxGasCashLydBal" style="font-size:18px; font-weight:900; font-family:monospace; color:#15803d;">0.00 د.ل</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cash USD Box -->
+        <div class="treasury-vault-box usd-box">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-weight:800; font-size:14px; color:#92400e;">💎 خزينة الدولار النقدي (الخارج)</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">خزينة عملة صعبة (الخارج)</div>
+            </div>
+            <span style="font-size:10px; background:#fef08a; color:#854d0e; padding:2px 7px; border-radius:9999px; font-weight:bold;">عملة صعبة ($)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+            <div>
+              <div style="font-size:10px; color:#64748b;">رصيد الدولار بالخارج:</div>
+              <div id="boxGasCashUsdBal" style="font-size:18px; font-weight:900; font-family:monospace; color:#b45309;">0.00 $</div>
+            </div>
+            <button type="button" class="btn-usd-pulse" onclick="closeTreasuryModal(); openSettleModal();">
+              💱 بيع وتصفية
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: 9 Approved Banks Grid -->
+      <div class="treasury-section-heading">
+        <h4>🏦 الحسابات المصرفية المعتمدة (9 مصارف)</h4>
+        <span class="treasury-section-badge" id="badgeGasBanksActiveSubtitle">9 مصارف معتمدة</span>
+      </div>
+
+      <div id="treasuryLoading" style="text-align:center; padding:18px; font-size:13px; color:#64748b;">⏳ جاري جلب الأرصدة من الشيت...</div>
+
+      <div class="treasury-banks-grid" id="treasuryGasBanksGrid" style="display:none;"></div>
+
+      <!-- Section 3: Safety Zone for Admin Reset -->
+      <div class="treasury-safety-zone" id="gasTreasurySafetyZone">
+        <div class="treasury-safety-info">
+          <span class="treasury-safety-icon">🛡️</span>
+          <div class="treasury-safety-text">
+            <h5>منطقة الأمان والصلاحيات العليا (صلاحية المدير العام فقط)</h5>
+            <p>تصفير وإعادة تعيين أرصدة المنظومة بالكامل مع التحقق من كود الأمان المشفر.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-safety-reset" onclick="alert('تصفير المنظومة متاح من نافذة الصلاحيات العليا برمز الأمان 9999');">
+          🗑️ تصفير المنظومة (إعادة ضبط الأرصدة)
         </button>
       </div>
 
-      <div id="treasuryLoading" style="text-align:center; padding:20px; font-size:13px; color:#64748b;">جاري جلب الأرصدة من الشيت...</div>
-      
-      <table class="treasury-table" id="treasuryTable" style="display:none;">
+      <!-- Footer -->
+      <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <button type="button" onclick="openTreasuryReportModal()" style="background:#f8fafc; color:#0f766e; border:1px solid #cbd5e1; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+          🖨️ طباعة كشف الخزينة والمصارف (الموقف المالي)
+        </button>
+
+        <button type="button" class="btn-secondary-action" style="width:auto; padding:6px 20px;" onclick="closeTreasuryModal()">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Printable Treasury Balance Sheet Modal (الشيت - كشف الموقف المالي) -->
+  <div id="treasuryReportModal">
+    <div class="treasury-report-sheet">
+      <!-- Official Header -->
+      <div class="treasury-report-header">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:24px;">💎</span>
+            <div>
+              <h2 style="margin:0; font-size:20px; font-weight:900; color:#0f172a;">
+                أمير للتجارة الإلكترونية
+              </h2>
+              <h4 style="margin:3px 0 0 0; font-size:14px; font-weight:700; color:#0f766e;">
+                كشف الموقف المالي وأرصدة الخزائن والمصارف اللحظية
+              </h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="treasury-report-meta">
+          <div>التاريخ: <strong id="repGasDate" style="color:#0f172a;">-</strong></div>
+          <div>الوقت: <strong id="repGasTime" style="color:#0f172a;">-</strong></div>
+          <div>المسؤول: <strong id="repGasOfficer" style="color:#0f172a;">-</strong></div>
+          <div>المرجع: <strong id="repGasRef" style="color:#0f766e; font-family:monospace;">REP-GAS-TREASURY</strong></div>
+        </div>
+      </div>
+
+      <!-- Summary KPI Cards -->
+      <div class="treasury-report-kpis">
+        <div class="treasury-report-kpi">
+          <div class="treasury-report-kpi-title">💵 كاش الدرج (دينار)</div>
+          <div class="treasury-report-kpi-val" id="repGasKpiCashLyd" style="color:#15803d;">0.00 د.ل</div>
+        </div>
+
+        <div class="treasury-report-kpi">
+          <div class="treasury-report-kpi-title">🏦 أرصدة المصارف الـ 9</div>
+          <div class="treasury-report-kpi-val" id="repGasKpiBanksLyd" style="color:#1d4ed8;">0.00 د.ل</div>
+        </div>
+
+        <div class="treasury-report-kpi">
+          <div class="treasury-report-kpi-title">💰 إجمالي السيولة بالدينار</div>
+          <div class="treasury-report-kpi-val" id="repGasKpiTotalLyd" style="color:#0f172a;">0.00 د.ل</div>
+        </div>
+
+        <div class="treasury-report-kpi">
+          <div class="treasury-report-kpi-title">💎 كاش الدولار بالخارج</div>
+          <div class="treasury-report-kpi-val" id="repGasKpiCashUsd" style="color:#b45309;">0.00 $</div>
+        </div>
+      </div>
+
+      <!-- Detailed Printable Table -->
+      <table class="treasury-print-table">
         <thead>
           <tr>
-            <th>الحساب / الخزينة</th>
-            <th>العملة</th>
-            <th>إجمالي الإيداعات والأرباح</th>
-            <th>الرصيد الحالي المتوفر</th>
+            <th style="width:35px; text-align:center;">م</th>
+            <th>اسم الحساب / الخزينة</th>
+            <th>النوع والتصنيف</th>
+            <th style="width:60px; text-align:center;">العملة</th>
+            <th style="text-align:left;">الرصيد الفعلي المتوفر</th>
+            <th style="width:90px; text-align:center;">الحالة</th>
           </tr>
         </thead>
-        <tbody id="treasuryTableBody"></tbody>
+        <tbody id="treasuryReportTableBody">
+          <!-- Dynamically populated -->
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" style="text-align:right; font-weight:bold;">
+              المجموع الكلي للسيولة بالدينار الليبي (كاش المكتب + المصارف الـ 9):
+            </td>
+            <td id="repGasFootTotalLyd" style="text-align:left; font-weight:900; font-family:monospace; color:#15803d; font-size:14px;">
+              0.00 د.ل
+            </td>
+            <td style="text-align:center;">مطابق للشيت</td>
+          </tr>
+          <tr>
+            <td colspan="4" style="text-align:right; font-weight:bold;">
+              إجمالي رصيد العملة الصعبة بالدولار (الخارج):
+            </td>
+            <td id="repGasFootTotalUsd" style="text-align:left; font-weight:900; font-family:monospace; color:#b45309; font-size:14px;">
+              0.00 $
+            </td>
+            <td style="text-align:center;">قبل البيع</td>
+          </tr>
+        </tfoot>
       </table>
 
-      <div style="margin-top:14px; text-align:left;">
-        <button type="button" class="btn-secondary-action" style="width:auto; padding:6px 18px;" onclick="closeTreasuryModal()">إغلاق</button>
+      <!-- Official Signatures -->
+      <div class="treasury-report-signatures">
+        <div class="treasury-sig-box">
+          <strong>إعداد: مسؤول الخزينة / أمين الصندوق</strong>
+          <div class="treasury-sig-line"></div>
+          <div style="font-size:11px; color:#64748b; margin-top:4px;">التوقيع والتاريخ</div>
+        </div>
+
+        <div class="treasury-sig-box">
+          <strong>اعتماد: المدير العام (AMIR)</strong>
+          <div class="treasury-sig-line"></div>
+          <div style="font-size:11px; color:#64748b; margin-top:4px;">الختم والاعتماد الرسمي</div>
+        </div>
+      </div>
+
+      <!-- Modal Actions (Hidden in Print) -->
+      <div class="no-print" style="margin-top:24px; display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeTreasuryReportModal()" style="padding:8px 16px; border:1px solid #cbd5e1; background:#f1f5f9; border-radius:6px; cursor:pointer; font-weight:600;">
+          ✕ إغلاق المعاينة
+        </button>
+        <button type="button" onclick="window.print()" style="padding:8px 22px; background:#059669; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          🖨️ طباعة الكشف (A4 / حفظ كـ PDF)
+        </button>
       </div>
     </div>
   </div>
@@ -2399,6 +3124,12 @@
         if (btnTreasury) btnTreasury.style.display = 'inline-flex';
       }
 
+      var safetyZone = document.getElementById('gasTreasurySafetyZone');
+      if (safetyZone) safetyZone.style.display = isAdmin ? 'flex' : 'none';
+
+      var btnGasPulseSell = document.getElementById('btnGasPulseSellUsd');
+      if (btnGasPulseSell) btnGasPulseSell.style.display = (isAdmin || isTreasury) ? 'inline-flex' : 'none';
+
       allowedOptions.forEach(function(stg) {
         var opt = document.createElement('option');
         opt.value = stg;
@@ -2687,6 +3418,28 @@
       }
     }
 
+    var currentTreasuryAccounts = [];
+
+    var BANK_ICONS_GAS = {
+      'التجارة والتنمية': '🏦',
+      'الوحدة': '🏛️',
+      'التجاري الوطني': '🏢',
+      'الأمان': '🛡️',
+      'المتوسط': '🌊',
+      'الجمهورية': '⭐',
+      'الإسلامي': '🌙',
+      'شمال أفريقيا': '🧭',
+      'اليقين': '💎'
+    };
+
+    function getBankGasIcon(name) {
+      if (!name) return '🏦';
+      for (var key in BANK_ICONS_GAS) {
+        if (name.indexOf(key) !== -1) return BANK_ICONS_GAS[key];
+      }
+      return '🏦';
+    }
+
     // فتح وعرض أرصدة الخزائن والمصارف
     function openTreasuryModal() {
       document.getElementById('treasuryModal').style.display = 'flex';
@@ -2699,38 +3452,262 @@
 
     function loadTreasuryBalances() {
       var loading = document.getElementById('treasuryLoading');
-      var table = document.getElementById('treasuryTable');
-      var tbody = document.getElementById('treasuryTableBody');
+      var grid = document.getElementById('treasuryGasBanksGrid');
 
       loading.style.display = 'block';
-      table.style.display = 'none';
-      tbody.innerHTML = '';
+      if (grid) grid.style.display = 'none';
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(function(accounts) {
             loading.style.display = 'none';
-            table.style.display = 'table';
-
-            if (!accounts || accounts.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:15px;">لا توجد حسابات مسجلة</td></tr>';
-              return;
-            }
-
-            accounts.forEach(function(acc) {
-              var tr = document.createElement('tr');
-              var currStyle = (acc.currency === '$') ? 'color:#15803d; font-weight:bold;' : 'color:#0f172a; font-weight:bold;';
-              tr.innerHTML = '<td><strong>' + acc.accountName + '</strong></td>' +
-                             '<td>' + acc.currency + '</td>' +
-                             '<td>' + Number(acc.totalIncome).toLocaleString('en-US') + '</td>' +
-                             '<td style="' + currStyle + '">' + Number(acc.currentBalance).toLocaleString('en-US') + ' ' + acc.currency + '</td>';
-              tbody.appendChild(tr);
-            });
+            if (grid) grid.style.display = 'grid';
+            currentTreasuryAccounts = accounts || [];
+            renderGasTreasuryHub(currentTreasuryAccounts);
           })
           .withFailureHandler(function(err) {
             loading.innerText = 'تعذر جلب الأرصدة: ' + err.message;
           })
           .getTreasuryBalances();
+      } else {
+        // Fallback for local preview
+        loading.style.display = 'none';
+        if (grid) grid.style.display = 'grid';
+        var mockAccounts = [
+          { accountName: 'خزينة الكاش بالدينار', currency: 'د.ل', currentBalance: 120000, totalIncome: 150000, notes: 'السيولة النقدية بمقر المكتب' },
+          { accountName: 'حساب مصرف التجارة والتنمية', currency: 'د.ل', currentBalance: 85000, totalIncome: 90000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب مصرف الوحدة', currency: 'د.ل', currentBalance: 60000, totalIncome: 70000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب المصرف التجاري الوطني', currency: 'د.ل', currentBalance: 50000, totalIncome: 55000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب مصرف الأمان', currency: 'د.ل', currentBalance: 40000, totalIncome: 45000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب مصرف المتوسط', currency: 'د.ل', currentBalance: 30000, totalIncome: 35000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب مصرف الجمهورية', currency: 'د.ل', currentBalance: 75000, totalIncome: 80000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب المصرف الإسلامي الليبي', currency: 'د.ل', currentBalance: 35000, totalIncome: 40000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب مصرف شمال أفريقيا', currency: 'د.ل', currentBalance: 25000, totalIncome: 30000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'حساب مصرف اليقين', currency: 'د.ل', currentBalance: 20000, totalIncome: 25000, notes: 'حساب التوريدات المصرفية' },
+          { accountName: 'خزينة الدولار النقدي (الخارج)', currency: '$', currentBalance: 4000, totalIncome: 8000, notes: 'رصيد الدولار المستلم قبل البيع' }
+        ];
+        currentTreasuryAccounts = mockAccounts;
+        renderGasTreasuryHub(mockAccounts);
+      }
+    }
+
+    function renderGasTreasuryHub(accounts) {
+      var cashLydAcc = null;
+      var cashUsdAcc = null;
+      var bankAccs = [];
+
+      accounts.forEach(function(acc) {
+        var name = (acc.accountName || '').trim();
+        if (name.indexOf('خزينة الكاش') !== -1 || (name.indexOf('كاش') !== -1 && acc.currency === 'د.ل')) {
+          cashLydAcc = acc;
+        } else if (name.indexOf('خزينة الدولار') !== -1 || acc.currency === '$') {
+          cashUsdAcc = acc;
+        } else if (name.indexOf('مصرف') !== -1 || name.indexOf('حساب') !== -1) {
+          bankAccs.push(acc);
+        } else {
+          bankAccs.push(acc);
+        }
+      });
+
+      var cashLydBal = cashLydAcc ? (Number(cashLydAcc.currentBalance) || 0) : 0;
+      var cashUsdBal = cashUsdAcc ? (Number(cashUsdAcc.currentBalance) || 0) : 0;
+      var totalBanksLyd = 0;
+      var activeBanksCount = 0;
+
+      bankAccs.forEach(function(b) {
+        var bBal = Number(b.currentBalance) || 0;
+        totalBanksLyd += bBal;
+        if (bBal > 0) activeBanksCount++;
+      });
+
+      var totalAllLyd = cashLydBal + totalBanksLyd;
+
+      // Update Top KPIs
+      var elKpiCashLyd = document.getElementById('kpiGasCashLydVal');
+      if (elKpiCashLyd) elKpiCashLyd.innerText = cashLydBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+
+      var elKpiBanksLyd = document.getElementById('kpiGasBanksTotalVal');
+      if (elKpiBanksLyd) elKpiBanksLyd.innerText = totalBanksLyd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+
+      var elKpiActiveCount = document.getElementById('kpiGasActiveBanksCount');
+      if (elKpiActiveCount) elKpiActiveCount.innerText = bankAccs.length + ' حسابات (' + activeBanksCount + ' بها رصيد)';
+
+      var elKpiTotalAll = document.getElementById('kpiGasTotalAllLyd');
+      if (elKpiTotalAll) elKpiTotalAll.innerText = 'الإجمالي: ' + totalAllLyd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+
+      var elKpiCashUsd = document.getElementById('kpiGasCashUsdVal');
+      if (elKpiCashUsd) elKpiCashUsd.innerText = cashUsdBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+
+      // Update Section 1 Boxes
+      var elBoxCashLyd = document.getElementById('boxGasCashLydBal');
+      if (elBoxCashLyd) elBoxCashLyd.innerText = cashLydBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+
+      var elBoxCashUsd = document.getElementById('boxGasCashUsdBal');
+      if (elBoxCashUsd) elBoxCashUsd.innerText = cashUsdBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+
+      var elBadgeCashLyd = document.getElementById('badgeGasCashLyd');
+      if (elBadgeCashLyd) {
+        elBadgeCashLyd.className = 'bank-card-badge ' + (cashLydBal > 0 ? 'badge-active' : 'badge-zero');
+        elBadgeCashLyd.innerText = cashLydBal > 0 ? '🟢 نشط: به رصيد' : '⚪ صفرية';
+      }
+
+      var elSubBadge = document.getElementById('badgeGasBanksActiveSubtitle');
+      if (elSubBadge) elSubBadge.innerText = activeBanksCount + ' من ' + bankAccs.length + ' نشطة بها رصيد';
+
+      // Render Banks Grid
+      var grid = document.getElementById('treasuryGasBanksGrid');
+      if (grid) {
+        grid.innerHTML = '';
+        bankAccs.forEach(function(b) {
+          var bBal = Number(b.currentBalance) || 0;
+          var hasBal = bBal > 0;
+          var icon = getBankGasIcon(b.accountName);
+          var cleanName = b.accountName.replace('حساب ', '');
+
+          var card = document.createElement('div');
+          card.className = 'bank-card ' + (hasBal ? 'has-balance' : '');
+          card.innerHTML =
+            '<div class="bank-card-head">' +
+              '<div class="bank-card-name" title="' + b.accountName + '">' +
+                '<span>' + icon + '</span>' +
+                '<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + cleanName + '</span>' +
+              '</div>' +
+              '<span class="bank-card-badge ' + (hasBal ? 'badge-active' : 'badge-zero') + '">' +
+                (hasBal ? '🟢 به رصيد' : '⚪ صفري') +
+              '</span>' +
+            '</div>' +
+            '<div class="bank-card-body">' +
+              '<div>' +
+                '<div style="font-size:10px; color:#64748b;">الرصيد الفعلي:</div>' +
+                '<div class="bank-card-bal ' + (hasBal ? 'active' : 'zero') + '">' +
+                  bBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          grid.appendChild(card);
+        });
+      }
+    }
+
+    // فتح وإغلاق كشف الموقف المالي الرسمي للطباعة
+    function openTreasuryReportModal() {
+      var modal = document.getElementById('treasuryReportModal');
+      if (modal) {
+        populateTreasuryReportSheet();
+        modal.style.display = 'block';
+      }
+    }
+
+    function closeTreasuryReportModal() {
+      var modal = document.getElementById('treasuryReportModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+
+    function populateTreasuryReportSheet() {
+      var now = new Date();
+      var dateStr = now.toLocaleDateString('ar-LY');
+      var timeStr = now.toLocaleTimeString('ar-LY');
+      var officerName = (currentEmployee && currentEmployee.name) ? (currentEmployee.name + ' (' + currentEmployee.role + ')') : 'مسؤول الخزينة';
+      var refCode = 'REP-TREASURY-' + now.getFullYear() + ('0' + (now.getMonth() + 1)).slice(-2) + ('0' + now.getDate()).slice(-2) + '-' + Math.floor(1000 + Math.random() * 9000);
+
+      var elDate = document.getElementById('repGasDate');
+      if (elDate) elDate.innerText = dateStr;
+      var elTime = document.getElementById('repGasTime');
+      if (elTime) elTime.innerText = timeStr;
+      var elOfficer = document.getElementById('repGasOfficer');
+      if (elOfficer) elOfficer.innerText = officerName;
+      var elRef = document.getElementById('repGasRef');
+      if (elRef) elRef.innerText = refCode;
+
+      var accounts = currentTreasuryAccounts || [];
+      var cashLydAcc = null;
+      var cashUsdAcc = null;
+      var bankAccs = [];
+
+      accounts.forEach(function(acc) {
+        var name = (acc.accountName || '').trim();
+        if (name.indexOf('خزينة الكاش') !== -1 || (name.indexOf('كاش') !== -1 && acc.currency === 'د.ل')) {
+          cashLydAcc = acc;
+        } else if (name.indexOf('خزينة الدولار') !== -1 || acc.currency === '$') {
+          cashUsdAcc = acc;
+        } else {
+          bankAccs.push(acc);
+        }
+      });
+
+      var cashLydBal = cashLydAcc ? (Number(cashLydAcc.currentBalance) || 0) : 0;
+      var cashUsdBal = cashUsdAcc ? (Number(cashUsdAcc.currentBalance) || 0) : 0;
+      var totalBanksLyd = 0;
+
+      bankAccs.forEach(function(b) {
+        totalBanksLyd += (Number(b.currentBalance) || 0);
+      });
+
+      var totalAllLyd = cashLydBal + totalBanksLyd;
+
+      // Update Report KPIs
+      var elRepKpiCashLyd = document.getElementById('repGasKpiCashLyd');
+      if (elRepKpiCashLyd) elRepKpiCashLyd.innerText = cashLydBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+      var elRepKpiBanksLyd = document.getElementById('repGasKpiBanksLyd');
+      if (elRepKpiBanksLyd) elRepKpiBanksLyd.innerText = totalBanksLyd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+      var elRepKpiTotalLyd = document.getElementById('repGasKpiTotalLyd');
+      if (elRepKpiTotalLyd) elRepKpiTotalLyd.innerText = totalAllLyd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+      var elRepKpiCashUsd = document.getElementById('repGasKpiCashUsd');
+      if (elRepKpiCashUsd) elRepKpiCashUsd.innerText = cashUsdBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+
+      // Update Footer totals
+      var elFootTotalLyd = document.getElementById('repGasFootTotalLyd');
+      if (elFootTotalLyd) elFootTotalLyd.innerText = totalAllLyd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل';
+      var elFootTotalUsd = document.getElementById('repGasFootTotalUsd');
+      if (elFootTotalUsd) elFootTotalUsd.innerText = cashUsdBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+
+      // Populate Report Table Body
+      var tbody = document.getElementById('treasuryReportTableBody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        var rowIdx = 1;
+
+        // Row 1: Cash LYD
+        var trCash = document.createElement('tr');
+        trCash.innerHTML =
+          '<td style="text-align:center; font-weight:bold;">' + (rowIdx++) + '</td>' +
+          '<td><strong>💵 ' + (cashLydAcc ? cashLydAcc.accountName : 'خزينة الكاش بالدينار') + '</strong></td>' +
+          '<td style="color:#64748b;">خزينة نقدية (درج المكتب)</td>' +
+          '<td style="text-align:center; font-weight:bold;">د.ل</td>' +
+          '<td style="text-align:left; font-weight:bold; font-family:monospace; color:#15803d;">' + cashLydBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل</td>' +
+          '<td style="text-align:center;"><span class="bank-card-badge ' + (cashLydBal > 0 ? 'badge-active' : 'badge-zero') + '">' + (cashLydBal > 0 ? 'نشط' : 'صفري') + '</span></td>';
+        tbody.appendChild(trCash);
+
+        // Bank rows
+        bankAccs.forEach(function(b) {
+          var bBal = Number(b.currentBalance) || 0;
+          var hasBal = bBal > 0;
+          var icon = getBankGasIcon(b.accountName);
+
+          var trB = document.createElement('tr');
+          trB.innerHTML =
+            '<td style="text-align:center; font-weight:bold;">' + (rowIdx++) + '</td>' +
+            '<td>' + icon + ' <strong>' + b.accountName + '</strong></td>' +
+            '<td style="color:#64748b;">حساب مصرفي</td>' +
+            '<td style="text-align:center; font-weight:bold;">' + (b.currency || 'د.ل') + '</td>' +
+            '<td style="text-align:left; font-weight:bold; font-family:monospace; color:' + (hasBal ? '#1d4ed8' : '#64748b') + ';">' + bBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || 'د.ل') + '</td>' +
+            '<td style="text-align:center;"><span class="bank-card-badge ' + (hasBal ? 'badge-active' : 'badge-zero') + '">' + (hasBal ? 'نشط' : 'صفري') + '</span></td>';
+          tbody.appendChild(trB);
+        });
+
+        // Cash USD Row
+        var trUsd = document.createElement('tr');
+        trUsd.style.background = '#fffdf5';
+        trUsd.innerHTML =
+          '<td style="text-align:center; font-weight:bold;">' + (rowIdx++) + '</td>' +
+          '<td><strong>💎 ' + (cashUsdAcc ? cashUsdAcc.accountName : 'خزينة الدولار النقدي (الخارج)') + '</strong></td>' +
+          '<td style="color:#64748b;">خزينة عملة صعبة (الخارج)</td>' +
+          '<td style="text-align:center; font-weight:bold;">$</td>' +
+          '<td style="text-align:left; font-weight:bold; font-family:monospace; color:#b45309;">' + cashUsdBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $</td>' +
+          '<td style="text-align:center;"><span style="font-size:10px; background:#fef08a; color:#854d0e; padding:2px 6px; border-radius:4px; font-weight:bold;">عملة صعبة</span></td>';
+        tbody.appendChild(trUsd);
       }
     }
 

@@ -492,7 +492,7 @@
     }
 
     /* Modal Overlays */
-    #reportModal, #successModal, #loginModal, #settleModal, #treasuryModal, #customAlertModal, #googleSyncModal {
+    #reportModal, #successModal, #loginModal, #settleModal, #treasuryModal, #customAlertModal, #googleSyncModal, #treasuryReportModal {
       display: none;
       position: fixed;
       top: 0;
@@ -797,20 +797,487 @@
       body * {
         visibility: hidden;
       }
-      #reportModal, #reportModal * {
+      #reportModal, #reportModal *,
+      #treasuryReportModal, #treasuryReportModal * {
         visibility: visible;
       }
-      #reportModal {
+      #reportModal, #treasuryReportModal {
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
-        background: white;
-        padding: 0;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
       }
       .no-print {
         display: none !important;
       }
+    }
+
+    /* =========================================================================
+       Modern Treasury Hub & Printable Balance Sheet (مركز الخزائن والمصارف اللحظية)
+       ========================================================================= */
+    .modal-card-treasury {
+      background: white;
+      width: 100%;
+      max-width: 960px;
+      border-radius: 18px;
+      padding: 22px 24px;
+      text-align: right;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      border: 1px solid #e2e8f0;
+      max-height: 94vh;
+      overflow-y: auto;
+      animation: popIn 0.25s ease-out;
+    }
+
+    .treasury-hub-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #064e3b;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .treasury-hub-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* 3 Top Summary KPIs */
+    .treasury-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+      .treasury-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .treasury-kpi-card {
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .treasury-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+    }
+    .treasury-kpi-cash {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #86efac;
+    }
+    .treasury-kpi-banks {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid #93c5fd;
+    }
+    .treasury-kpi-usd {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 1px solid #fcd34d;
+    }
+
+    .treasury-kpi-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .treasury-kpi-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .treasury-kpi-icon {
+      font-size: 20px;
+    }
+    .treasury-kpi-val {
+      font-size: 21px;
+      font-weight: 900;
+      font-family: monospace;
+      line-height: 1.2;
+      margin: 4px 0;
+    }
+    .treasury-kpi-cash .treasury-kpi-val {
+      color: #15803d;
+    }
+    .treasury-kpi-banks .treasury-kpi-val {
+      color: #1d4ed8;
+    }
+    .treasury-kpi-usd .treasury-kpi-val {
+      color: #b45309;
+    }
+    .treasury-kpi-sub {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .btn-usd-pulse {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7);
+      animation: pulseAmber 2s infinite;
+      transition: all 0.2s ease;
+    }
+    .btn-usd-pulse:hover {
+      transform: scale(1.03);
+      background: #92400e;
+    }
+    @keyframes pulseAmber {
+      0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(217, 119, 6, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+    }
+
+    /* Section Divider & Titles */
+    .treasury-section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 16px 0 10px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .treasury-section-heading h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .treasury-section-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    /* Cash Vaults Row (2 Cards) */
+    .treasury-cash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 640px) {
+      .treasury-cash-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .treasury-vault-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .treasury-vault-box.usd-box {
+      border-color: #fcd34d;
+      background: #fffdf5;
+    }
+
+    /* 9 Banks Grid */
+    .treasury-banks-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 900px) {
+      .treasury-banks-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 580px) {
+      .treasury-banks-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .bank-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      transition: all 0.2s ease;
+    }
+    .bank-card:hover {
+      border-color: #94a3b8;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .bank-card.has-balance {
+      border-color: #86efac;
+      background: #fbfdfc;
+    }
+    .bank-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .bank-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bank-card-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+    .badge-active {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .badge-zero {
+      background: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+    .bank-card-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: 2px;
+    }
+    .bank-card-bal {
+      font-size: 16px;
+      font-weight: 900;
+      font-family: monospace;
+    }
+    .bank-card-bal.active {
+      color: #15803d;
+    }
+    .bank-card-bal.zero {
+      color: #94a3b8;
+    }
+    .bank-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .btn-bank-fund {
+      background: #f8fafc;
+      color: #0f766e;
+      border: 1px solid #cbd5e1;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .btn-bank-fund:hover {
+      background: #0f766e;
+      color: white;
+      border-color: #0f766e;
+    }
+
+    /* Safety Zone */
+    .treasury-safety-zone {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .treasury-safety-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .treasury-safety-icon {
+      font-size: 24px;
+    }
+    .treasury-safety-text h5 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: #991b1b;
+    }
+    .treasury-safety-text p {
+      margin: 2px 0 0 0;
+      font-size: 11px;
+      color: #b91c1c;
+    }
+    .btn-safety-reset {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.2s;
+    }
+    .btn-safety-reset:hover {
+      background: #dc2626;
+    }
+
+    /* Printable Balance Sheet Modal */
+    .treasury-report-sheet {
+      background: white;
+      max-width: 880px;
+      margin: 0 auto;
+      border-radius: 14px;
+      padding: 26px 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      color: #0f172a;
+    }
+    .treasury-report-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .treasury-report-meta {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+      text-align: left;
+    }
+    .treasury-report-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 14px 0;
+    }
+    @media (max-width: 680px) {
+      .treasury-report-kpis {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .treasury-report-kpi {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .treasury-report-kpi-title {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .treasury-report-kpi-val {
+      font-size: 16px;
+      font-weight: 900;
+      font-family: monospace;
+      margin-top: 4px;
+      color: #0f172a;
+    }
+    .treasury-print-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 12px;
+    }
+    .treasury-print-table th {
+      background: #0f172a;
+      color: white;
+      padding: 8px 10px;
+      text-align: right;
+      font-weight: 800;
+      border: 1px solid #0f172a;
+    }
+    .treasury-print-table td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      font-weight: 600;
+    }
+    .treasury-print-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .treasury-print-table tfoot td {
+      background: #f1f5f9;
+      font-weight: 900;
+      font-size: 13px;
+      border-top: 2px solid #0f172a;
+    }
+    .treasury-report-signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 32px;
+      padding-top: 18px;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .treasury-sig-box {
+      text-align: center;
+      font-size: 12px;
+      color: #334155;
+      line-height: 2;
+    }
+    .treasury-sig-line {
+      margin-top: 26px;
+      border-bottom: 1px solid #94a3b8;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* =========================================================================
