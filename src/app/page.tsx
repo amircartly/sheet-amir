@@ -252,7 +252,8 @@ export default function AmirClassicApp() {
       if (!res.ok) throw new Error("تعذر جلب ملف الكود");
       const code = await res.text();
       await navigator.clipboard.writeText(code);
-      setCopyCodeStatus("✓ تم نسخ الكود كاملاً (937 سطر)! توجه الآن إلى Apps Script في شيت جوجل والصقه.");
+      const lineCount = code.split("\n").length;
+      setCopyCodeStatus(`✓ تم نسخ كود Apps Script المحدث كاملاً (${lineCount} سطر)! توجه الآن إلى Apps Script في شيت جوجل والصقه.`);
       setShowScriptGuide(true);
       setTimeout(() => setCopyCodeStatus(null), 9000);
     } catch (err: any) {
@@ -1467,6 +1468,32 @@ export default function AmirClassicApp() {
   const isAdmin = currentEmployee.role === "مدير عام";
   const canSettle = isAdmin || isTreasuryOfficer;
 
+  // Mini Dashboard Statistics
+  const statsTotalCards = cards.length;
+  const statsPending = useMemo(() => {
+    return cards.filter((c) => c.status === "1. إدخال البيانات" || c.status === "2. محجوزة").length;
+  }, [cards]);
+  const statsReadyAndShipping = useMemo(() => {
+    return cards.filter(
+      (c) =>
+        c.status === "3. مودعة" ||
+        c.status === "4. انتظار شحن" ||
+        c.status === "5. مشحونة" ||
+        c.status === "6. مرسلة للسحب"
+    ).length;
+  }, [cards]);
+  const statsSettled = useMemo(() => {
+    return cards.filter((c) => c.status === "7. تم السحب والتصفية").length;
+  }, [cards]);
+  const totalLydVaultsBalance = useMemo(() => {
+    return vaults
+      .filter((v) => v.currency === "د.ل")
+      .reduce((sum, v) => sum + (v.balance || 0), 0);
+  }, [vaults]);
+  const totalUsdVaultsBalance = useMemo(() => {
+    return vaults.find((v) => v.id === "cash_usd")?.balance || 0;
+  }, [vaults]);
+
   // 0. Full Gate: If not authenticated, render the Modern Login Gate Portal
   if (!isAuthenticated) {
     return (
@@ -1846,41 +1873,103 @@ export default function AmirClassicApp() {
         </span>
       </div>
 
-      {/* 3. Search & Reports Tool Bar */}
-      <div className="controls-bar">
-        <div className="search-box">
-          <div className="search-input-wrap">
-            <input
-              type="text"
-              placeholder="🔍 ابحث بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSearch();
-                }
-              }}
-            />
-            {searchQuery.trim().length > 0 && (
-              <button
-                type="button"
-                className="btn-search-clear"
-                style={{ display: "inline-flex" }}
-                onClick={() => setSearchQuery("")}
-                title="مسح خانة البحث"
-              >
-                ✕
-              </button>
+      {/* 2.5. Mini Dashboard Quick Statistics Cards */}
+      <div className="mini-dashboard-grid">
+        {/* Card 1: Total Registered */}
+        <div className="mini-stat-card card-blue">
+          <div className="mini-stat-info">
+            <span className="mini-stat-label">إجمالي البطاقات المسجلة</span>
+            <span className="mini-stat-value">{statsTotalCards}</span>
+            <span className="mini-stat-sub">بطاقة بالمنظومة</span>
+          </div>
+          <div className="mini-stat-icon-bubble bubble-blue">👥</div>
+        </div>
+
+        {/* Card 2: Pending Booking & Intake */}
+        <div className="mini-stat-card card-amber">
+          <div className="mini-stat-info">
+            <span className="mini-stat-label">قيد الحجز والاستقبال</span>
+            <span className="mini-stat-value">{statsPending}</span>
+            <span className="mini-stat-sub">المراحل 1 و 2</span>
+          </div>
+          <div className="mini-stat-icon-bubble bubble-amber">⏳</div>
+        </div>
+
+        {/* Card 3: Ready & In Transit */}
+        <div className="mini-stat-card card-emerald">
+          <div className="mini-stat-info">
+            <span className="mini-stat-label">جاهزة ومشحونة للسحب</span>
+            <span className="mini-stat-value">{statsReadyAndShipping}</span>
+            <span className="mini-stat-sub">المراحل 3 إلى 6</span>
+          </div>
+          <div className="mini-stat-icon-bubble bubble-emerald">✈️</div>
+        </div>
+
+        {/* Card 4: Liquid Balances (or Completed for Data Entry) */}
+        <div className="mini-stat-card card-purple">
+          <div className="mini-stat-info">
+            {isDataEntry ? (
+              <>
+                <span className="mini-stat-label">المعاملات المكتملة</span>
+                <span className="mini-stat-value">{statsSettled}</span>
+                <span className="mini-stat-sub">تم السحب والتصفية</span>
+              </>
+            ) : (
+              <>
+                <span className="mini-stat-label">سيولة الخزائن التراكمية</span>
+                <span className="mini-stat-value">
+                  {totalLydVaultsBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })}{" "}
+                  <span style={{ fontSize: "13px", fontWeight: "bold" }}>د.ل</span>
+                </span>
+                <span className="mini-stat-sub" style={{ color: "#059669" }}>
+                  + {totalUsdVaultsBalance.toLocaleString("en-US")} $ كاش خارج
+                </span>
+              </>
             )}
           </div>
-          <button type="button" className="btn-search" onClick={handleSearch}>
-            بحث فوري
+          <div className="mini-stat-icon-bubble bubble-purple">🏦</div>
+        </div>
+      </div>
+
+      {/* 3. Modern Organized Command Toolbar */}
+      <div className="command-toolbar">
+        <div className="command-search-wrap">
+          <span className="command-search-icon">🔍</span>
+          <input
+            type="text"
+            className="command-search-input"
+            placeholder="ابحث بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSearch();
+              }
+            }}
+          />
+          {searchQuery.trim().length > 0 && (
+            <button
+              type="button"
+              className="command-search-clear"
+              style={{ display: "inline-flex" }}
+              onClick={() => setSearchQuery("")}
+              title="مسح خانة البحث"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        <div className="command-actions">
+          <button type="button" className="btn-cmd-search" onClick={handleSearch}>
+            <span>🔍</span>
+            <span>بحث فوري</span>
           </button>
+
           <button
             type="button"
-            className="btn-search"
-            style={{ background: "#059669", marginRight: "6px" }}
+            className="btn-cmd-sync"
             onClick={async () => {
               setStatusMsg("🔄 جاري مزامنة البطاقات وتصدير أرصدة الخزائن للشيت...");
               await syncCardsFromGoogleSheets(googleScriptUrl, false);
@@ -1888,23 +1977,28 @@ export default function AmirClassicApp() {
             }}
             title="تحديث ومزامنة البطاقات وتصدير وتطابق أرصدة الخزائن فورياً مع شيت جوجل"
           >
-            🔄 مزامنة الشيت
+            <span>🔄</span>
+            <span>مزامنة الشيت</span>
           </button>
-        </div>
 
-        <div className="report-box">
-          <span style={{ fontSize: "12px", fontWeight: "bold", color: "#065f46" }}>طباعة كشف:</span>
-          <select value={reportStage} onChange={(e) => setReportStage(e.target.value)}>
-            {ALL_STAGES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-            <option value="الكل">جميع البطاقات (سجل عام)</option>
-          </select>
-          <button type="button" className="btn-print" onClick={() => setShowReportModal(true)}>
-            🖨️ فتح الكشف للطباعة
-          </button>
+          <div className="command-report-group">
+            <span style={{ fontSize: "11.5px", fontWeight: "bold", color: "#0f766e" }}>🖨️ كشف:</span>
+            <select
+              className="command-report-select"
+              value={reportStage}
+              onChange={(e) => setReportStage(e.target.value)}
+            >
+              {ALL_STAGES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+              <option value="الكل">جميع البطاقات (سجل عام)</option>
+            </select>
+            <button type="button" className="btn-cmd-print" onClick={() => setShowReportModal(true)}>
+              فتح للطباعة
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1917,7 +2011,7 @@ export default function AmirClassicApp() {
         />
       )}
 
-      {/* 5. Main Card Form (2 Columns Exact Replication of Image 1) */}
+      {/* 5. Main Card Form */}
       <form onSubmit={handleSaveCard}>
         <div className="grid-container">
           {/* Section 1: Customer & Account Info */}
@@ -1932,15 +2026,18 @@ export default function AmirClassicApp() {
                 اسم الزبون الرباعي *
                 {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل لمسؤول الخزينة</span>}
               </label>
-              <input
-                type="text"
-                required
-                readOnly={isPersonalInfoLocked}
-                className={isPersonalInfoLocked ? "field-locked-danger" : ""}
-                placeholder="محمد عبد السلام السنوسي..."
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
+              <div className="input-with-icon">
+                <span className="input-field-icon">👤</span>
+                <input
+                  type="text"
+                  required
+                  readOnly={isPersonalInfoLocked}
+                  className={isPersonalInfoLocked ? "field-locked-danger" : ""}
+                  placeholder="محمد عبد السلام السنوسي..."
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="row-2">
@@ -1949,29 +2046,35 @@ export default function AmirClassicApp() {
                   الرقم الوطني (12 خانة) *
                   {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
                 </label>
-                <input
-                  type="text"
-                  maxLength={12}
-                  readOnly={isPersonalInfoLocked}
-                  className={isPersonalInfoLocked ? "field-locked-danger" : ""}
-                  placeholder="119xxxxxxxx"
-                  value={nationalId}
-                  onChange={(e) => setNationalId(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">🪪</span>
+                  <input
+                    type="text"
+                    maxLength={12}
+                    readOnly={isPersonalInfoLocked}
+                    className={isPersonalInfoLocked ? "field-locked-danger" : ""}
+                    placeholder="119xxxxxxxx"
+                    value={nationalId}
+                    onChange={(e) => setNationalId(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>
                   هاتف المركزي (المربوط) *
                   {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
                 </label>
-                <input
-                  type="text"
-                  readOnly={isPersonalInfoLocked}
-                  className={isPersonalInfoLocked ? "field-locked-danger" : ""}
-                  placeholder="091xxxxxxx"
-                  value={cblPhone}
-                  onChange={(e) => setCblPhone(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">📱</span>
+                  <input
+                    type="text"
+                    readOnly={isPersonalInfoLocked}
+                    className={isPersonalInfoLocked ? "field-locked-danger" : ""}
+                    placeholder="091xxxxxxx"
+                    value={cblPhone}
+                    onChange={(e) => setCblPhone(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1980,21 +2083,24 @@ export default function AmirClassicApp() {
                 المصرف *
                 {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
               </label>
-              <select
-                value={bank}
-                disabled={isPersonalInfoLocked}
-                onChange={(e) => setBank(e.target.value)}
-              >
-                <option value="مصرف التجارة والتنمية">مصرف التجارة والتنمية</option>
-                <option value="مصرف الوحدة">مصرف الوحدة</option>
-                <option value="مصرف التجاري الوطني">مصرف التجاري الوطني</option>
-                <option value="مصرف الأمان">مصرف الأمان</option>
-                <option value="مصرف المتوسط">مصرف المتوسط</option>
-                <option value="مصرف الجمهورية">مصرف الجمهورية</option>
-                <option value="المصرف الإسلامي">المصرف الإسلامي</option>
-                <option value="مصرف شمال أفريقيا">مصرف شمال أفريقيا</option>
-                <option value="مصرف اليقين">مصرف اليقين</option>
-              </select>
+              <div className="input-with-icon">
+                <span className="input-field-icon">🏦</span>
+                <select
+                  value={bank}
+                  disabled={isPersonalInfoLocked}
+                  onChange={(e) => setBank(e.target.value)}
+                >
+                  <option value="مصرف التجارة والتنمية">مصرف التجارة والتنمية</option>
+                  <option value="مصرف الوحدة">مصرف الوحدة</option>
+                  <option value="مصرف التجاري الوطني">مصرف التجاري الوطني</option>
+                  <option value="مصرف الأمان">مصرف الأمان</option>
+                  <option value="مصرف المتوسط">مصرف المتوسط</option>
+                  <option value="مصرف الجمهورية">مصرف الجمهورية</option>
+                  <option value="المصرف الإسلامي">المصرف الإسلامي</option>
+                  <option value="مصرف شمال أفريقيا">مصرف شمال أفريقيا</option>
+                  <option value="مصرف اليقين">مصرف اليقين</option>
+                </select>
+              </div>
             </div>
 
             <div className="row-2">
@@ -2003,28 +2109,34 @@ export default function AmirClassicApp() {
                   رقم حساب الزبون
                   {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
                 </label>
-                <input
-                  type="text"
-                  readOnly={isPersonalInfoLocked}
-                  className={isPersonalInfoLocked ? "field-locked-danger" : ""}
-                  placeholder="01533010488074"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">🔢</span>
+                  <input
+                    type="text"
+                    readOnly={isPersonalInfoLocked}
+                    className={isPersonalInfoLocked ? "field-locked-danger" : ""}
+                    placeholder="01533010488074"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>
                   رقم الآيبان للزبون (IBAN)
                   {isPersonalInfoLocked && <span className="lock-label-tag">🔒 مقفل</span>}
                 </label>
-                <input
-                  type="text"
-                  readOnly={isPersonalInfoLocked}
-                  className={`iban-input ${isPersonalInfoLocked ? "field-locked-danger" : ""}`}
-                  placeholder="LY00 0000 ..."
-                  value={iban}
-                  onChange={(e) => setIban(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">🌐</span>
+                  <input
+                    type="text"
+                    readOnly={isPersonalInfoLocked}
+                    className={`iban-input ${isPersonalInfoLocked ? "field-locked-danger" : ""}`}
+                    placeholder="LY00 0000 ..."
+                    value={iban}
+                    onChange={(e) => setIban(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -2049,37 +2161,46 @@ export default function AmirClassicApp() {
                     </button>
                   )}
                 </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={depositAmt}
-                  readOnly={isDepositLocked}
-                  className={isDepositLocked ? "field-locked-danger" : ""}
-                  onChange={(e) => handleDepositChange(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">💵</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={depositAmt}
+                    readOnly={isDepositLocked}
+                    className={isDepositLocked ? "field-locked-danger" : ""}
+                    onChange={(e) => handleDepositChange(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
                 <label style={{ color: "#0f766e" }}>سعر شراء البطاقة (د.ل) *</label>
-                <input
-                  type={isDataEntry ? "password" : "number"}
-                  step="any"
-                  disabled={isDataEntry}
-                  value={isDataEntry ? "••••" : cardPrice}
-                  onChange={(e) => setCardPrice(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">🏷️</span>
+                  <input
+                    type={isDataEntry ? "password" : "number"}
+                    step="any"
+                    disabled={isDataEntry}
+                    value={isDataEntry ? "••••" : cardPrice}
+                    onChange={(e) => setCardPrice(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
             <div className="row-2">
               <div className="form-group">
                 <label style={{ color: "#1e40af" }}>إجمالي التكلفة الكلية (د.ل)</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={isDataEntry ? "•••• د.ل" : `${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل`}
-                  style={{ background: "#eff6ff", fontWeight: "bold", color: "#1e40af" }}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">💰</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={isDataEntry ? "•••• د.ل" : `${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل`}
+                    style={{ background: "#eff6ff", fontWeight: "bold", color: "#1e40af" }}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -2087,13 +2208,16 @@ export default function AmirClassicApp() {
                   تاريخ الإيداع
                   {isDepositLocked && <span className="lock-label-tag">🔒 مسجل سابقاً</span>}
                 </label>
-                <input
-                  type="date"
-                  value={depositDate}
-                  readOnly={isDepositLocked}
-                  className={isDepositLocked ? "field-locked-danger" : ""}
-                  onChange={(e) => setDepositDate(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">📅</span>
+                  <input
+                    type="date"
+                    value={depositDate}
+                    readOnly={isDepositLocked}
+                    className={isDepositLocked ? "field-locked-danger" : ""}
+                    onChange={(e) => setDepositDate(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -2107,14 +2231,20 @@ export default function AmirClassicApp() {
 
             <div className="row-2">
               <div className="form-group">
-                <label>رقم البطاقة (16 رقم)</label>
-                <input
-                  type="text"
-                  maxLength={19}
-                  placeholder="8191 0021 9811 4263"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <label style={{ margin: 0 }}>رقم البطاقة (16 رقم)</label>
+                  <span className="card-header-badge">🏦 {bank}</span>
+                </div>
+                <div className="input-with-icon">
+                  <span className="input-field-icon">💳</span>
+                  <input
+                    type="text"
+                    maxLength={19}
+                    placeholder="8191 0021 9811 4263"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -2122,102 +2252,173 @@ export default function AmirClassicApp() {
                   تاريخ الحجز بالمنظومة
                   {isBookingLocked && <span className="lock-label-tag">🔒 محجوزة مسبقاً</span>}
                 </label>
-                <input
-                  type="date"
-                  value={bookingDate}
-                  readOnly={isBookingLocked}
-                  className={isBookingLocked ? "field-locked-danger" : ""}
-                  onChange={(e) => handleBookingDateChange(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">📅</span>
+                  <input
+                    type="date"
+                    value={bookingDate}
+                    readOnly={isBookingLocked}
+                    className={isBookingLocked ? "field-locked-danger" : ""}
+                    onChange={(e) => handleBookingDateChange(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
             <div className="row-2">
               <div className="form-group">
                 <label>PIN المحلي (الدينار)</label>
-                <input
-                  type={isDataEntry ? "password" : "text"}
-                  className={isDataEntry ? "pin-local pin-locked" : "pin-local"}
-                  disabled={isDataEntry}
-                  placeholder={isDataEntry ? "••••" : "الرقم السري المحلي"}
-                  value={isDataEntry ? "••••" : pinLocal}
-                  onChange={(e) => setPinLocal(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">🔑</span>
+                  <input
+                    type={isDataEntry ? "password" : "text"}
+                    className={isDataEntry ? "pin-local pin-locked" : "pin-local"}
+                    disabled={isDataEntry}
+                    placeholder={isDataEntry ? "••••" : "الرقم السري المحلي"}
+                    value={isDataEntry ? "••••" : pinLocal}
+                    onChange={(e) => setPinLocal(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
                 <label style={{ color: "#1d4ed8" }}>الرقم السري الدولي (السري دولار) *</label>
-                <input
-                  type={isDataEntry || isTreasuryOfficer ? "password" : "text"}
-                  className={isDataEntry || isTreasuryOfficer ? "pin-dollar pin-locked" : "pin-dollar"}
-                  disabled={isDataEntry || isTreasuryOfficer}
-                  placeholder={isDataEntry || isTreasuryOfficer ? "••••" : "السري دولار"}
-                  value={isDataEntry || isTreasuryOfficer ? "••••" : pinDollar}
-                  onChange={(e) => setPinDollar(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">🔐</span>
+                  <input
+                    type={isDataEntry || isTreasuryOfficer ? "password" : "text"}
+                    className={isDataEntry || isTreasuryOfficer ? "pin-dollar pin-locked" : "pin-dollar"}
+                    disabled={isDataEntry || isTreasuryOfficer}
+                    placeholder={isDataEntry || isTreasuryOfficer ? "••••" : "السري دولار"}
+                    value={isDataEntry || isTreasuryOfficer ? "••••" : pinDollar}
+                    onChange={(e) => setPinDollar(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
             <div className="row-2">
               <div className="form-group">
                 <label>تاريخ الصلاحية (MM/YY)</label>
-                <input
-                  type="text"
-                  maxLength={5}
-                  value={expiry}
-                  placeholder="09/29"
-                  onChange={(e) => setExpiry(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <span className="input-field-icon">⏳</span>
+                  <input
+                    type="text"
+                    maxLength={5}
+                    value={expiry}
+                    placeholder="09/29"
+                    onChange={(e) => setExpiry(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
                 <label>المرحلة الحالية للبطاقة *</label>
-                <select
-                  value={status}
-                  onChange={(e) => {
-                    const nextStg = e.target.value;
-                    setStatus(nextStg);
-                    if (nextStg === "7. تم السحب والتصفية") handleOpenSettle();
-                  }}
-                >
-                  {currentEmployee.allowedStages.map((stg) => (
-                    <option key={stg} value={stg}>
-                      {stg}
-                    </option>
-                  ))}
-                </select>
+                <div className="input-with-icon">
+                  <span className="input-field-icon">🚀</span>
+                  <select
+                    value={status}
+                    onChange={(e) => {
+                      const nextStg = e.target.value;
+                      setStatus(nextStg);
+                      if (nextStg === "7. تم السحب والتصفية") handleOpenSettle();
+                    }}
+                  >
+                    {currentEmployee.allowedStages.map((stg) => (
+                      <option key={stg} value={stg}>
+                        {stg}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Stage Stepper */}
+            <div className="stage-stepper-box">
+              <div className="stage-stepper-label">
+                <span>مسار مراحل المعاملة (انقر للتغيير الفوري):</span>
+                <span style={{ color: "#2563eb", fontWeight: 800 }}>{status}</span>
+              </div>
+              <div className="stage-stepper-grid">
+                {ALL_STAGES.map((stg, idx) => {
+                  const isAllowed = currentEmployee.allowedStages.includes(stg);
+                  const isActive = status === stg;
+                  const isSettled = stg === "7. تم السحب والتصفية";
+                  let pillClass = "stage-step-pill";
+                  if (!isAllowed) pillClass += " locked";
+                  else if (isActive && isSettled) pillClass += " active-success";
+                  else if (isActive) pillClass += " active";
+
+                  const shortNames = [
+                    "1. إدخال",
+                    "2. محجوزة",
+                    "3. مودعة",
+                    "4. انتظار شحن",
+                    "5. مشحونة",
+                    "6. مرسلة",
+                    "7. تصفية 💰",
+                  ];
+
+                  return (
+                    <button
+                      key={stg}
+                      type="button"
+                      className={pillClass}
+                      title={isAllowed ? `تعيين المرحلة إلى: ${stg}` : "🔒 ليس لديك صلاحية لهذه المرحلة"}
+                      onClick={() => {
+                        if (!isAllowed) return;
+                        setStatus(stg);
+                        if (stg === "7. تم السحب والتصفية") handleOpenSettle();
+                      }}
+                    >
+                      {shortNames[idx]}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             <div className="form-group">
               <label>ملاحظات وبيان المعاملة</label>
-              <input
-                type="text"
-                placeholder="ملاحظات حول الفرع، رقم الصك، أو التوريد..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
+              <div className="input-with-icon">
+                <span className="input-field-icon">📝</span>
+                <input
+                  type="text"
+                  placeholder="ملاحظات حول الفرع، رقم الصك، أو التوريد..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 6. Actions Bar */}
-        <div className="actions">
-          <button type="button" className="btn-clear" onClick={handleClearForm}>
-            🔄 تفريغ الخانات (بطاقة جديدة)
-          </button>
+        {/* 6. Modern Sticky Action Dock */}
+        <div className="sticky-action-dock">
+          <div className="dock-left">
+            <div className="dock-card-identity">
+              <span>{cardCode ? `💳 بطاقة كود: ${cardCode}` : "✨ بطاقة جديدة (إدخال جديد)"}</span>
+            </div>
+            {statusMsg && <span className="dock-status-msg">{statusMsg}</span>}
+            <span className="dock-hint">⚡ اضغط ترحيل لحفظ وتحديث البطاقة</span>
+          </div>
 
-          {canSettle && (
-            <button type="button" className="btn-settle-action" onClick={handleOpenSettle}>
-              💰 تصفية وبيع الدولار وتوريد الخزينة
+          <div className="dock-right">
+            <button type="button" className="btn-dock-clear" onClick={handleClearForm}>
+              🔄 تفريغ الخانات (جديدة)
             </button>
-          )}
 
-          <span style={{ fontSize: "12px", fontWeight: "bold", color: "#15803d" }}>{statusMsg}</span>
+            {canSettle && (
+              <button type="button" className="btn-dock-settle" onClick={handleOpenSettle}>
+                💰 تصفية وبيع الدولار
+              </button>
+            )}
 
-          <button type="submit" className="btn-save">
-            💾 ترحيل وحفظ البطاقة
-          </button>
+            <button type="submit" className="btn-dock-save">
+              💾 ترحيل وحفظ المعاملة
+            </button>
+          </div>
         </div>
       </form>
 
@@ -3536,7 +3737,41 @@ export default function AmirClassicApp() {
                       gap: "6px",
                     }}
                   >
-                    📋 نسخ الكود كاملاً (Code.gs)
+                    📋 نسخ كود الخادم (Code.gs)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCopyCodeStatus("⏳ جاري نسخ كود واجهة الشيت (Index.html)...");
+                      try {
+                        const res = await fetch("/api/google-script-code?file=Index.html");
+                        if (!res.ok) throw new Error("تعذر جلب ملف الواجهة");
+                        const htmlCode = await res.text();
+                        await navigator.clipboard.writeText(htmlCode);
+                        const lines = htmlCode.split("\n").length;
+                        setCopyCodeStatus(`✓ تم نسخ كود واجهة الشيت العصرية Index.html كاملاً (${lines} سطر)! الصقه في ملف Index.html بـ Apps Script.`);
+                        setShowScriptGuide(true);
+                        setTimeout(() => setCopyCodeStatus(null), 9000);
+                      } catch (err: any) {
+                        setCopyCodeStatus("خطأ في النسخ: " + err.message);
+                        setTimeout(() => setCopyCodeStatus(null), 5000);
+                      }
+                    }}
+                    style={{
+                      background: "#059669",
+                      color: "white",
+                      border: "none",
+                      padding: "7px 14px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    ✨ نسخ واجهة الشيت (Index.html)
                   </button>
                   <a
                     href="/api/google-script-code"
@@ -3555,7 +3790,26 @@ export default function AmirClassicApp() {
                       gap: "4px",
                     }}
                   >
-                    📥 تحميل كملف
+                    📥 Code.gs
+                  </a>
+                  <a
+                    href="/api/google-script-code?file=Index.html"
+                    download="Index.html"
+                    style={{
+                      background: "#dcfce7",
+                      color: "#166534",
+                      border: "1px solid #86efac",
+                      padding: "7px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    📥 Index.html
                   </a>
                 </div>
               </div>
@@ -3610,13 +3864,16 @@ export default function AmirClassicApp() {
                   >
                     <ol style={{ paddingRight: "20px", margin: 0 }}>
                       <li>
-                        اضغط على زر <strong>(📋 نسخ الكود كاملاً)</strong> في الأعلى.
+                        اضغط على زر <strong>(📋 نسخ كود الخادم Code.gs)</strong> وانسخه إلى ملف <code>Code.gs</code> في Apps Script.
+                      </li>
+                      <li>
+                        اضغط على زر <strong>(✨ نسخ واجهة الشيت Index.html)</strong> والصقه في ملف <code>Index.html</code> داخل Apps Script لتنعم بنفس الواجهة العصرية المتطابقة والكروت داخل الشيت.
                       </li>
                       <li>
                         افتح شيت جوجل <strong>(بطاقات_مصرفية_ماستر)</strong>، ومن القائمة اضغط على <strong>ملحقات (Extensions)</strong> ⬅️ ثم <strong>Apps Script</strong>.
                       </li>
                       <li>
-                        في ملف <strong>Code.gs</strong> (أو &quot;الرمز&quot;): حدد كل الكود القديم واحذفه (اضغط <code>Ctrl + A</code> ثم <code>Delete</code>)، ثم الصق الكود الجديد (<code>Ctrl + V</code>)، واضغط حفظ 💾 (<code>Ctrl + S</code>).
+                        اضغط حفظ 💾 (<code>Ctrl + S</code>) لكل من الملفين.
                       </li>
                       <li>
                         اضغط على زر <strong>نشر (Deploy)</strong> الأزرق في الأعلى ⬅️ <strong>إدارة عمليات النشر (Manage deployments)</strong> ⬅️ اضغط على أيقونة <strong>القلم ✏️</strong> ⬅️ في خانة الإصدار (Version) اختر <strong>إصدار جديد (New version)</strong> ⬅️ اضغط <strong>Deploy (نشر)</strong>.

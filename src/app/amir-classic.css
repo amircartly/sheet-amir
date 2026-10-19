@@ -1067,3 +1067,493 @@
       background: #fecaca;
       color: #7f1d1d;
     }
+
+    /* =========================================================================
+       MODERN ENHANCEMENTS: DASHBOARD STATS, COMMAND BAR, INPUT ICONS, STEPPER & STICKY DOCK
+       ========================================================================= */
+
+    /* 1. Mini Dashboard Cards */
+    .mini-dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 900px) {
+      .mini-dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .mini-dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .mini-stat-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .mini-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+      border-color: #cbd5e1;
+    }
+    .mini-stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 4px;
+      height: 100%;
+    }
+    .mini-stat-card.card-blue::before { background: #0284c7; }
+    .mini-stat-card.card-amber::before { background: #d97706; }
+    .mini-stat-card.card-emerald::before { background: #059669; }
+    .mini-stat-card.card-purple::before { background: #7c3aed; }
+
+    .mini-stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .mini-stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+    .mini-stat-value {
+      font-size: 19px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .mini-stat-sub {
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .mini-stat-icon-bubble {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .bubble-blue { background: #e0f2fe; color: #0284c7; }
+    .bubble-amber { background: #fef3c7; color: #d97706; }
+    .bubble-emerald { background: #d1fae5; color: #059669; }
+    .bubble-purple { background: #ede9fe; color: #7c3aed; }
+
+    /* 2. Organized Command Toolbar */
+    .command-toolbar {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+      flex-wrap: wrap;
+    }
+    .command-search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+      display: flex;
+      align-items: center;
+    }
+    .command-search-icon {
+      position: absolute;
+      right: 12px;
+      color: #94a3b8;
+      font-size: 15px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .command-search-input {
+      width: 100%;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 9px 38px 9px 36px !important;
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+    .command-search-input:focus {
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .command-search-clear {
+      position: absolute;
+      left: 10px;
+      background: #e2e8f0;
+      color: #64748b;
+      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 3;
+    }
+    .command-search-clear:hover {
+      background: #cbd5e1;
+      color: #0f172a;
+    }
+    .command-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-cmd-search {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 9px;
+      padding: 9px 16px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-cmd-search:hover {
+      background: linear-gradient(135deg, #1e40af, #1d4ed8);
+      transform: translateY(-1px);
+    }
+    .btn-cmd-sync {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      border: none;
+      border-radius: 9px;
+      padding: 9px 14px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-cmd-sync:hover {
+      background: linear-gradient(135deg, #047857, #059669);
+      transform: translateY(-1px);
+    }
+    .command-report-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 4px 6px;
+      border-radius: 9px;
+      border: 1px solid #e2e8f0;
+    }
+    .command-report-select {
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e293b;
+      outline: none;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+    .btn-cmd-print {
+      background: #0f766e;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-cmd-print:hover {
+      background: #115e59;
+    }
+
+    /* 3. Modern Input with Icon Wrappers */
+    .input-with-icon {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .input-field-icon {
+      position: absolute;
+      right: 11px;
+      pointer-events: none;
+      font-size: 14px;
+      color: #64748b;
+      z-index: 2;
+      user-select: none;
+    }
+    .input-with-icon input,
+    .input-with-icon select {
+      width: 100%;
+      padding: 9px 34px 9px 12px !important;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 9px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-with-icon input:focus,
+    .input-with-icon select:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .input-with-icon input:disabled,
+    .input-with-icon select:disabled {
+      background: #f8fafc;
+      color: #94a3b8;
+      cursor: not-allowed;
+      border-color: #e2e8f0;
+    }
+    .input-with-icon .field-locked-danger {
+      background: #fef2f2 !important;
+      color: #b91c1c !important;
+      border-color: #fca5a5 !important;
+      cursor: not-allowed;
+    }
+
+    /* 4. Interactive Stage Stepper */
+    .stage-stepper-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+    .stage-stepper-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stage-stepper-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    @media (max-width: 860px) {
+      .stage-stepper-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .stage-stepper-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .stage-step-pill {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 7px;
+      padding: 6px 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #475569;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-step-pill:hover:not(.locked) {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .stage-step-pill.active {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      border-color: #1d4ed8;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+      font-weight: 800;
+    }
+    .stage-step-pill.active-success {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border-color: #059669;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+    }
+    .stage-step-pill.locked {
+      opacity: 0.45;
+      background: #f1f5f9;
+      color: #94a3b8;
+      border-style: dashed;
+      cursor: not-allowed;
+    }
+
+    /* Card Visual Header Badge */
+    .card-header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    /* 5. Sticky Action Dock */
+    .sticky-action-dock {
+      position: sticky;
+      bottom: 0;
+      z-index: 99;
+      margin: 20px -10px -10px -10px;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-top: 1.5px solid #e2e8f0;
+      box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08);
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .dock-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .dock-card-identity {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .dock-status-msg {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #15803d;
+      animation: fadeIn 0.3s ease;
+    }
+    .dock-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .dock-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-dock-clear {
+      background: #f8fafc;
+      color: #475569;
+      border: 1.5px solid #cbd5e1;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-dock-clear:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+    .btn-dock-settle {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+      transition: all 0.2s ease;
+    }
+    .btn-dock-settle:hover {
+      background: linear-gradient(135deg, #047857, #059669);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+    }
+    .btn-dock-save {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #ffffff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-dock-save:hover {
+      background: linear-gradient(135deg, #1e40af, #1d4ed8);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+    }

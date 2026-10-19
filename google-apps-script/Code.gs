@@ -60,6 +60,14 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // 3.1 جلب إحصائيات لوحة التحكم السريعة (Mini Dashboard Cards)
+  if (action === 'getDashboardStats') {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      stats: getMiniDashboardStats()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   // 4. مزامنة وتحديث أرصدة الخزائن عبر GET كبديل مرن للغاية في حال قيود POST
   if (action === 'syncTreasury') {
     var rawVaults = e && e.parameter ? e.parameter.vaults : '';
@@ -614,6 +622,62 @@ function getAllCards() {
   }
 
   return cards;
+}
+
+// 12.1 جلب إحصائيات لوحة التحكم السريعة (Mini Dashboard Stats)
+function getMiniDashboardStats() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('بيانات_ماستر') || ss.getSheets()[0];
+  var data = sheet.getDataRange().getValues();
+
+  var totalCards = 0;
+  var pending = 0;
+  var readyAndShipping = 0;
+  var settled = 0;
+
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[0] && !row[1]) continue;
+    totalCards++;
+    var status = (row.length >= 17 && row[16]) ? row[16].toString().trim() : '';
+    if (status === '1. إدخال البيانات' || status === '2. محجوزة') {
+      pending++;
+    } else if (
+      status === '3. مودعة' ||
+      status === '4. انتظار شحن' ||
+      status === '5. مشحونة' ||
+      status === '6. مرسلة للسحب'
+    ) {
+      readyAndShipping++;
+    } else if (status === '7. تم السحب والتصفية') {
+      settled++;
+    }
+  }
+
+  var totalLyd = 0;
+  var totalUsd = 0;
+  try {
+    var tSheet = ss.getSheetByName('الخزائن_والمصارف');
+    if (tSheet) {
+      var tData = tSheet.getDataRange().getValues();
+      for (var j = 1; j < tData.length; j++) {
+        var tRow = tData[j];
+        var cur = tRow[2] ? tRow[2].toString().trim() : '';
+        var bal = parseFloat(tRow[3]) || 0;
+        if (cur === 'د.ل') totalLyd += bal;
+        else if (cur === '$') totalUsd += bal;
+      }
+    }
+  } catch (err) {}
+
+  return {
+    totalCards: totalCards,
+    pending: pending,
+    readyAndShipping: readyAndShipping,
+    settled: settled,
+    totalLyd: totalLyd,
+    totalUsd: totalUsd
+  };
 }
 
 // 13. البحث الذكي الموحد (بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة)

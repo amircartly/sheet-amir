@@ -1045,6 +1045,476 @@
       background: #fecaca;
       color: #7f1d1d;
     }
+
+    /* =========================================================================
+       MODERN ENHANCEMENTS: DASHBOARD STATS, COMMAND BAR, INPUT ICONS, STEPPER & STICKY DOCK
+       ========================================================================= */
+
+    /* 1. Mini Dashboard Cards */
+    .mini-dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 900px) {
+      .mini-dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .mini-dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .mini-stat-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .mini-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+      border-color: #cbd5e1;
+    }
+    .mini-stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 4px;
+      height: 100%;
+    }
+    .mini-stat-card.card-blue::before { background: #0284c7; }
+    .mini-stat-card.card-amber::before { background: #d97706; }
+    .mini-stat-card.card-emerald::before { background: #059669; }
+    .mini-stat-card.card-purple::before { background: #7c3aed; }
+
+    .mini-stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .mini-stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+    .mini-stat-value {
+      font-size: 19px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .mini-stat-sub {
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .mini-stat-icon-bubble {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .bubble-blue { background: #e0f2fe; color: #0284c7; }
+    .bubble-amber { background: #fef3c7; color: #d97706; }
+    .bubble-emerald { background: #d1fae5; color: #059669; }
+    .bubble-purple { background: #ede9fe; color: #7c3aed; }
+
+    /* 2. Organized Command Toolbar */
+    .command-toolbar {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+      flex-wrap: wrap;
+    }
+    .command-search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+      display: flex;
+      align-items: center;
+    }
+    .command-search-icon {
+      position: absolute;
+      right: 12px;
+      color: #94a3b8;
+      font-size: 15px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .command-search-input {
+      width: 100%;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 9px 38px 9px 36px !important;
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+    .command-search-input:focus {
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .command-search-clear {
+      position: absolute;
+      left: 10px;
+      background: #e2e8f0;
+      color: #64748b;
+      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 3;
+    }
+    .command-search-clear:hover {
+      background: #cbd5e1;
+      color: #0f172a;
+    }
+    .command-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-cmd-search {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 9px;
+      padding: 9px 16px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-cmd-search:hover {
+      background: linear-gradient(135deg, #1e40af, #1d4ed8);
+      transform: translateY(-1px);
+    }
+    .command-report-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 4px 6px;
+      border-radius: 9px;
+      border: 1px solid #e2e8f0;
+    }
+    .command-report-select {
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e293b;
+      outline: none;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+    .btn-cmd-print {
+      background: #0f766e;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-cmd-print:hover {
+      background: #115e59;
+    }
+
+    /* 3. Modern Input with Icon Wrappers */
+    .input-with-icon {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .input-field-icon {
+      position: absolute;
+      right: 11px;
+      pointer-events: none;
+      font-size: 14px;
+      color: #64748b;
+      z-index: 2;
+      user-select: none;
+    }
+    .input-with-icon input,
+    .input-with-icon select {
+      width: 100%;
+      padding: 9px 34px 9px 12px !important;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 9px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-with-icon input:focus,
+    .input-with-icon select:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .input-with-icon input:disabled,
+    .input-with-icon select:disabled {
+      background: #f8fafc;
+      color: #94a3b8;
+      cursor: not-allowed;
+      border-color: #e2e8f0;
+    }
+    .input-with-icon .field-locked-danger {
+      background: #fef2f2 !important;
+      color: #b91c1c !important;
+      border-color: #fca5a5 !important;
+      cursor: not-allowed;
+    }
+
+    /* 4. Interactive Stage Stepper */
+    .stage-stepper-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+    .stage-stepper-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stage-stepper-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    @media (max-width: 860px) {
+      .stage-stepper-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .stage-stepper-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .stage-step-pill {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 7px;
+      padding: 6px 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #475569;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-step-pill:hover:not(.locked) {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .stage-step-pill.active {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      border-color: #1d4ed8;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+      font-weight: 800;
+    }
+    .stage-step-pill.active-success {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border-color: #059669;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+    }
+    .stage-step-pill.locked {
+      opacity: 0.45;
+      background: #f1f5f9;
+      color: #94a3b8;
+      border-style: dashed;
+      cursor: not-allowed;
+    }
+
+    /* Card Visual Header Badge */
+    .card-header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    /* 5. Sticky Action Dock */
+    .sticky-action-dock {
+      position: sticky;
+      bottom: 0;
+      z-index: 99;
+      margin: 20px -10px -10px -10px;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-top: 1.5px solid #e2e8f0;
+      box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08);
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .dock-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .dock-card-identity {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .dock-status-msg {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #15803d;
+      animation: fadeIn 0.3s ease;
+    }
+    .dock-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .dock-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-dock-clear {
+      background: #f8fafc;
+      color: #475569;
+      border: 1.5px solid #cbd5e1;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-dock-clear:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+    .btn-dock-settle {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+      transition: all 0.2s ease;
+    }
+    .btn-dock-settle:hover {
+      background: linear-gradient(135deg, #047857, #059669);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+    }
+    .btn-dock-save {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #ffffff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-dock-save:hover {
+      background: linear-gradient(135deg, #1e40af, #1d4ed8);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+    }
   </style>
 </head>
 <body>
@@ -1171,29 +1641,82 @@
     <span id="roleSecurityBadge" style="font-size: 11px; background:#dbeafe; padding: 2px 8px; border-radius: 4px; color:#1e40af;">🔒 الأرقام السرية محمية ومحجوبة</span>
   </div>
 
-  <!-- Search & Reports Tool Bar -->
-  <div class="controls-bar">
-    <div class="search-box">
-      <div class="search-input-wrap">
-        <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة..." oninput="onSearchInputChange()" onkeypress="if(event.key==='Enter'){event.preventDefault();searchCustomer();}">
-        <button type="button" id="btnSearchClear" class="btn-search-clear" onclick="clearSearchField()" title="مسح خانة البحث">✕</button>
+  <!-- 2.5. Mini Dashboard Quick Statistics Cards -->
+  <div class="mini-dashboard-grid">
+    <!-- Card 1: Total Registered -->
+    <div class="mini-stat-card card-blue">
+      <div class="mini-stat-info">
+        <span class="mini-stat-label">إجمالي البطاقات المسجلة</span>
+        <span class="mini-stat-value" id="dashStatTotal">0</span>
+        <span class="mini-stat-sub">بطاقة بالمنظومة</span>
       </div>
-      <button type="button" class="btn-search" onclick="searchCustomer()">بحث فوري</button>
+      <div class="mini-stat-icon-bubble bubble-blue">👥</div>
     </div>
 
-    <div class="report-box">
-      <span style="font-size:12px; font-weight:bold; color:#065f46;">طباعة كشف:</span>
-      <select id="reportStage">
-        <option value="1. إدخال البيانات">1. إدخال البيانات</option>
-        <option value="2. محجوزة">2. محجوزة</option>
-        <option value="3. مودعة">3. مودعة</option>
-        <option value="4. انتظار شحن">4. انتظار شحن</option>
-        <option value="5. مشحونة">5. مشحونة</option>
-        <option value="6. مرسلة للسحب">6. مرسلة للسحب</option>
-        <option value="7. تم السحب والتصفية">7. تم السحب والتصفية</option>
-        <option value="الكل">جميع البطاقات (سجل عام)</option>
-      </select>
-      <button type="button" class="btn-print" onclick="openPrintReport()">🖨️ فتح الكشف للطباعة</button>
+    <!-- Card 2: Pending Booking & Intake -->
+    <div class="mini-stat-card card-amber">
+      <div class="mini-stat-info">
+        <span class="mini-stat-label">قيد الحجز والاستقبال</span>
+        <span class="mini-stat-value" id="dashStatPending">0</span>
+        <span class="mini-stat-sub">المراحل 1 و 2</span>
+      </div>
+      <div class="mini-stat-icon-bubble bubble-amber">⏳</div>
+    </div>
+
+    <!-- Card 3: Ready & In Transit -->
+    <div class="mini-stat-card card-emerald">
+      <div class="mini-stat-info">
+        <span class="mini-stat-label">جاهزة ومشحونة للسحب</span>
+        <span class="mini-stat-value" id="dashStatReady">0</span>
+        <span class="mini-stat-sub">المراحل 3 إلى 6</span>
+      </div>
+      <div class="mini-stat-icon-bubble bubble-emerald">✈️</div>
+    </div>
+
+    <!-- Card 4: Liquid Balances (or Completed for Data Entry) -->
+    <div class="mini-stat-card card-purple">
+      <div class="mini-stat-info" id="dashStatLiquidityWrap">
+        <span class="mini-stat-label" id="dashStatLiquidityLabel">سيولة الخزائن التراكمية</span>
+        <span class="mini-stat-value" id="dashStatLiquidityValue">0 <span style="font-size:13px; font-weight:bold;">د.ل</span></span>
+        <span class="mini-stat-sub" id="dashStatLiquiditySub" style="color:#059669;">+ 0 $ كاش خارج</span>
+      </div>
+      <div class="mini-stat-icon-bubble bubble-purple" id="dashStatLiquidityIcon">🏦</div>
+    </div>
+  </div>
+
+  <!-- 3. Modern Organized Command Toolbar -->
+  <div class="command-toolbar">
+    <div class="command-search-wrap">
+      <span class="command-search-icon">🔍</span>
+      <input type="text" id="searchInput" class="command-search-input" placeholder="ابحث بالاسم، الرقم الوطني، رقم الهاتف، أو كود البطاقة..." oninput="onSearchInputChange()" onkeypress="if(event.key==='Enter'){event.preventDefault();searchCustomer();}">
+      <button type="button" id="btnSearchClear" class="command-search-clear" onclick="clearSearchField()" title="مسح خانة البحث">✕</button>
+    </div>
+
+    <div class="command-actions">
+      <button type="button" class="btn-cmd-search" onclick="searchCustomer()">
+        <span>🔍</span>
+        <span>بحث فوري</span>
+      </button>
+
+      <button type="button" class="btn-cmd-print" style="background:#059669;" onclick="loadDashboardStats()" title="تحديث الإحصائيات الفورية من الشيت">
+        <span>🔄</span>
+        <span>تحديث الشيت</span>
+      </button>
+
+      <div class="command-report-group">
+        <span style="font-size:11.5px; font-weight:bold; color:#0f766e;">🖨️ كشف:</span>
+        <select id="reportStage" class="command-report-select">
+          <option value="1. إدخال البيانات">1. إدخال البيانات</option>
+          <option value="2. محجوزة">2. محجوزة</option>
+          <option value="3. مودعة">3. مودعة</option>
+          <option value="4. انتظار شحن">4. انتظار شحن</option>
+          <option value="5. مشحونة">5. مشحونة</option>
+          <option value="6. مرسلة للسحب">6. مرسلة للسحب</option>
+          <option value="7. تم السحب والتصفية">7. تم السحب والتصفية</option>
+          <option value="الكل">جميع البطاقات (سجل عام)</option>
+        </select>
+        <button type="button" class="btn-cmd-print" onclick="openPrintReport()">فتح للطباعة</button>
+      </div>
     </div>
   </div>
 
@@ -1214,43 +1737,61 @@
         
         <div class="form-group">
           <label>اسم الزبون الرباعي *</label>
-          <input type="text" id="name" required placeholder="محمد عبد السلام السنوسي...">
+          <div class="input-with-icon">
+            <span class="input-field-icon">👤</span>
+            <input type="text" id="name" required placeholder="محمد عبد السلام السنوسي...">
+          </div>
         </div>
 
         <div class="row-2">
           <div class="form-group">
             <label>الرقم الوطني (12 خانة) *</label>
-            <input type="text" id="nationalId" maxlength="12" placeholder="119xxxxxxxx">
+            <div class="input-with-icon">
+              <span class="input-field-icon">🪪</span>
+              <input type="text" id="nationalId" maxlength="12" placeholder="119xxxxxxxx">
+            </div>
           </div>
           <div class="form-group">
             <label>هاتف المركزي (المربوط) *</label>
-            <input type="text" id="cblPhone" placeholder="091xxxxxxx">
+            <div class="input-with-icon">
+              <span class="input-field-icon">📱</span>
+              <input type="text" id="cblPhone" placeholder="091xxxxxxx">
+            </div>
           </div>
         </div>
 
         <div class="form-group">
           <label>المصرف *</label>
-          <select id="bank">
-            <option value="مصرف التجارة والتنمية">مصرف التجارة والتنمية</option>
-            <option value="مصرف الوحدة">مصرف الوحدة</option>
-            <option value="مصرف التجاري الوطني">مصرف التجاري الوطني</option>
-            <option value="مصرف الأمان">مصرف الأمان</option>
-            <option value="مصرف المتوسط">مصرف المتوسط</option>
-            <option value="مصرف الجمهورية">مصرف الجمهورية</option>
-            <option value="المصرف الإسلامي">المصرف الإسلامي</option>
-            <option value="مصرف شمال أفريقيا">مصرف شمال أفريقيا</option>
-            <option value="مصرف اليقين">مصرف اليقين</option>
-          </select>
+          <div class="input-with-icon">
+            <span class="input-field-icon">🏦</span>
+            <select id="bank" onchange="updateBankBadge()">
+              <option value="مصرف التجارة والتنمية">مصرف التجارة والتنمية</option>
+              <option value="مصرف الوحدة">مصرف الوحدة</option>
+              <option value="مصرف التجاري الوطني">مصرف التجاري الوطني</option>
+              <option value="مصرف الأمان">مصرف الأمان</option>
+              <option value="مصرف المتوسط">مصرف المتوسط</option>
+              <option value="مصرف الجمهورية">مصرف الجمهورية</option>
+              <option value="المصرف الإسلامي">المصرف الإسلامي</option>
+              <option value="مصرف شمال أفريقيا">مصرف شمال أفريقيا</option>
+              <option value="مصرف اليقين">مصرف اليقين</option>
+            </select>
+          </div>
         </div>
 
         <div class="row-2">
           <div class="form-group">
             <label>رقم حساب الزبون</label>
-            <input type="text" id="accountNumber" placeholder="01533010488074">
+            <div class="input-with-icon">
+              <span class="input-field-icon">🔢</span>
+              <input type="text" id="accountNumber" placeholder="01533010488074">
+            </div>
           </div>
           <div class="form-group">
             <label>رقم الآيبان للزبون (IBAN)</label>
-            <input type="text" id="iban" class="iban-input" placeholder="LY00 0000 ...">
+            <div class="input-with-icon">
+              <span class="input-field-icon">🌐</span>
+              <input type="text" id="iban" class="iban-input" placeholder="LY00 0000 ...">
+            </div>
           </div>
         </div>
 
@@ -1262,25 +1803,37 @@
               <span id="depositLockTag" class="lock-label-tag" style="display:none;">🔒 مودعة سابقاً (للقراءة فقط)</span>
               <button type="button" id="btnUnlockDeposit" class="btn-admin-override" style="display:none;" onclick="requestUnlockDeposit()">🔓 تعديل استثنائي</button>
             </label>
-            <input type="number" id="depositAmt" value="0" placeholder="0" oninput="onDepositInputChanged()">
+            <div class="input-with-icon">
+              <span class="input-field-icon">💵</span>
+              <input type="number" id="depositAmt" value="0" placeholder="0" oninput="onDepositInputChanged()">
+            </div>
           </div>
           <div class="form-group">
             <label style="color:#0f766e;">سعر شراء البطاقة (د.ل) *</label>
-            <input type="number" id="cardPrice" value="0" placeholder="0" oninput="calculateTotalCost()">
+            <div class="input-with-icon">
+              <span class="input-field-icon">🏷️</span>
+              <input type="number" id="cardPrice" value="0" placeholder="0" oninput="calculateTotalCost()">
+            </div>
           </div>
         </div>
 
         <div class="row-2">
           <div class="form-group">
             <label style="color:#1e40af;">إجمالي التكلفة الكلية (د.ل)</label>
-            <input type="text" id="totalCostDisplay" readonly value="0 د.ل" style="background:#eff6ff; font-weight:bold; color:#1e40af;">
+            <div class="input-with-icon">
+              <span class="input-field-icon">💰</span>
+              <input type="text" id="totalCostDisplay" readonly value="0 د.ل" style="background:#eff6ff; font-weight:bold; color:#1e40af;">
+            </div>
           </div>
           <div class="form-group">
             <label>
               تاريخ الإيداع
               <span id="depositDateLockTag" class="lock-label-tag" style="display:none;">🔒 مسجل سابقاً</span>
             </label>
-            <input type="date" id="depositDate" onchange="onDepositDateChanged()">
+            <div class="input-with-icon">
+              <span class="input-field-icon">📅</span>
+              <input type="date" id="depositDate" onchange="onDepositDateChanged()">
+            </div>
           </div>
         </div>
       </div>
@@ -1294,8 +1847,14 @@
 
         <div class="row-2">
           <div class="form-group">
-            <label>رقم البطاقة (16 رقم)</label>
-            <input type="text" id="cardNum" maxlength="19" placeholder="4263 9811 0021 8191">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label style="margin:0;">رقم البطاقة (16 رقم)</label>
+              <span id="bankBadge" class="card-header-badge">🏦 مصرف التجارة والتنمية</span>
+            </div>
+            <div class="input-with-icon">
+              <span class="input-field-icon">💳</span>
+              <input type="text" id="cardNum" maxlength="19" placeholder="4263 9811 0021 8191">
+            </div>
           </div>
           <div class="form-group">
             <label>
@@ -1303,52 +1862,99 @@
               <span id="bookingDateLockTag" class="lock-label-tag" style="display:none;">🔒 محجوزة مسبقاً (للقراءة فقط)</span>
               <button type="button" id="btnUnlockBooking" class="btn-admin-override" style="display:none;" onclick="requestUnlockBooking()">🔓 تعديل</button>
             </label>
-            <input type="date" id="bookingDate" onchange="onBookingDateChanged()">
+            <div class="input-with-icon">
+              <span class="input-field-icon">📅</span>
+              <input type="date" id="bookingDate" onchange="onBookingDateChanged()">
+            </div>
           </div>
         </div>
 
         <div class="row-2">
           <div class="form-group">
             <label id="pinLocalLabel">PIN المحلي (الدينار)</label>
-            <input type="text" id="pinLocal" class="pin-local" placeholder="****">
+            <div class="input-with-icon">
+              <span class="input-field-icon">🔑</span>
+              <input type="text" id="pinLocal" class="pin-local" placeholder="****">
+            </div>
           </div>
           <div class="form-group">
             <label id="pinDollarLabel" style="color:#1d4ed8;">الرقم السري الدولي (السري دولار) *</label>
-            <input type="text" id="pinDollar" class="pin-dollar" placeholder="السري دولار">
+            <div class="input-with-icon">
+              <span class="input-field-icon">🔐</span>
+              <input type="text" id="pinDollar" class="pin-dollar" placeholder="السري دولار">
+            </div>
           </div>
         </div>
 
         <div class="row-2">
           <div class="form-group">
             <label>تاريخ الصلاحية (MM/YY)</label>
-            <input type="text" id="expiry" value="09/29" placeholder="09/29">
+            <div class="input-with-icon">
+              <span class="input-field-icon">⏳</span>
+              <input type="text" id="expiry" value="09/29" placeholder="09/29">
+            </div>
           </div>
           <div class="form-group">
             <label>المرحلة الحالية للبطاقة *</label>
-            <select id="status" onchange="handleStageChange(this.value)">
-              <!-- Dynamically populated based on employee role -->
-            </select>
+            <div class="input-with-icon">
+              <span class="input-field-icon">🚀</span>
+              <select id="status" onchange="handleStageChange(this.value)">
+                <!-- Dynamically populated based on employee role -->
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Stage Stepper -->
+        <div class="stage-stepper-box">
+          <div class="stage-stepper-label">
+            <span>مسار مراحل المعاملة (انقر للتغيير الفوري):</span>
+            <span id="activeStageLabel" style="color:#2563eb; font-weight:800;">1. إدخال البيانات</span>
+          </div>
+          <div class="stage-stepper-grid" id="stageStepperGrid">
+            <button type="button" class="stage-step-pill active" id="stepPill_0" onclick="selectStageByPill('1. إدخال البيانات')">1. إدخال</button>
+            <button type="button" class="stage-step-pill" id="stepPill_1" onclick="selectStageByPill('2. محجوزة')">2. محجوزة</button>
+            <button type="button" class="stage-step-pill" id="stepPill_2" onclick="selectStageByPill('3. مودعة')">3. مودعة</button>
+            <button type="button" class="stage-step-pill" id="stepPill_3" onclick="selectStageByPill('4. انتظار شحن')">4. انتظار شحن</button>
+            <button type="button" class="stage-step-pill" id="stepPill_4" onclick="selectStageByPill('5. مشحونة')">5. مشحونة</button>
+            <button type="button" class="stage-step-pill" id="stepPill_5" onclick="selectStageByPill('6. مرسلة')">6. مرسلة</button>
+            <button type="button" class="stage-step-pill" id="stepPill_6" onclick="selectStageByPill('7. تم السحب والتصفية')">7. تصفية 💰</button>
           </div>
         </div>
 
         <div class="form-group">
           <label>ملاحظات وبيان المعاملة</label>
-          <input type="text" id="notes" placeholder="ملاحظات حول الفرع، رقم الصك، أو التوريد...">
+          <div class="input-with-icon">
+            <span class="input-field-icon">📝</span>
+            <input type="text" id="notes" placeholder="ملاحظات حول الفرع، رقم الصك، أو التوريد...">
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Actions Bar -->
-    <div class="actions">
-      <button type="button" class="btn-clear" onclick="clearForm()">🔄 تفريغ الخانات (بطاقة جديدة)</button>
-      
-      <!-- Dedicated Settlement Button (visible for foreign office & admin) -->
-      <button type="button" id="btnSettleSale" class="btn-settle-action" style="display:none;" onclick="openSettleModal()">
-        💰 تصفية وبيع الدولار وتوريد الخزينة
-      </button>
+    <!-- 6. Modern Sticky Action Dock -->
+    <div class="sticky-action-dock">
+      <div class="dock-left">
+        <div class="dock-card-identity">
+          <span id="dockCardIdentityText">✨ بطاقة جديدة (إدخال جديد)</span>
+        </div>
+        <span id="statusMsg" class="dock-status-msg"></span>
+        <span class="dock-hint">⚡ اضغط ترحيل لحفظ وتحديث البطاقة</span>
+      </div>
 
-      <span id="statusMsg" style="font-size:12px; font-weight:bold;"></span>
-      <button type="button" class="btn-save" onclick="sendData()">💾 ترحيل وحفظ البطاقة</button>
+      <div class="dock-right">
+        <button type="button" class="btn-dock-clear" onclick="clearForm()">
+          🔄 تفريغ الخانات (جديدة)
+        </button>
+
+        <button type="button" id="btnSettleSale" class="btn-dock-settle" style="display:none;" onclick="openSettleModal()">
+          💰 تصفية وبيع الدولار
+        </button>
+
+        <button type="button" class="btn-dock-save" onclick="sendData()">
+          💾 ترحيل وحفظ المعاملة
+        </button>
+      </div>
     </div>
   </form>
 
@@ -1799,10 +2405,133 @@
         opt.innerText = stg;
         statusSelect.appendChild(opt);
       });
+
+      renderStageStepper();
+      loadDashboardStats();
+    }
+
+    // تحديث الشارة البصرية للمصرف في كرت البطاقة
+    function updateBankBadge() {
+      var bankEl = document.getElementById('bank');
+      var badge = document.getElementById('bankBadge');
+      if (bankEl && badge) {
+        badge.innerText = '🏦 ' + bankEl.value;
+      }
+    }
+
+    // رسم وتحديث مسار مراحل المعاملة (Stage Stepper)
+    function renderStageStepper() {
+      var grid = document.getElementById('stageStepperGrid');
+      var activeLabel = document.getElementById('activeStageLabel');
+      var currentStg = document.getElementById('status').value || '1. إدخال البيانات';
+
+      if (activeLabel) activeLabel.innerText = currentStg;
+      if (!grid) return;
+
+      var shortNames = [
+        '1. إدخال',
+        '2. محجوزة',
+        '3. مودعة',
+        '4. انتظار شحن',
+        '5. مشحونة',
+        '6. مرسلة',
+        '7. تصفية 💰'
+      ];
+
+      var isDataEntry = currentEmployee.role === 'موظف إدخال البيانات' || currentEmployee.role === 'موظف استقبال';
+      var isTreasury = currentEmployee.role === 'مسؤول الخزينة' || currentEmployee.role === 'مسؤول إيداع وخزينة';
+
+      grid.innerHTML = '';
+      ALL_STAGES.forEach(function(stg, idx) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.innerText = shortNames[idx];
+
+        var isAllowed = true;
+        if (isDataEntry && idx > 1) isAllowed = false;
+        if (isTreasury && idx > 2) isAllowed = false;
+
+        var isActive = (currentStg === stg);
+        var isSettled = (stg === '7. تم السحب والتصفية');
+
+        var cls = 'stage-step-pill';
+        if (!isAllowed) {
+          cls += ' locked';
+          btn.title = '🔒 ليس لديك صلاحية لهذه المرحلة';
+        } else if (isActive && isSettled) {
+          cls += ' active-success';
+          btn.title = 'المرحلة النشطة الحالية: ' + stg;
+        } else if (isActive) {
+          cls += ' active';
+          btn.title = 'المرحلة النشطة الحالية: ' + stg;
+        } else {
+          btn.title = 'تعيين المرحلة إلى: ' + stg;
+        }
+
+        btn.className = cls;
+        btn.onclick = function() {
+          if (!isAllowed) return;
+          selectStageByPill(stg);
+        };
+
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectStageByPill(stage) {
+      var select = document.getElementById('status');
+      if (select) {
+        select.value = stage;
+        handleStageChange(stage);
+      }
+    }
+
+    // جلب وتحديث كروت الإحصائيات العلوية (Mini Dashboard)
+    function loadDashboardStats() {
+      var isDataEntry = currentEmployee.role === 'موظف إدخال البيانات' || currentEmployee.role === 'موظف استقبال';
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(stats) {
+            if (!stats) return;
+            var elTotal = document.getElementById('dashStatTotal');
+            var elPending = document.getElementById('dashStatPending');
+            var elReady = document.getElementById('dashStatReady');
+
+            if (elTotal) elTotal.innerText = stats.totalCards || '0';
+            if (elPending) elPending.innerText = stats.pending || '0';
+            if (elReady) elReady.innerText = stats.readyAndShipping || '0';
+
+            var elLiqLabel = document.getElementById('dashStatLiquidityLabel');
+            var elLiqVal = document.getElementById('dashStatLiquidityValue');
+            var elLiqSub = document.getElementById('dashStatLiquiditySub');
+            var elLiqIcon = document.getElementById('dashStatLiquidityIcon');
+
+            if (isDataEntry) {
+              if (elLiqLabel) elLiqLabel.innerText = 'المعاملات المكتملة';
+              if (elLiqVal) elLiqVal.innerHTML = (stats.settled || 0) + ' <span style="font-size:13px; font-weight:bold;">معاملة</span>';
+              if (elLiqSub) {
+                elLiqSub.innerText = 'تم السحب والتصفية';
+                elLiqSub.style.color = '#059669';
+              }
+              if (elLiqIcon) elLiqIcon.innerText = '✅';
+            } else {
+              if (elLiqLabel) elLiqLabel.innerText = 'سيولة الخزائن التراكمية';
+              if (elLiqVal) elLiqVal.innerHTML = Number(stats.totalLyd || 0).toLocaleString('en-US') + ' <span style="font-size:13px; font-weight:bold;">د.ل</span>';
+              if (elLiqSub) {
+                elLiqSub.innerText = '+ ' + Number(stats.totalUsd || 0).toLocaleString('en-US') + ' $ كاش خارج';
+                elLiqSub.style.color = '#059669';
+              }
+              if (elLiqIcon) elLiqIcon.innerText = '🏦';
+            }
+          })
+          .getMiniDashboardStats();
+      }
     }
 
     // عند تغيير المرحلة إلى السحب والتصفية
     function handleStageChange(stage) {
+      renderStageStepper();
       if (stage === '7. تم السحب والتصفية') {
         openSettleModal();
       }
@@ -1928,6 +2657,8 @@
           .withSuccessHandler(function(res) {
             closeSettleModal();
             document.getElementById('status').value = '7. تم السحب والتصفية';
+            renderStageStepper();
+            loadDashboardStats();
             
             showSuccessDialog(
               res.name,
@@ -2179,10 +2910,13 @@
 
             document.getElementById('cardCode').value = card.code || '';
             document.getElementById('cardStatusBadge').innerText = 'تعديل المعاملة: ' + card.code;
+            var dockCardText = document.getElementById('dockCardIdentityText');
+            if (dockCardText) dockCardText.innerText = '💳 بطاقة كود: ' + card.code;
             document.getElementById('name').value = card.name || '';
             document.getElementById('nationalId').value = card.nationalId || '';
             document.getElementById('cblPhone').value = card.cblPhone || '';
             document.getElementById('bank').value = card.bank || 'مصرف التجارة والتنمية';
+            updateBankBadge();
             document.getElementById('accountNumber').value = card.accountNumber || '';
             document.getElementById('iban').value = card.iban || '';
             document.getElementById('depositAmt').value = card.depositAmt || '0';
@@ -2193,10 +2927,10 @@
             document.getElementById('bookingDate').value = card.bookingDate || '';
             document.getElementById('cardNum').value = card.cardNum || '';
 
-            if (currentEmployee.role === 'موظف استقبال') {
+            if (currentEmployee.role === 'موظف استقبال' || currentEmployee.role === 'موظف إدخال البيانات') {
               document.getElementById('pinLocal').value = '••••';
               document.getElementById('pinDollar').value = '••••';
-            } else if (currentEmployee.role === 'مسؤول إيداع وخزينة') {
+            } else if (currentEmployee.role === 'مسؤول إيداع وخزينة' || currentEmployee.role === 'مسؤول الخزينة') {
               document.getElementById('pinLocal').value = card.pinLocal || '';
               document.getElementById('pinDollar').value = '••••';
             } else {
@@ -2206,6 +2940,7 @@
 
             document.getElementById('expiry').value = card.expiry || '09/29';
             document.getElementById('status').value = card.status || '1. إدخال البيانات';
+            renderStageStepper();
             document.getElementById('notes').value = card.notes || '';
 
             // تطبيق فحص الحماية الذكية من تكرار الحجز والإيداع
@@ -2276,7 +3011,10 @@
 
             // تحديث بطاقة التعديل ورسالة الحماية فوراً بالقيم الجديدة
             card.code = res.code;
+            var dockCardText = document.getElementById('dockCardIdentityText');
+            if (dockCardText) dockCardText.innerText = '💳 بطاقة كود: ' + res.code;
             evaluateProtectionRules(card);
+            loadDashboardStats();
           })
           .withFailureHandler(function(err) {
             showCustomAlert('خطأ أثناء الحفظ', 'حدث خطأ أثناء الحفظ: ' + err.message, 'danger');
@@ -2353,6 +3091,8 @@
       document.getElementById('cardForm').reset();
       document.getElementById('cardCode').value = '';
       document.getElementById('cardStatusBadge').innerText = 'تسجيل بطاقة جديدة';
+      var dockCardText = document.getElementById('dockCardIdentityText');
+      if (dockCardText) dockCardText.innerText = '✨ بطاقة جديدة (إدخال جديد)';
       document.getElementById('statusMsg').innerText = '';
       document.getElementById('depositAmt').value = '0';
       document.getElementById('cardPrice').value = '0';
@@ -2361,6 +3101,7 @@
       clearSearchField();
       resetProtectionStyles();
       calculateTotalCost();
+      updateBankBadge();
       applyRoleRestrictions(currentEmployee.role);
     }
 
