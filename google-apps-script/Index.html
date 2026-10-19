@@ -2479,11 +2479,8 @@
           <option value="حساب مصرف الوحدة">حساب مصرف الوحدة</option>
           <option value="حساب المصرف التجاري الوطني">حساب المصرف التجاري الوطني</option>
           <option value="حساب مصرف الأمان">حساب مصرف الأمان</option>
-          <option value="حساب مصرف المتوسط">حساب مصرف المتوسط</option>
-          <option value="حساب مصرف الجمهورية">حساب مصرف الجمهورية</option>
           <option value="حساب المصرف الإسلامي الليبي">حساب المصرف الإسلامي الليبي</option>
           <option value="حساب مصرف شمال أفريقيا">حساب مصرف شمال أفريقيا</option>
-          <option value="حساب مصرف اليقين">حساب مصرف اليقين</option>
         </select>
       </div>
 
@@ -3351,6 +3348,25 @@
       document.getElementById('settleClientName').innerText = name;
       document.getElementById('settleCardCode').innerText = code || 'بطاقة جديدة';
       document.getElementById('settleErrorMsg').innerText = '';
+
+      // تحديث قائمة الخزائن المستلمة لتشمل الحسابات الفعلية فقط
+      var destSelect = document.getElementById('settleDestinationVault');
+      if (destSelect && currentTreasuryAccounts && currentTreasuryAccounts.length > 0) {
+        var currentSelected = destSelect.value;
+        destSelect.innerHTML = '';
+        currentTreasuryAccounts.forEach(function(acc) {
+          if (acc.currency === 'د.ل') {
+            var opt = document.createElement('option');
+            opt.value = acc.accountName;
+            opt.innerText = acc.accountName;
+            if (acc.accountName === currentSelected) opt.selected = true;
+            destSelect.appendChild(opt);
+          }
+        });
+        if (!destSelect.value && destSelect.options.length > 0) {
+          destSelect.selectedIndex = 0;
+        }
+      }
 
       // إعطاء قيم افتراضية ذكية إذا كانت الخانات فارغة
       var slipInput = document.getElementById('settleRefSlipNo');
