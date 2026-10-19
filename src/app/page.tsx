@@ -170,8 +170,8 @@ export default function AmirClassicApp() {
   const [bank, setBank] = useState("مصرف التجارة والتنمية");
   const [accountNumber, setAccountNumber] = useState("");
   const [iban, setIban] = useState("");
-  const [depositAmt, setDepositAmt] = useState<string>("0");
-  const [cardPrice, setCardPrice] = useState<string>("0");
+  const [depositAmt, setDepositAmt] = useState<string>("");
+  const [cardPrice, setCardPrice] = useState<string>("");
   const [depositDate, setDepositDate] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -853,8 +853,8 @@ export default function AmirClassicApp() {
     setBank("مصرف التجارة والتنمية");
     setAccountNumber("");
     setIban("");
-    setDepositAmt("0");
-    setCardPrice("0");
+    setDepositAmt("");
+    setCardPrice("");
     setDepositDate("");
     setBookingDate("");
     setCardNumber("");
@@ -925,8 +925,8 @@ export default function AmirClassicApp() {
     setBank(found.bank);
     setAccountNumber(found.accountNumber);
     setIban(found.iban);
-    setDepositAmt(found.depositAmt.toString());
-    setCardPrice(found.cardPrice.toString());
+    setDepositAmt(found.depositAmt ? found.depositAmt.toString() : "");
+    setCardPrice(found.cardPrice ? found.cardPrice.toString() : "");
     setDepositDate(found.depositDate);
     setBookingDate(found.bookingDate);
     setCardNumber(found.cardNum);
@@ -1700,7 +1700,7 @@ export default function AmirClassicApp() {
   }
 
   return (
-    <div style={{ maxWidth: "1160px", margin: "0 auto", padding: "10px" }}>
+    <div className="main-desktop-container">
       {/* 1. Top Bar */}
       <div className="top-bar">
         <div className="top-bar-title">
@@ -1712,69 +1712,6 @@ export default function AmirClassicApp() {
           {!isDataEntry && (
             <button type="button" className="btn-view-treasury" onClick={() => setShowTreasuryModal(true)}>
               🏦 أرصدة الخزائن والمصارف
-            </button>
-          )}
-
-          {/* USD Cash Vault Quick Badge & Sell Action (Hidden for data entry employee) */}
-          {!isDataEntry && (
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                background: "#fef3c7",
-                border: "1px solid #fde68a",
-                padding: "4px 10px",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "bold",
-                color: "#92400e",
-              }}
-            >
-              <span>💵 خزينة الدولار النقدي:</span>
-              <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#b45309", fontWeight: 800 }}>
-                ${availableUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-              </span>
-              {canSettle && availableUsd > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSellUsdAmount(availableUsd >= 4000 ? "4000" : availableUsd.toString());
-                    setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
-                    setSellUsdError("");
-                    setShowSellUsdModal(true);
-                  }}
-                  style={{
-                    background: "#b45309",
-                    color: "#fff",
-                    border: "none",
-                    padding: "3px 8px",
-                    borderRadius: "5px",
-                    fontSize: "11px",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    marginRight: "4px",
-                  }}
-                  title="الخطوة 2: بيع دولارات كاش مجمعة من الخزينة وتوريد الدينار"
-                >
-                  💱 بيع
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Google Sheets Live Sync Button (Only for Admin) */}
-          {isAdmin && (
-            <button
-              type="button"
-              className="btn-google-sync"
-              onClick={() => {
-                setGoogleSyncStatus(null);
-                setShowGoogleSyncModal(true);
-              }}
-              title="تصدير وتحديث شيت جوجل مباشرة (Google Sheets Sync)"
-            >
-              📊 ربط وتصدير شيت جوجل
             </button>
           )}
 
@@ -1790,34 +1727,32 @@ export default function AmirClassicApp() {
             </button>
           </div>
 
+          {/* Google Sheets Settings Button (Admin only - sleek pill) */}
+          {isAdmin && (
+            <button
+              type="button"
+              className="btn-google-sync-sleek"
+              onClick={() => {
+                setGoogleSyncStatus(null);
+                setShowGoogleSyncModal(true);
+              }}
+              title="إعدادات وربط وتصدير شيت جوجل"
+            >
+              📊 الشيت
+            </button>
+          )}
+
+          {/* Mode Badge - Matching Google Sheets modal */}
           <span
             className="badge-mode"
-            style={{
-              background:
-                googleConnected === true
-                  ? "#059669"
-                  : dbConnected === true
-                  ? "#065f46"
-                  : dbConnected === false
-                  ? "#991b1b"
-                  : "#2563eb",
-              color: "#fff",
-            }}
             title={
-              googleConnected === true
-                ? "متصل مباشرة بشيت جوجل السحابي المركزي (المزامنة اللحظية الشاملة)"
-                : dbConnected === true
-                ? "متصل بقاعدة بيانات MySQL المركزية"
-                : "جاري المزامنة مع الشيت السحابي..."
+              googleConnected
+                ? "متصل مباشرة بشيت جوجل السحابي"
+                : "حالة تسجيل المعاملة"
             }
           >
-            {googleConnected === true
-              ? "🟢 شيت جوجل متصل (حي)"
-              : dbConnected === true
-              ? "🟢 قاعدة MySQL متصلة"
-              : cardCode
-              ? `تعديل المعاملة: ${cardCode}`
-              : "تسجيل بطاقة جديدة"}
+            {googleConnected && <span style={{ marginLeft: "4px" }}>🟢</span>}
+            {cardCode ? `تعديل: ${cardCode}` : "تسجيل بطاقة جديدة"}
           </span>
         </div>
       </div>
@@ -1850,9 +1785,9 @@ export default function AmirClassicApp() {
           {isDataEntry &&
             "📌 صلاحيتك (موظف إدخال البيانات): تسجيل الزبائن الجدد وحجز المخصصات والبحث (المراحل 1 و 2 فقط). الخزائن والتصفية محجوبة."}
           {isTreasuryOfficer &&
-            "📌 صلاحيتك (مسؤول الخزينة): تأكيد الإيداع بالمصرف (المرحلة 3)، إدارة وتغذية الخزائن، بيع وتصفية الدولار، وتصدير الأرصدة للشيت."}
+            "📌 صلاحيتك (مسؤول الخزينة): تأكيد الإيداع بالمصرف (المرحلة 3)، إدارة وتغذية الخزائن، بيع وتصفية الدولار، وتصدير الأرصدة."}
           {isAdmin &&
-            "👑 صلاحيتك (المدير العام AMIR): إشراف كامل ومطلق على كافة المراحل 1-7، الخزائن، الأرباح، التكاليف، تصفير المنظومة، وربط شيت جوجل."}
+            "👑 صلاحيتك (المدير العام): إشراف كامل على كافة المراحل 1-7، الخزائن، والأرباح والتصفية وتصفير النظام."}
         </span>
 
         <span
@@ -1863,13 +1798,14 @@ export default function AmirClassicApp() {
             background: isDataEntry ? "#dbeafe" : isTreasuryOfficer ? "#dcfce7" : "#f3e8ff",
             color: isDataEntry ? "#1e40af" : isTreasuryOfficer ? "#166534" : "#6d28d9",
             fontWeight: "bold",
+            whiteSpace: "nowrap",
           }}
         >
           {isDataEntry
             ? "🔒 الأرقام السرية والخزائن محجوبة"
             : isTreasuryOfficer
             ? "🏦 إدارة وتغذية الخزائن وتأكيد الإيداع متاح"
-            : "⚡ تحكم شامل وإشراف مالي كامل"}
+            : "⚡ صلاحيات إدارية مطلقة وتوريد فوري"}
         </span>
       </div>
 
@@ -1916,7 +1852,33 @@ export default function AmirClassicApp() {
               </>
             ) : (
               <>
-                <span className="mini-stat-label">سيولة الخزائن التراكمية</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+                  <span className="mini-stat-label">سيولة الخزائن التراكمية</span>
+                  {canSettle && availableUsd > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSellUsdAmount(availableUsd >= 4000 ? "4000" : availableUsd.toString());
+                        setSellUsdRefNo(`SALE-USD-${Math.floor(1000 + Math.random() * 9000)}`);
+                        setSellUsdError("");
+                        setShowSellUsdModal(true);
+                      }}
+                      style={{
+                        background: "#b45309",
+                        color: "#fff",
+                        border: "none",
+                        padding: "1px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10.5px",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                      title="الخطوة 2: بيع دولارات كاش مجمعة من الخزينة وتوريد الدينار"
+                    >
+                      💱 بيع $
+                    </button>
+                  )}
+                </div>
                 <span className="mini-stat-value">
                   {totalLydVaultsBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })}{" "}
                   <span style={{ fontSize: "13px", fontWeight: "bold" }}>د.ل</span>
@@ -2166,6 +2128,7 @@ export default function AmirClassicApp() {
                   <input
                     type="number"
                     step="any"
+                    placeholder="0"
                     value={depositAmt}
                     readOnly={isDepositLocked}
                     className={isDepositLocked ? "field-locked-danger" : ""}
@@ -2181,6 +2144,7 @@ export default function AmirClassicApp() {
                   <input
                     type={isDataEntry ? "password" : "number"}
                     step="any"
+                    placeholder="0"
                     disabled={isDataEntry}
                     value={isDataEntry ? "••••" : cardPrice}
                     onChange={(e) => setCardPrice(e.target.value)}

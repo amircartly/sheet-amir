@@ -1405,21 +1405,21 @@
     /* 5. Sticky Action Dock */
     .sticky-action-dock {
       position: sticky;
-      bottom: 0;
+      bottom: 12px;
       z-index: 99;
-      margin: 20px -10px -10px -10px;
-      padding: 12px 20px;
-      background: rgba(255, 255, 255, 0.94);
+      margin: 20px 0 12px 0;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border-top: 1.5px solid #e2e8f0;
-      box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08);
-      border-radius: 16px 16px 0 0;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.1), 0 -2px 10px rgba(15, 23, 42, 0.04);
+      border-radius: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
     }
     .dock-left {
       display: flex;
@@ -1805,14 +1805,14 @@
             </label>
             <div class="input-with-icon">
               <span class="input-field-icon">💵</span>
-              <input type="number" id="depositAmt" value="0" placeholder="0" oninput="onDepositInputChanged()">
+              <input type="number" id="depositAmt" value="" placeholder="0" oninput="onDepositInputChanged()">
             </div>
           </div>
           <div class="form-group">
             <label style="color:#0f766e;">سعر شراء البطاقة (د.ل) *</label>
             <div class="input-with-icon">
               <span class="input-field-icon">🏷️</span>
-              <input type="number" id="cardPrice" value="0" placeholder="0" oninput="calculateTotalCost()">
+              <input type="number" id="cardPrice" value="" placeholder="0" oninput="calculateTotalCost()">
             </div>
           </div>
         </div>
@@ -2919,8 +2919,8 @@
             updateBankBadge();
             document.getElementById('accountNumber').value = card.accountNumber || '';
             document.getElementById('iban').value = card.iban || '';
-            document.getElementById('depositAmt').value = card.depositAmt || '0';
-            document.getElementById('cardPrice').value = card.cardPrice || '0';
+            document.getElementById('depositAmt').value = card.depositAmt ? card.depositAmt : '';
+            document.getElementById('cardPrice').value = card.cardPrice ? card.cardPrice : '';
             calculateTotalCost();
 
             document.getElementById('depositDate').value = card.depositDate || '';
@@ -3094,8 +3094,8 @@
       var dockCardText = document.getElementById('dockCardIdentityText');
       if (dockCardText) dockCardText.innerText = '✨ بطاقة جديدة (إدخال جديد)';
       document.getElementById('statusMsg').innerText = '';
-      document.getElementById('depositAmt').value = '0';
-      document.getElementById('cardPrice').value = '0';
+      document.getElementById('depositAmt').value = '';
+      document.getElementById('cardPrice').value = '';
       document.getElementById('expiry').value = '09/29';
       
       clearSearchField();
