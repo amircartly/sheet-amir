@@ -94,12 +94,47 @@ export async function POST(req: Request) {
           performedBy || "المسؤول المالي ومكتب الخارج",
         ]
       );
+    } else if (action === "add_vault" && body.vault) {
+      const v = body.vault;
+      await pool.query(
+        `INSERT INTO vaults (id, name, type, currency, balance, total_income) VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE name = VALUES(name), type = VALUES(type), currency = VALUES(currency), balance = VALUES(balance), total_income = VALUES(total_income)`,
+        [v.id, v.name, v.type || "حساب مصرفي", v.currency || "د.ل", v.balance || 0, v.totalIncome || 0]
+      );
+      await pool.query(
+        `INSERT INTO movements (action_type, details, amount, performed_by) VALUES (?, ?, ?, ?)`,
+        [
+          "إضافة حساب مصرفي",
+          `إضافة حساب جديد بالخزينة: ${v.name} برصيد افتتاحي: ${v.balance || 0} ${v.currency || "د.ل"}`,
+          v.balance || 0,
+          performedBy || "المسؤول المالي",
+        ]
+      );
+    } else if (action === "delete_vault" && body.vaultId) {
+      await pool.query(`DELETE FROM vaults WHERE id = ?`, [body.vaultId]);
+      await pool.query(
+        `INSERT INTO movements (action_type, details, amount, performed_by) VALUES (?, ?, ?, ?)`,
+        [
+          "حذف حساب مصرفي",
+          `حذف الحساب المصرفي (${body.vaultName || body.vaultId}) من الخزينة`,
+          0,
+          performedBy || "المسؤول المالي",
+        ]
+      );
     } else if (action === "sync_all" && Array.isArray(body.vaults)) {
       // Bulk update from UI settlement
       for (const v of body.vaults) {
         await pool.query(
-          `UPDATE vaults SET balance = ?, total_income = ? WHERE id = ?`,
-          [v.balance, v.totalIncome, v.id]
+          `INSERT INTO vaults (id, name, type, currency, balance, total_income) VALUES (?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE name = VALUES(name), type = VALUES(type), currency = VALUES(currency), balance = VALUES(balance), total_income = VALUES(total_income)`,
+          [v.id, v.name, v.type || "حساب مصرفي", v.currency || "د.ل", v.balance, v.totalIncome]
+        );
+      }
+      const activeIds = body.vaults.map((v: any) => v.id);
+      if (activeIds.length > 0) {
+        await pool.query(
+          `DELETE FROM vaults WHERE id NOT IN (?) AND id LIKE 'bank_%'`,
+          [activeIds]
         );
       }
     }

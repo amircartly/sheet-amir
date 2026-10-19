@@ -179,6 +179,20 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ز. إضافة حساب مصرفي جديد للخزينة
+    if (action === 'addTreasuryAccount' && data.account) {
+      var addRes = addTreasuryAccount(data.account, data.employeeName || 'المسؤول المالي');
+      return ContentService.createTextOutput(JSON.stringify(addRes))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ح. حذف حساب مصرفي من الخزينة
+    if (action === 'deleteTreasuryAccount' && data.accountName) {
+      var delRes = deleteTreasuryAccount(data.accountName, data.employeeName || 'المسؤول المالي');
+      return ContentService.createTextOutput(JSON.stringify(delRes))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: 'إجراء غير مدعوم في doPost'
@@ -312,12 +326,9 @@ function setupTreasurySheet(ss) {
       ['حساب مصرف الوحدة', 'د.ل', 60000, 0, 0, '=C4+D4-E4', 'حساب التوريدات المصرفية'],
       ['حساب المصرف التجاري الوطني', 'د.ل', 50000, 0, 0, '=C5+D5-E5', 'حساب التوريدات المصرفية'],
       ['حساب مصرف الأمان', 'د.ل', 40000, 0, 0, '=C6+D6-E6', 'حساب التوريدات المصرفية'],
-      ['حساب مصرف المتوسط', 'د.ل', 30000, 0, 0, '=C7+D7-E7', 'حساب التوريدات المصرفية'],
-      ['حساب مصرف الجمهورية', 'د.ل', 75000, 0, 0, '=C8+D8-E8', 'حساب التوريدات المصرفية'],
-      ['حساب المصرف الإسلامي الليبي', 'د.ل', 35000, 0, 0, '=C9+D9-E9', 'حساب التوريدات المصرفية'],
-      ['حساب مصرف شمال أفريقيا', 'د.ل', 25000, 0, 0, '=C10+D10-E10', 'حساب التوريدات المصرفية'],
-      ['حساب مصرف اليقين', 'د.ل', 20000, 0, 0, '=C11+D11-E11', 'حساب التوريدات المصرفية'],
-      ['خزينة الدولار النقدي (الخارج)', '$', 0, 0, 0, '=C12+D12-E12', 'رصيد الدولار المستلم قبل البيع']
+      ['حساب المصرف الإسلامي الليبي', 'د.ل', 35000, 0, 0, '=C7+D7-E7', 'حساب التوريدات المصرفية'],
+      ['حساب مصرف شمال أفريقيا', 'د.ل', 25000, 0, 0, '=C8+D8-E8', 'حساب التوريدات المصرفية'],
+      ['خزينة الدولار النقدي (الخارج)', '$', 0, 0, 0, '=C9+D9-E9', 'رصيد الدولار المستلم قبل البيع']
     ];
     sheet.getRange(2, 1, defaultAccounts.length, headers.length).setValues(defaultAccounts);
   }
@@ -1021,6 +1032,88 @@ function syncTreasurySheet(vaultsList, employeeName) {
     success: true,
     message: 'تمت مزامنة أرصدة ' + updatedCount + ' خزينة وحساب في ورقة أرصدة_الخزائن بنجاح',
     updated: updatedCount
+  };
+}
+
+// 15.3 إضافة حساب مصرفي جديد في ورقة أرصدة_الخزائن
+function addTreasuryAccount(accountData, employeeName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('أرصدة_الخزائن');
+  if (!sheet) {
+    setupTreasurySheet(ss);
+    sheet = ss.getSheetByName('أرصدة_الخزائن');
+  }
+  if (!sheet) return { success: false, error: 'تعذر العثور على ورقة أرصدة_الخزائن' };
+
+  var rawName = (accountData.name || accountData.accountName || '').toString().trim();
+  if (!rawName) return { success: false, error: 'اسم الحساب مطلوب' };
+  if (rawName.indexOf('حساب ') !== 0 && rawName.indexOf('خزينة ') !== 0) {
+    rawName = 'حساب ' + rawName;
+  }
+
+  var currency = accountData.currency || 'د.ل';
+  var balance = parseFloat(accountData.balance || accountData.initialBalance) || 0;
+  var nextRow = sheet.getLastRow() + 1;
+  var row = [
+    rawName,
+    currency,
+    balance,
+    0,
+    0,
+    '=C' + nextRow + '+D' + nextRow + '-E' + nextRow,
+    accountData.notes || 'حساب مصرفي مضاف من المنظومة'
+  ];
+  sheet.appendRow(row);
+
+  recordMovement(
+    '-',
+    'إدارة الخزائن',
+    'إضافة حساب مصرفي',
+    rawName,
+    balance,
+    currency,
+    employeeName || 'المسؤول المالي',
+    'تمت إضافة حساب جديد إلى ورقة أرصدة_الخزائن برصيد افتتاحي: ' + balance + ' ' + currency
+  );
+
+  return { success: true, message: 'تمت إضافة الحساب بنجاح', accountName: rawName };
+}
+
+// 15.4 حذف حساب مصرفي من ورقة أرصدة_الخزائن
+function deleteTreasuryAccount(accountName, employeeName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('أرصدة_الخزائن');
+  if (!sheet) return { success: false, error: 'تعذر العثور على ورقة أرصدة_الخزائن' };
+
+  var data = sheet.getDataRange().getValues();
+  var target = cleanText(accountName);
+  var deleted = false;
+
+  for (var i = data.length - 1; i >= 1; i--) {
+    var rowName = cleanText(data[i][0]);
+    if (!rowName) continue;
+    if (rowName === target || rowName.indexOf(target) !== -1 || target.indexOf(rowName) !== -1) {
+      sheet.deleteRow(i + 1);
+      deleted = true;
+    }
+  }
+
+  if (deleted) {
+    recordMovement(
+      '-',
+      'إدارة الخزائن',
+      'حذف حساب مصرفي',
+      accountName,
+      0,
+      'د.ل',
+      employeeName || 'المسؤول المالي',
+      'تم حذف الحساب المصرفي (' + accountName + ') من ورقة أرصدة_الخزائن'
+    );
+  }
+
+  return {
+    success: deleted,
+    message: deleted ? 'تم حذف الحساب من ورقة أرصدة_الخزائن بنجاح' : 'لم يتم العثور على الحساب المطلوب'
   };
 }
 

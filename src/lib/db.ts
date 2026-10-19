@@ -122,11 +122,8 @@ export async function initDatabaseTables() {
       ["bank_2", "حساب مصرف الوحدة", "حساب مصرفي", "د.ل", 0, 0],
       ["bank_3", "حساب المصرف التجاري الوطني", "حساب مصرفي", "د.ل", 0, 0],
       ["bank_4", "حساب مصرف الأمان", "حساب مصرفي", "د.ل", 0, 0],
-      ["bank_5", "حساب مصرف المتوسط", "حساب مصرفي", "د.ل", 0, 0],
-      ["bank_6", "حساب مصرف الجمهورية", "حساب مصرفي", "د.ل", 0, 0],
       ["bank_7", "حساب المصرف الإسلامي الليبي", "حساب مصرفي", "د.ل", 0, 0],
       ["bank_8", "حساب مصرف شمال أفريقيا", "حساب مصرفي", "د.ل", 0, 0],
-      ["bank_9", "حساب مصرف اليقين", "حساب مصرفي", "د.ل", 0, 0],
       ["cash_usd", "خزينة الدولار النقدي (الخارج)", "خزينة عملة صعبة (الخارج)", "$", 0, 0],
     ];
 
@@ -137,6 +134,15 @@ export async function initDatabaseTables() {
       );
     }
   } else {
+    // Clean up removed banks if their balance is 0
+    try {
+      await p.query(
+        `DELETE FROM vaults WHERE id IN ('bank_5', 'bank_6', 'bank_9') AND balance = 0`
+      );
+    } catch {
+      // ignore
+    }
+
     // Unify name with Google Sheets if legacy name exists
     try {
       await p.query(

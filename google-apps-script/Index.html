@@ -2523,11 +2523,15 @@
             💱 بيع وتصفية الدولار
           </button>
 
+          <button type="button" id="btnGasAddBank" onclick="openGasAddBankModal()" style="background:#059669; color:white; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="إضافة حساب مصرفي جديد للخزينة">
+            ➕ إضافة مصرف
+          </button>
+
           <button type="button" onclick="openTreasuryReportModal()" style="background:#0f766e; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="معاينة وطباعة كشف الموقف المالي وحفظه كـ PDF">
             🖨️ طباعة الموقف المالي (PDF)
           </button>
 
-          <button type="button" onclick="loadTreasuryBalances()" style="background:#059669; color:white; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="تحديث مباشر للأرصدة من الشيت">
+          <button type="button" onclick="loadTreasuryBalances()" style="background:#0284c7; color:white; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="تحديث مباشر للأرصدة من الشيت">
             🔄 تحديث الأرصدة
           </button>
 
@@ -2642,10 +2646,10 @@
         </div>
       </div>
 
-      <!-- Section 2: 9 Approved Banks Grid -->
+      <!-- Section 2: Approved Banks Grid with Add & Delete capability -->
       <div class="treasury-section-heading">
-        <h4>🏦 الحسابات المصرفية المعتمدة (9 مصارف)</h4>
-        <span class="treasury-section-badge" id="badgeGasBanksActiveSubtitle">9 مصارف معتمدة</span>
+        <h4 id="gasBanksHeadingTitle">🏦 الحسابات المصرفية المعتمدة (6 مصارف)</h4>
+        <span class="treasury-section-badge" id="badgeGasBanksActiveSubtitle">6 مصارف معتمدة</span>
       </div>
 
       <div id="treasuryLoading" style="text-align:center; padding:18px; font-size:13px; color:#64748b;">⏳ جاري جلب الأرصدة من الشيت...</div>
@@ -2714,7 +2718,7 @@
         </div>
 
         <div class="treasury-report-kpi">
-          <div class="treasury-report-kpi-title">🏦 أرصدة المصارف الـ 9</div>
+          <div class="treasury-report-kpi-title" id="repGasBanksKpiTitle">🏦 أرصدة المصارف</div>
           <div class="treasury-report-kpi-val" id="repGasKpiBanksLyd" style="color:#1d4ed8;">0.00 د.ل</div>
         </div>
 
@@ -2790,6 +2794,69 @@
           🖨️ طباعة الكشف (A4 / حفظ كـ PDF)
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Add New Bank Account Modal (GAS) -->
+  <div id="gasAddBankModal" style="display:none; position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:16px;">
+    <div class="modal-card" style="max-width:440px; text-align:right;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <span style="font-size:22px;">🏦</span>
+        <div>
+          <h3 style="font-size:16px; font-weight:bold; color:#0f172a; margin:0;">
+            إضافة حساب مصرفي جديد للخزينة
+          </h3>
+          <span style="font-size:11px; color:#64748b;">
+            إدراج حساب بنكي للشركة في ورقة أرصدة_الخزائن
+          </span>
+        </div>
+      </div>
+
+      <form onsubmit="event.preventDefault(); submitGasAddBank();" class="space-y-3">
+        <div class="form-group">
+          <label>اسم المصرف / الحساب *</label>
+          <input type="text" id="gasNewBankName" required placeholder="مثال: مصرف السراي، مصرف الواحة، مصرف الصحاري...">
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>العملة</label>
+            <select id="gasNewBankCurrency">
+              <option value="د.ل">دينار ليبي (د.ل)</option>
+              <option value="$">دولار أمريكي ($)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الرمز / الأيقونة</label>
+            <select id="gasNewBankIcon">
+              <option value="🏦">🏦 مصرف رئيسي</option>
+              <option value="🏛️">🏛️ بنك عريق</option>
+              <option value="🏢">🏢 فرع تجاري</option>
+              <option value="🛡️">🛡️ مصرف الأمان</option>
+              <option value="🌙">🌙 إسلامي</option>
+              <option value="🧭">🧭 إقليمي/أفريقي</option>
+              <option value="🏰">🏰 مصرف السراي</option>
+              <option value="🌴">🌴 الواحة / الصحاري</option>
+              <option value="✨">✨ مصرف نوران</option>
+              <option value="💎">💎 استثماري / يقين</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>الرصيد الافتتاحي المتوفر</label>
+          <input type="number" id="gasNewBankBal" step="any" min="0" placeholder="0">
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button type="submit" class="btn-primary-action" style="flex:1; margin-bottom:0;">
+            ✓ تأكيد إضافة الحساب
+          </button>
+          <button type="button" class="btn-secondary-action" style="width:auto;" onclick="closeGasAddBankModal()">
+            إلغاء
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -3129,6 +3196,9 @@
 
       var btnGasPulseSell = document.getElementById('btnGasPulseSellUsd');
       if (btnGasPulseSell) btnGasPulseSell.style.display = (isAdmin || isTreasury) ? 'inline-flex' : 'none';
+
+      var btnGasAddBank = document.getElementById('btnGasAddBank');
+      if (btnGasAddBank) btnGasAddBank.style.display = isAdmin ? 'inline-flex' : 'none';
 
       allowedOptions.forEach(function(stg) {
         var opt = document.createElement('option');
@@ -3479,11 +3549,8 @@
           { accountName: 'حساب مصرف الوحدة', currency: 'د.ل', currentBalance: 60000, totalIncome: 70000, notes: 'حساب التوريدات المصرفية' },
           { accountName: 'حساب المصرف التجاري الوطني', currency: 'د.ل', currentBalance: 50000, totalIncome: 55000, notes: 'حساب التوريدات المصرفية' },
           { accountName: 'حساب مصرف الأمان', currency: 'د.ل', currentBalance: 40000, totalIncome: 45000, notes: 'حساب التوريدات المصرفية' },
-          { accountName: 'حساب مصرف المتوسط', currency: 'د.ل', currentBalance: 30000, totalIncome: 35000, notes: 'حساب التوريدات المصرفية' },
-          { accountName: 'حساب مصرف الجمهورية', currency: 'د.ل', currentBalance: 75000, totalIncome: 80000, notes: 'حساب التوريدات المصرفية' },
           { accountName: 'حساب المصرف الإسلامي الليبي', currency: 'د.ل', currentBalance: 35000, totalIncome: 40000, notes: 'حساب التوريدات المصرفية' },
           { accountName: 'حساب مصرف شمال أفريقيا', currency: 'د.ل', currentBalance: 25000, totalIncome: 30000, notes: 'حساب التوريدات المصرفية' },
-          { accountName: 'حساب مصرف اليقين', currency: 'د.ل', currentBalance: 20000, totalIncome: 25000, notes: 'حساب التوريدات المصرفية' },
           { accountName: 'خزينة الدولار النقدي (الخارج)', currency: '$', currentBalance: 4000, totalIncome: 8000, notes: 'رصيد الدولار المستلم قبل البيع' }
         ];
         currentTreasuryAccounts = mockAccounts;
@@ -3554,6 +3621,14 @@
       var elSubBadge = document.getElementById('badgeGasBanksActiveSubtitle');
       if (elSubBadge) elSubBadge.innerText = activeBanksCount + ' من ' + bankAccs.length + ' نشطة بها رصيد';
 
+      var elHeadingTitle = document.getElementById('gasBanksHeadingTitle');
+      if (elHeadingTitle) elHeadingTitle.innerText = '🏦 الحسابات المصرفية المعتمدة (' + bankAccs.length + ' مصارف)';
+
+      var elRepBanksTitle = document.getElementById('repGasBanksKpiTitle');
+      if (elRepBanksTitle) elRepBanksTitle.innerText = '🏦 أرصدة المصارف (' + bankAccs.length + ')';
+
+      var isAdmin = (currentEmployee && currentEmployee.role === 'مدير عام');
+
       // Render Banks Grid
       var grid = document.getElementById('treasuryGasBanksGrid');
       if (grid) {
@@ -3566,6 +3641,10 @@
 
           var card = document.createElement('div');
           card.className = 'bank-card ' + (hasBal ? 'has-balance' : '');
+          
+          var delBtnHtml = isAdmin ? 
+            ('<button type="button" class="btn-bank-delete" onclick="deleteGasBank(\'' + b.accountName.replace(/'/g, "\\'") + '\', ' + bBal + ')" title="حذف الحساب من الخزينة">🗑️</button>') : '';
+
           card.innerHTML =
             '<div class="bank-card-head">' +
               '<div class="bank-card-name" title="' + b.accountName + '">' +
@@ -3583,9 +3662,96 @@
                   bBal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' د.ل' +
                 '</div>' +
               '</div>' +
+              '<div style="display:flex; gap:4px; align-items:center;">' +
+                delBtnHtml +
+              '</div>' +
             '</div>';
           grid.appendChild(card);
         });
+      }
+    }
+
+    // فتح وإغلاق كشف الموقف المالي الرسمي للطباعة
+    function openGasAddBankModal() {
+      var modal = document.getElementById('gasAddBankModal');
+      if (modal) {
+        document.getElementById('gasNewBankName').value = '';
+        document.getElementById('gasNewBankBal').value = '0';
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closeGasAddBankModal() {
+      var modal = document.getElementById('gasAddBankModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function submitGasAddBank() {
+      var name = document.getElementById('gasNewBankName').value.trim();
+      var curr = document.getElementById('gasNewBankCurrency').value;
+      var icon = document.getElementById('gasNewBankIcon').value;
+      var bal = parseFloat(document.getElementById('gasNewBankBal').value) || 0;
+
+      if (!name) return;
+
+      var fullName = (name.indexOf('حساب ') === 0) ? name : ('حساب ' + name);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            closeGasAddBankModal();
+            loadTreasuryBalances();
+            alert('✓ تمت إضافة (' + fullName + ') إلى أرصدة_الخزائن بنجاح');
+          })
+          .withFailureHandler(function(err) {
+            alert('خطأ في إضافة الحساب: ' + err.message);
+          })
+          .addTreasuryAccount({
+            name: fullName,
+            currency: curr,
+            balance: bal,
+            notes: 'حساب مضاف'
+          }, currentEmployee.name);
+      } else {
+        closeGasAddBankModal();
+        currentTreasuryAccounts.push({
+          accountName: fullName,
+          currency: curr,
+          currentBalance: bal,
+          totalIncome: bal,
+          notes: 'حساب مضاف'
+        });
+        renderGasTreasuryHub(currentTreasuryAccounts);
+        alert('✓ تمت إضافة (' + fullName + ') محلياً');
+      }
+    }
+
+    function deleteGasBank(accName, currentBal) {
+      if (currentBal > 0) {
+        alert('لا يمكن حذف (' + accName + ') لوجود رصيد فعلي به قدره ' + currentBal.toLocaleString('en-US') + ' د.ل.\nيرجى تصفير الرصيد أولاً حفاظاً على سلامة العهدة المالية.');
+        return;
+      }
+
+      if (!confirm('هل أنت متأكد من حذف (' + accName + ') من أرصدة الخزائن؟')) {
+        return;
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            loadTreasuryBalances();
+            alert('✓ تم حذف (' + accName + ') من الشيت بنجاح');
+          })
+          .withFailureHandler(function(err) {
+            alert('خطأ في حذف الحساب: ' + err.message);
+          })
+          .deleteTreasuryAccount(accName, currentEmployee.name);
+      } else {
+        currentTreasuryAccounts = currentTreasuryAccounts.filter(function(a) {
+          return a.accountName !== accName;
+        });
+        renderGasTreasuryHub(currentTreasuryAccounts);
+        alert('✓ تم حذف (' + accName + ')');
       }
     }
 

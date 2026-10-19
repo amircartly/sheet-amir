@@ -1123,6 +1123,24 @@
       color: white;
       border-color: #0f766e;
     }
+    .btn-bank-delete {
+      background: #fff5f5;
+      color: #ef4444;
+      border: 1px solid #fecaca;
+      padding: 3px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .btn-bank-delete:hover {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
 
     /* Safety Zone */
     .treasury-safety-zone {

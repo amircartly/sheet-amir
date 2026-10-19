@@ -64,11 +64,8 @@ const DEFAULT_VAULTS: VaultAccount[] = [
   { id: "bank_2", name: "حساب مصرف الوحدة", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
   { id: "bank_3", name: "حساب المصرف التجاري الوطني", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
   { id: "bank_4", name: "حساب مصرف الأمان", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
-  { id: "bank_5", name: "حساب مصرف المتوسط", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
-  { id: "bank_6", name: "حساب مصرف الجمهورية", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
   { id: "bank_7", name: "حساب المصرف الإسلامي الليبي", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
   { id: "bank_8", name: "حساب مصرف شمال أفريقيا", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
-  { id: "bank_9", name: "حساب مصرف اليقين", type: "حساب مصرفي", currency: "د.ل", balance: 0, totalIncome: 0 },
   { id: "cash_usd", name: "خزينة الدولار النقدي (الخارج)", type: "خزينة عملة صعبة (الخارج)", currency: "$", balance: 0, totalIncome: 0 },
 ];
 
@@ -77,12 +74,27 @@ const BANK_ICONS: Record<string, string> = {
   bank_2: "🏛️",
   bank_3: "🏢",
   bank_4: "🛡️",
-  bank_5: "🌊",
-  bank_6: "⭐",
   bank_7: "🌙",
   bank_8: "🧭",
-  bank_9: "💎",
 };
+
+function getVaultIcon(vault: VaultAccount): string {
+  if (BANK_ICONS[vault.id]) return BANK_ICONS[vault.id];
+  const n = (vault.name || "").toLowerCase();
+  if (n.includes("تجارة") || n.includes("تنمية")) return "🏦";
+  if (n.includes("وحدة")) return "🏛️";
+  if (n.includes("تجاري")) return "🏢";
+  if (n.includes("أمان")) return "🛡️";
+  if (n.includes("إسلامي")) return "🌙";
+  if (n.includes("شمال أفريقيا") || n.includes("افريقيا")) return "🧭";
+  if (n.includes("سراي")) return "🏰";
+  if (n.includes("صحاري") || n.includes("واحة")) return "🌴";
+  if (n.includes("نوران")) return "✨";
+  if (n.includes("خليج") || n.includes("متوسط")) return "🌊";
+  if (n.includes("جمهورية")) return "⭐";
+  if (n.includes("يقين")) return "💎";
+  return "🏦";
+}
 
 const ALL_STAGES = [
   "1. إدخال البيانات",
@@ -213,6 +225,12 @@ export default function AmirClassicApp() {
 
   const [showTreasuryModal, setShowTreasuryModal] = useState(false);
   const [showTreasuryReportModal, setShowTreasuryReportModal] = useState(false);
+  const [showAddBankModal, setShowAddBankModal] = useState(false);
+  const [newBankName, setNewBankName] = useState("");
+  const [newBankCurrency, setNewBankCurrency] = useState("د.ل");
+  const [newBankInitialBalance, setNewBankInitialBalance] = useState("0");
+  const [newBankIcon, setNewBankIcon] = useState("🏦");
+
   const [showFundModal, setShowFundModal] = useState(false);
   const [fundVaultId, setFundVaultId] = useState("cash_lyd");
   const [fundAmount, setFundAmount] = useState("");
@@ -496,18 +514,31 @@ export default function AmirClassicApp() {
         try {
           const parsed = JSON.parse(savedVaults);
           if (Array.isArray(parsed)) {
-            const normalized = parsed.map((v: any) => {
-              if (v.id === "cash_usd" || v.currency === "$" || (v.name && v.name.includes("خزينة الدولار"))) {
-                return {
-                  ...v,
-                  id: "cash_usd",
-                  name: "خزينة الدولار النقدي (الخارج)",
-                  type: "خزينة عملة صعبة (الخارج)",
-                  currency: "$",
-                };
-              }
-              return v;
-            });
+            const normalized = parsed
+              .filter((v: any) => {
+                const vid = v.id || "";
+                const vname = (v.name || "").toString();
+                return (
+                  vid !== "bank_5" &&
+                  vid !== "bank_6" &&
+                  vid !== "bank_9" &&
+                  !vname.includes("مصرف الجمهورية") &&
+                  !vname.includes("مصرف المتوسط") &&
+                  !vname.includes("مصرف اليقين")
+                );
+              })
+              .map((v: any) => {
+                if (v.id === "cash_usd" || v.currency === "$" || (v.name && v.name.includes("خزينة الدولار"))) {
+                  return {
+                    ...v,
+                    id: "cash_usd",
+                    name: "خزينة الدولار النقدي (الخارج)",
+                    type: "خزينة عملة صعبة (الخارج)",
+                    currency: "$",
+                  };
+                }
+                return v;
+              });
             setVaults(normalized);
             localStorage.setItem("amir_vaults_v2", JSON.stringify(normalized));
           }
@@ -605,18 +636,31 @@ export default function AmirClassicApp() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.success && Array.isArray(data.vaults) && data.vaults.length > 0) {
-          const normalized = data.vaults.map((v: any) => {
-            if (v.id === "cash_usd" || v.currency === "$" || (v.name && v.name.includes("خزينة الدولار"))) {
-              return {
-                ...v,
-                id: "cash_usd",
-                name: "خزينة الدولار النقدي (الخارج)",
-                type: "خزينة عملة صعبة (الخارج)",
-                currency: "$",
-              };
-            }
-            return v;
-          });
+          const normalized = data.vaults
+            .filter((v: any) => {
+              const vid = v.id || "";
+              const vname = (v.name || "").toString();
+              return (
+                vid !== "bank_5" &&
+                vid !== "bank_6" &&
+                vid !== "bank_9" &&
+                !vname.includes("مصرف الجمهورية") &&
+                !vname.includes("مصرف المتوسط") &&
+                !vname.includes("مصرف اليقين")
+              );
+            })
+            .map((v: any) => {
+              if (v.id === "cash_usd" || v.currency === "$" || (v.name && v.name.includes("خزينة الدولار"))) {
+                return {
+                  ...v,
+                  id: "cash_usd",
+                  name: "خزينة الدولار النقدي (الخارج)",
+                  type: "خزينة عملة صعبة (الخارج)",
+                  currency: "$",
+                };
+              }
+              return v;
+            });
           setVaults(normalized);
           localStorage.setItem("amir_vaults_v2", JSON.stringify(normalized));
         }
@@ -1427,6 +1471,98 @@ export default function AmirClassicApp() {
 
     setFundAmount("");
     setShowFundModal(false);
+  };
+
+  // Add Dynamic Bank Account to Treasury
+  const handleAddBankSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const rawName = newBankName.trim();
+    if (!rawName) return;
+
+    const formattedName = rawName.startsWith("حساب ") ? rawName : `حساب ${rawName}`;
+    const initialBal = parseFloat(newBankInitialBalance) || 0;
+
+    // Generate unique ID
+    const newId = `bank_${Date.now()}`;
+    const newVault: VaultAccount = {
+      id: newId,
+      name: formattedName,
+      type: "حساب مصرفي",
+      currency: newBankCurrency || "د.ل",
+      balance: initialBal,
+      totalIncome: initialBal,
+    };
+
+    // Store custom icon if selected
+    if (newBankIcon) {
+      BANK_ICONS[newId] = newBankIcon;
+    }
+
+    const updatedVaultsList = [...vaults, newVault];
+    setVaults(updatedVaultsList);
+    localStorage.setItem("amir_vaults_v2", JSON.stringify(updatedVaultsList));
+
+    // Save in MySQL
+    fetch("/api/vaults", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_vault",
+        vault: newVault,
+        performedBy: `${currentEmployee.name} (${currentEmployee.role})`,
+      }),
+    }).catch((err) => console.error("Error adding vault to MySQL:", err));
+
+    // Sync to Google Sheets
+    syncTreasuryToGoogleSheets(updatedVaultsList, true);
+
+    setNewBankName("");
+    setNewBankInitialBalance("0");
+    setShowAddBankModal(false);
+    setStatusMsg(`✓ تم إضافة (${formattedName}) إلى حسابات الخزينة بنجاح`);
+    setTimeout(() => setStatusMsg(""), 4000);
+  };
+
+  // Delete Bank Account from Treasury
+  const handleDeleteBankVault = (vaultToDelete: VaultAccount) => {
+    if (!isAdmin) {
+      alert("حذف الحسابات المصرفية متاح بصلاحية المدير العام فقط.");
+      return;
+    }
+
+    if (vaultToDelete.balance > 0) {
+      alert(
+        `لا يمكن حذف (${vaultToDelete.name}) لوجود رصيد فعلي به قدره (${vaultToDelete.balance.toLocaleString()} ${vaultToDelete.currency}).\nيرجى تصفير الرصيد أو تحويله لخزينة أخرى أولاً حفاظاً على سلامة العهدة.`
+      );
+      return;
+    }
+
+    const confirmed = confirm(
+      `هل أنت متأكد من رغبتك في حذف (${vaultToDelete.name}) من منظومة الخزينة؟`
+    );
+    if (!confirmed) return;
+
+    const updatedVaultsList = vaults.filter((v) => v.id !== vaultToDelete.id);
+    setVaults(updatedVaultsList);
+    localStorage.setItem("amir_vaults_v2", JSON.stringify(updatedVaultsList));
+
+    // Delete in MySQL
+    fetch("/api/vaults", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "delete_vault",
+        vaultId: vaultToDelete.id,
+        vaultName: vaultToDelete.name,
+        performedBy: `${currentEmployee.name} (${currentEmployee.role})`,
+      }),
+    }).catch((err) => console.error("Error deleting vault in MySQL:", err));
+
+    // Sync to Google Sheets
+    syncTreasuryToGoogleSheets(updatedVaultsList, true);
+
+    setStatusMsg(`✓ تم حذف (${vaultToDelete.name}) من الخزينة`);
+    setTimeout(() => setStatusMsg(""), 4000);
   };
 
   // System Reset (Zeroing Out)
@@ -3188,7 +3324,7 @@ export default function AmirClassicApp() {
                   </div>
                 </div>
                 <div className="treasury-kpi-sub">
-                  <span>9 حسابات ({activeBanksCount} بها رصيد)</span>
+                  <span>{bankVaults.length} حسابات ({activeBanksCount} بها رصيد)</span>
                   <span style={{ color: "#1e40af", fontWeight: 700 }}>
                     الإجمالي: {totalAllLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
                   </span>
@@ -3333,18 +3469,49 @@ export default function AmirClassicApp() {
               </div>
             </div>
 
-            {/* Section 2: 9 Approved Banks Grid */}
+            {/* Section 2: Approved Banks Grid with Add & Delete capability */}
             <div className="treasury-section-heading">
-              <h4>🏦 الحسابات المصرفية المعتمدة (9 مصارف)</h4>
-              <span className="treasury-section-badge">
-                {activeBanksCount} من 9 نشطة بها رصيد
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <h4>🏦 الحسابات المصرفية المعتمدة ({bankVaults.length} مصارف)</h4>
+                <span className="treasury-section-badge">
+                  {activeBanksCount} من {bankVaults.length} نشطة بها رصيد
+                </span>
+              </div>
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewBankName("");
+                    setNewBankInitialBalance("0");
+                    setNewBankCurrency("د.ل");
+                    setNewBankIcon("🏦");
+                    setShowAddBankModal(true);
+                  }}
+                  style={{
+                    background: "#0f766e",
+                    color: "white",
+                    border: "none",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                  title="إضافة حساب مصرفي جديد للشركة في الخزينة"
+                >
+                  ➕ إضافة حساب مصرفي
+                </button>
+              )}
             </div>
 
             <div className="treasury-banks-grid">
               {bankVaults.map((b) => {
                 const hasBalance = b.balance > 0;
-                const icon = BANK_ICONS[b.id] || "🏦";
+                const icon = getVaultIcon(b);
                 return (
                   <div key={b.id} className={`bank-card ${hasBalance ? "has-balance" : ""}`}>
                     <div className="bank-card-head">
@@ -3363,22 +3530,34 @@ export default function AmirClassicApp() {
                       <div>
                         <div style={{ fontSize: "10px", color: "#64748b" }}>الرصيد الفعلي:</div>
                         <div className={`bank-card-bal ${hasBalance ? "active" : "zero"}`}>
-                          {b.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                          {b.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} {b.currency}
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        className="btn-bank-fund"
-                        onClick={() => {
-                          setFundVaultId(b.id);
-                          setFundAmount("");
-                          setShowFundModal(true);
-                        }}
-                        title={`تغذية أو تعديل رصيد ${b.name}`}
-                      >
-                        ➕ تغذية
-                      </button>
+                      <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                        <button
+                          type="button"
+                          className="btn-bank-fund"
+                          onClick={() => {
+                            setFundVaultId(b.id);
+                            setFundAmount("");
+                            setShowFundModal(true);
+                          }}
+                          title={`تغذية أو تعديل رصيد ${b.name}`}
+                        >
+                          ➕ تغذية
+                        </button>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="btn-bank-delete"
+                            onClick={() => handleDeleteBankVault(b)}
+                            title={`حذف (${b.name}) من الخزينة`}
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -3478,7 +3657,7 @@ export default function AmirClassicApp() {
               </div>
 
               <div className="treasury-report-kpi">
-                <div className="treasury-report-kpi-title">🏦 أرصدة المصارف الـ 9</div>
+                <div className="treasury-report-kpi-title">🏦 أرصدة المصارف ({bankVaults.length})</div>
                 <div className="treasury-report-kpi-val" style={{ color: "#1d4ed8" }}>
                   {totalBanksLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
                 </div>
@@ -3528,17 +3707,18 @@ export default function AmirClassicApp() {
                   </td>
                 </tr>
 
-                {/* Rows 2 to 10: 9 Banks */}
+                {/* Rows for Banks */}
                 {bankVaults.map((b, idx) => {
                   const hasBal = b.balance > 0;
+                  const icon = getVaultIcon(b);
                   return (
                     <tr key={b.id}>
                       <td style={{ textAlign: "center", fontWeight: "bold" }}>{idx + 2}</td>
-                      <td>{BANK_ICONS[b.id] || "🏦"} <strong>{b.name}</strong></td>
+                      <td>{icon} <strong>{b.name}</strong></td>
                       <td style={{ color: "#64748b" }}>{b.type}</td>
                       <td style={{ textAlign: "center", fontWeight: "bold" }}>{b.currency}</td>
                       <td style={{ textAlign: "left", fontWeight: "bold", fontFamily: "monospace", color: hasBal ? "#1d4ed8" : "#64748b" }}>
-                        {b.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
+                        {b.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} {b.currency}
                       </td>
                       <td style={{ textAlign: "center" }}>
                         <span className={`bank-card-badge ${hasBal ? "badge-active" : "badge-zero"}`}>
@@ -3549,9 +3729,9 @@ export default function AmirClassicApp() {
                   );
                 })}
 
-                {/* Row 11: Cash USD */}
+                {/* Last Row: Cash USD */}
                 <tr style={{ background: "#fffdf5" }}>
-                  <td style={{ textAlign: "center", fontWeight: "bold" }}>11</td>
+                  <td style={{ textAlign: "center", fontWeight: "bold" }}>{bankVaults.length + 2}</td>
                   <td><strong>💎 {usdVault ? usdVault.name : "خزينة الدولار النقدي (الخارج)"}</strong></td>
                   <td style={{ color: "#64748b" }}>{usdVault ? usdVault.type : "خزينة عملة صعبة (الخارج)"}</td>
                   <td style={{ textAlign: "center", fontWeight: "bold" }}>{usdVault ? usdVault.currency : "$"}</td>
@@ -3568,7 +3748,7 @@ export default function AmirClassicApp() {
               <tfoot>
                 <tr>
                   <td colSpan={4} style={{ textAlign: "right", fontWeight: "bold" }}>
-                    المجموع الكلي للسيولة بالدينار الليبي (كاش المكتب + المصارف الـ 9):
+                    المجموع الكلي للسيولة بالدينار الليبي (كاش المكتب + المصارف المعتمدة):
                   </td>
                   <td style={{ textAlign: "left", fontWeight: 900, fontFamily: "monospace", color: "#15803d", fontSize: "14px" }}>
                     {totalAllLyd.toLocaleString("en-US", { minimumFractionDigits: 2 })} د.ل
@@ -3693,6 +3873,91 @@ export default function AmirClassicApp() {
                   {fundMode === "set" ? "تأكيد ضبط الرصيد" : "تأكيد الإضافة"}
                 </button>
                 <button type="button" className="btn-secondary-action" style={{ width: "auto" }} onClick={() => setShowFundModal(false)}>
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Bank Account Modal */}
+      {showAddBankModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10001, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div className="modal-card" style={{ maxWidth: "440px", textAlign: "right" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+              <span style={{ fontSize: "22px" }}>🏦</span>
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#0f172a", margin: 0 }}>
+                  إضافة حساب مصرفي جديد للخزينة
+                </h3>
+                <span style={{ fontSize: "11px", color: "#64748b" }}>
+                  إدراج حساب بنكي رسمي للشركة وتخصيص رصيد افتتاحي
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddBankSubmit} className="space-y-3" style={{ marginTop: "14px" }}>
+              <div className="form-group">
+                <label>اسم المصرف / الحساب *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: مصرف السراي، مصرف الواحة، مصرف الصحاري..."
+                  value={newBankName}
+                  onChange={(e) => setNewBankName(e.target.value)}
+                />
+              </div>
+
+              <div className="row-2">
+                <div className="form-group">
+                  <label>العملة</label>
+                  <select value={newBankCurrency} onChange={(e) => setNewBankCurrency(e.target.value)}>
+                    <option value="د.ل">دينار ليبي (د.ل)</option>
+                    <option value="$">دولار أمريكي ($)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>الرمز / الأيقونة</label>
+                  <select value={newBankIcon} onChange={(e) => setNewBankIcon(e.target.value)}>
+                    <option value="🏦">🏦 مصرف رئيسي</option>
+                    <option value="🏛️">🏛️ بنك مركزي/عريق</option>
+                    <option value="🏢">🏢 فرع تجاري</option>
+                    <option value="🛡️">🛡️ أمان واستقرار</option>
+                    <option value="🌙">🌙 إسلامي</option>
+                    <option value="🧭">🧭 إقليمي/أفريقي</option>
+                    <option value="🏰">🏰 مصرف السراي</option>
+                    <option value="🌴">🌴 الواحة / الصحاري</option>
+                    <option value="✨">✨ مصرف نوران</option>
+                    <option value="🌊">🌊 مصرف المتوسط</option>
+                    <option value="⭐">⭐ مصرف الجمهورية</option>
+                    <option value="💎">💎 استثماري / يقين</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>الرصيد الافتتاحي المتوفر (د.ل)</label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  placeholder="0"
+                  value={newBankInitialBalance}
+                  onChange={(e) => setNewBankInitialBalance(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
+                <button type="submit" className="btn-primary-action" style={{ flex: 1, marginBottom: 0 }}>
+                  ✓ تأكيد إضافة الحساب
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  style={{ width: "auto" }}
+                  onClick={() => setShowAddBankModal(false)}
+                >
                   إلغاء
                 </button>
               </div>
